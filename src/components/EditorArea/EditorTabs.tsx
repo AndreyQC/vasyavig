@@ -1,0 +1,41 @@
+import {Button, Icon, Text} from "@gravity-ui/uikit";
+import {Xmark} from "@gravity-ui/icons";
+import {useEditorStore} from "../../store/editorStore";
+
+/** Горизонтальные табы открытых файлов: точка ● у «грязных», крестик закрытия. */
+export function EditorTabs() {
+  const tabs = useEditorStore((s) => s.tabs);
+  const activePath = useEditorStore((s) => s.activePath);
+  const setActiveTab = useEditorStore((s) => s.setActiveTab);
+  const closeTab = useEditorStore((s) => s.closeTab);
+
+  if (tabs.length === 0) return null;
+
+  return (
+    <div className="editor-tabs">
+      {tabs.map((tab) => (
+        <div
+          key={tab.path}
+          className={`editor-tabs__tab${tab.path === activePath ? " editor-tabs__tab--active" : ""}`}
+          title={tab.path}
+        >
+          <button type="button" className="editor-tabs__label" onClick={() => setActiveTab(tab.path)}>
+            <Text variant="body-1" ellipsis>
+              {tab.name}
+            </Text>
+            {tab.dirty && <span className="editor-tabs__dirty">●</span>}
+          </button>
+          <Button
+            view="flat"
+            size="s"
+            className="editor-tabs__close"
+            onClick={() => closeTab(tab.path)}
+            title="Закрыть"
+          >
+            <Icon data={Xmark} size={12} />
+          </Button>
+        </div>
+      ))}
+    </div>
+  );
+}

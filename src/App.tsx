@@ -3,15 +3,19 @@ import {Layout} from "./components/Layout";
 import {SidebarHeader} from "./components/Sidebar/SidebarHeader";
 import {FileTree} from "./components/Sidebar/FileTree";
 import {EmptyState} from "./components/EditorArea/EmptyState";
+import {EditorTabs} from "./components/EditorArea/EditorTabs";
+import {MarkdownEditor} from "./components/EditorArea/MarkdownEditor";
+import {ModeSwitcher} from "./components/Toolbar/ModeSwitcher";
 import {useFileStore} from "./store/fileStore";
+import {useEditorStore} from "./store/editorStore";
 import {useFileWatcher} from "./hooks/useFileWatcher";
 import "./components/Sidebar/Sidebar.css";
+import "./components/EditorArea/EditorArea.css";
 
 function App() {
   const rootPath = useFileStore((s) => s.rootPath);
-  const activeFilePath = useFileStore((s) => s.activeFilePath);
-  const activeFileContent = useFileStore((s) => s.activeFileContent);
   const error = useFileStore((s) => s.error);
+  const activeTab = useEditorStore((s) => s.tabs.find((t) => t.path === s.activePath));
 
   useFileWatcher();
 
@@ -36,8 +40,24 @@ function App() {
           {error}
         </Text>
       )}
-      {activeFilePath !== null && activeFileContent !== null ? (
-        <pre className="file-viewer">{activeFileContent}</pre>
+      {activeTab ? (
+        <div className="editor-area">
+          <div className="editor-area__header">
+            <EditorTabs />
+            {activeTab.kind === "markdown" && <ModeSwitcher path={activeTab.path} />}
+          </div>
+          <div className="editor-area__content">
+            {activeTab.kind === "markdown" ? (
+              <MarkdownEditor
+                key={activeTab.path}
+                path={activeTab.path}
+                initialContent={activeTab.content}
+              />
+            ) : (
+              <pre className="file-viewer">{activeTab.content}</pre>
+            )}
+          </div>
+        </div>
       ) : (
         <EmptyState />
       )}

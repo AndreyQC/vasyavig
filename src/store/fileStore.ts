@@ -1,6 +1,8 @@
 import {create} from "zustand";
 import type {FileNode} from "../types";
 import {listDirectory, openFolderDialog, readFile, watchFolder} from "../hooks/useTauriFS";
+import {getFileKind, getFileName} from "../lib/utils";
+import {useEditorStore} from "./editorStore";
 
 interface FileState {
   rootPath: string | null;
@@ -8,8 +10,8 @@ interface FileState {
   /** Стабильная ссылка, меняется только при toggle/collapse — см. LESSONS_LEARNED §3. */
   expandedPaths: Record<string, true>;
   showHidden: boolean;
+  /** Путь файла, выбранного в дереве (для подсветки). */
   activeFilePath: string | null;
-  activeFileContent: string | null;
   isLoadingTree: boolean;
   error: string | null;
 
@@ -19,7 +21,6 @@ interface FileState {
   collapseAll: () => void;
   toggleShowHidden: () => void;
   openFile: (path: string) => Promise<void>;
-  closeFile: () => void;
 }
 
 export const useFileStore = create<FileState>((set, get) => ({
@@ -28,7 +29,6 @@ export const useFileStore = create<FileState>((set, get) => ({
   expandedPaths: {},
   showHidden: false,
   activeFilePath: null,
-  activeFileContent: null,
   isLoadingTree: false,
   error: null,
 
@@ -72,18 +72,18 @@ export const useFileStore = create<FileState>((set, get) => ({
   toggleShowHidden: () => set((s) => ({showHidden: !s.showHidden})),
 
   openFile: async (path) => {
-    set({error: null});
+    const kind = getFileKind(path);
+    if (kind === "unsupported") {
+      set({error: `Неподдерживаемый тип файла: ${getFileName(path)}`});
+      return;
+    }
+    set({error: null, activeFilePath: path});
     try {
       const content = await readFile(path);
-      set({activeFilePath: path, activeFileContent: content});
-      document.title = `${path.split(/[\\/]/).pop()} — Vasyavig`;
+      useEditorStore.getState().openTab({path, kind, content});
+      document.title = `${getFileName(path)} — Vasyavig`;
     } catch (e) {
       set({error: String(e)});
     }
-  },
-
-  closeFile: () => {
-    set({activeFilePath: null, activeFileContent: null});
-    document.title = "Vasyavig";
   },
 }));
