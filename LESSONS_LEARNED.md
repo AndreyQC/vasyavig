@@ -135,7 +135,19 @@ const toaster = new Toaster();
 ошибки вместо белого экрана и пишет её в `localStorage` — ускоряет диагностику
 внутри WebView, где нет DevTools под рукой.
 
-## 7. Шпаргалка: быстрые проверки при «белом окне Tauri»
+## 7. monaco-editor 0.56: exports-мапа сломала канонические пути воркеров
+
+**Что произошло.** Документированные для Vite импорты
+`monaco-editor/esm/vs/editor/editor.worker?worker` падают с
+`Failed to resolve import` — в monaco-editor 0.56 exports-мапа `"./*" -> "./esm/vs/*.js"`,
+и префикс `esm/vs` в сабпасе дублируется.
+
+**Правило.** Воркеры импортировать без префикса `esm/vs`:
+`monaco-editor/editor/editor.worker?worker`, `monaco-editor/language/json/json.worker?worker`
+и т.д. Перед копированием сниппетов из README проверять `exports` в package.json
+конкретной установленной версии.
+
+## 8. Шпаргалка: быстрые проверки при «белом окне Tauri»
 
 | Симптом | Скорее всего | Проверка |
 |---|---|---|
