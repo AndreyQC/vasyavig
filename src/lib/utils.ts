@@ -41,3 +41,27 @@ export function isMdYfmSwap(oldExt: string, newExt: string): boolean {
   const b = normalizeMdExt(newExt);
   return (a === "md" && b === "yfm") || (a === "yfm" && b === "md");
 }
+
+/** Язык Monaco по расширению файла (идея §8). */
+const MONACO_LANG_MAP: Record<string, string> = {
+  json: "json",
+  py: "python",
+  sql: "sql",
+  js: "javascript",
+  jsx: "javascript",
+  ts: "typescript",
+  tsx: "typescript",
+  yaml: "yaml",
+  yml: "yaml",
+  xml: "xml",
+  rs: "rust",
+  go: "go",
+  java: "java",
+  cpp: "cpp",
+  c: "c",
+  h: "cpp",
+};
+
+export function getMonacoLanguage(path: string): string {
+  return MONACO_LANG_MAP[getExtension(path)] ?? "plaintext";
+}

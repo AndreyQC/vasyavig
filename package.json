@@ -14,10 +14,12 @@
     "@gravity-ui/icons": "^2.21.0",
     "@gravity-ui/markdown-editor": "^15.44.0",
     "@gravity-ui/uikit": "^7.47.1",
+    "@monaco-editor/react": "^4.7.0",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-dialog": "^2.7.2",
     "@tauri-apps/plugin-opener": "^2",
     "mermaid": "^11.16.0",
+    "monaco-editor": "^0.56.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "zustand": "^5.0.14"

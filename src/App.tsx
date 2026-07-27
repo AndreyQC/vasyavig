@@ -5,6 +5,7 @@ import {FileTree} from "./components/Sidebar/FileTree";
 import {EmptyState} from "./components/EditorArea/EmptyState";
 import {EditorTabs} from "./components/EditorArea/EditorTabs";
 import {MarkdownEditor} from "./components/EditorArea/MarkdownEditor";
+import {MonacoViewer} from "./components/EditorArea/MonacoViewer";
 import {MainToolbar} from "./components/Toolbar/MainToolbar";
 import {StatusBar} from "./components/StatusBar/StatusBar";
 import {SaveConfirmModal} from "./components/Modals/SaveConfirmModal";
@@ -60,7 +61,7 @@ function App() {
                   initialContent={activeTab.content}
                 />
               ) : (
-                <pre className="file-viewer">{activeTab.content}</pre>
+                <MonacoViewer content={activeTab.content} path={activeTab.path} />
               )}
             </div>
           </div>
