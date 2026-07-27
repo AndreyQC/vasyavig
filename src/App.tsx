@@ -9,6 +9,7 @@ import {ModeSwitcher} from "./components/Toolbar/ModeSwitcher";
 import {useFileStore} from "./store/fileStore";
 import {useEditorStore} from "./store/editorStore";
 import {useFileWatcher} from "./hooks/useFileWatcher";
+import {ErrorBoundary} from "./components/ErrorBoundary";
 import "./components/Sidebar/Sidebar.css";
 import "./components/EditorArea/EditorArea.css";
 
@@ -35,32 +36,34 @@ function App() {
 
   return (
     <Layout sidebar={sidebar}>
-      {error && (
-        <Text variant="body-2" color="danger" style={{marginBottom: 12}}>
-          {error}
-        </Text>
-      )}
-      {activeTab ? (
-        <div className="editor-area">
-          <div className="editor-area__header">
-            <EditorTabs />
-            {activeTab.kind === "markdown" && <ModeSwitcher path={activeTab.path} />}
+      <ErrorBoundary>
+        {error && (
+          <Text variant="body-2" color="danger" style={{marginBottom: 12}}>
+            {error}
+          </Text>
+        )}
+        {activeTab ? (
+          <div className="editor-area">
+            <div className="editor-area__header">
+              <EditorTabs />
+              {activeTab.kind === "markdown" && <ModeSwitcher path={activeTab.path} />}
+            </div>
+            <div className="editor-area__content">
+              {activeTab.kind === "markdown" ? (
+                <MarkdownEditor
+                  key={activeTab.path}
+                  path={activeTab.path}
+                  initialContent={activeTab.content}
+                />
+              ) : (
+                <pre className="file-viewer">{activeTab.content}</pre>
+              )}
+            </div>
           </div>
-          <div className="editor-area__content">
-            {activeTab.kind === "markdown" ? (
-              <MarkdownEditor
-                key={activeTab.path}
-                path={activeTab.path}
-                initialContent={activeTab.content}
-              />
-            ) : (
-              <pre className="file-viewer">{activeTab.content}</pre>
-            )}
-          </div>
-        </div>
-      ) : (
-        <EmptyState />
-      )}
+        ) : (
+          <EmptyState />
+        )}
+      </ErrorBoundary>
     </Layout>
   );
 }
