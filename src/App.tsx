@@ -1,26 +1,46 @@
-import {Button, Text} from "@gravity-ui/uikit";
-import {FolderOpen} from "@gravity-ui/icons";
+import {Text} from "@gravity-ui/uikit";
 import {Layout} from "./components/Layout";
+import {SidebarHeader} from "./components/Sidebar/SidebarHeader";
+import {FileTree} from "./components/Sidebar/FileTree";
+import {EmptyState} from "./components/EditorArea/EmptyState";
+import {useFileStore} from "./store/fileStore";
+import {useFileWatcher} from "./hooks/useFileWatcher";
+import "./components/Sidebar/Sidebar.css";
 
 function App() {
+  const rootPath = useFileStore((s) => s.rootPath);
+  const activeFilePath = useFileStore((s) => s.activeFilePath);
+  const activeFileContent = useFileStore((s) => s.activeFileContent);
+  const error = useFileStore((s) => s.error);
+
+  useFileWatcher();
+
   const sidebar = (
     <>
-      <Button view="outlined" width="max">
-        <FolderOpen />
-        Открыть папку
-      </Button>
-      <Text variant="body-2" color="secondary" style={{marginTop: 12}}>
-        Папка не открыта
-      </Text>
+      <SidebarHeader />
+      <FileTree />
+      {rootPath && (
+        <div className="sidebar-footer">
+          <Text variant="caption-2" color="secondary" ellipsis title={rootPath}>
+            {rootPath}
+          </Text>
+        </div>
+      )}
     </>
   );
 
   return (
     <Layout sidebar={sidebar}>
-      <Text variant="header-1">Vasyavig</Text>
-      <Text variant="body-2" color="secondary" style={{marginTop: 8}}>
-        Откройте папку, чтобы начать работу с Markdown/YFM файлами
-      </Text>
+      {error && (
+        <Text variant="body-2" color="danger" style={{marginBottom: 12}}>
+          {error}
+        </Text>
+      )}
+      {activeFilePath !== null && activeFileContent !== null ? (
+        <pre className="file-viewer">{activeFileContent}</pre>
+      ) : (
+        <EmptyState />
+      )}
     </Layout>
   );
 }
