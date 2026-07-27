@@ -21,6 +21,8 @@ interface FileState {
   collapseAll: () => void;
   toggleShowHidden: () => void;
   openFile: (path: string) => Promise<void>;
+  setActiveFilePath: (path: string | null) => void;
+  setError: (error: string | null) => void;
 }
 
 export const useFileStore = create<FileState>((set, get) => ({
@@ -70,6 +72,10 @@ export const useFileStore = create<FileState>((set, get) => ({
   collapseAll: () => set({expandedPaths: {}}),
 
   toggleShowHidden: () => set((s) => ({showHidden: !s.showHidden})),
+
+  setActiveFilePath: (path) => set({activeFilePath: path}),
+
+  setError: (error) => set({error}),
 
   openFile: async (path) => {
     const kind = getFileKind(path);

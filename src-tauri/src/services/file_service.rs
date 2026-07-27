@@ -57,3 +57,21 @@ pub fn read_file_utf8(path: &Path) -> Result<String, String> {
     }
     String::from_utf8(bytes).map_err(|_| "Файл не в UTF-8".to_string())
 }
+
+/// Атомарная запись: temp-файл в той же директории + rename (идея §6.1).
+pub fn write_file_atomic(path: &Path, content: &str) -> Result<(), String> {
+    let dir = path
+        .parent()
+        .ok_or_else(|| format!("no parent dir for {}", path.display()))?;
+    let tmp = dir.join(format!(
+        ".vasyavig-tmp-{}",
+        path.file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_else(|| "file".to_string())
+    ));
+    fs::write(&tmp, content.as_bytes()).map_err(|e| format!("cannot write {}: {e}", tmp.display()))?;
+    fs::rename(&tmp, path).map_err(|e| {
+        let _ = fs::remove_file(&tmp);
+        format!("cannot rename to {}: {e}", path.display())
+    })
+}

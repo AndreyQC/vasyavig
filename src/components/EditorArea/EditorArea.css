@@ -57,3 +57,42 @@
 .md-editor {
   height: 100%;
 }
+
+.main-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--g-spacing-3);
+  padding-bottom: var(--g-spacing-2);
+}
+
+.main-toolbar__right {
+  display: flex;
+  gap: var(--g-spacing-2);
+}
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--g-spacing-3);
+  padding: var(--g-spacing-1) var(--g-spacing-3);
+  min-height: 28px;
+}
+
+.file-type-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--g-spacing-2);
+  border-radius: var(--g-border-radius-s);
+}
+
+.save-confirm-modal {
+  padding: var(--g-spacing-6);
+  max-width: 480px;
+}
+
+.save-confirm-modal__actions {
+  display: flex;
+  gap: var(--g-spacing-2);
+  margin-top: var(--g-spacing-5);
+}
