@@ -41,6 +41,15 @@ importers:
       monaco-editor:
         specifier: ^0.56.0
         version: 0.56.0
+      prosemirror-model:
+        specifier: ^1.25.11
+        version: 1.25.11
+      prosemirror-state:
+        specifier: ^1.4.4
+        version: 1.4.4
+      prosemirror-view:
+        specifier: ^1.42.2
+        version: 1.42.2
       react:
         specifier: ^19.1.0
         version: 19.2.8

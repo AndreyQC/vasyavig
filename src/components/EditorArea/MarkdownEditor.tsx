@@ -1,6 +1,7 @@
 import {useEffect} from "react";
 import {MarkdownEditorView, useMarkdownEditor} from "@gravity-ui/markdown-editor";
 import {useEditorStore} from "../../store/editorStore";
+import {spellcheckExtension} from "../../lib/spellcheckExtension";
 
 interface Props {
   path: string;
@@ -19,6 +20,7 @@ export function MarkdownEditor({path, initialContent}: Props) {
       md: {html: true, breaks: true, linkify: true},
       initial: {markup: initialContent, mode: "wysiwyg"},
       experimental: {preserveEmptyRows: true},
+      wysiwygConfig: {extensions: spellcheckExtension()},
     },
     [path],
   );

@@ -1,4 +1,6 @@
+import {useEffect} from "react";
 import {Text} from "@gravity-ui/uikit";
+import {invoke} from "@tauri-apps/api/core";
 import {Layout} from "./components/Layout";
 import {SidebarHeader} from "./components/Sidebar/SidebarHeader";
 import {FileTree} from "./components/Sidebar/FileTree";
@@ -25,6 +27,11 @@ function App() {
 
   useFileWatcher();
   useSaveHotkeys();
+
+  // Пользовательский словарь орфографии (слова, добавленные ранее)
+  useEffect(() => {
+    invoke("load_user_dictionary").catch((e) => console.warn("load_user_dictionary failed:", e));
+  }, []);
 
   const sidebar = (
     <>

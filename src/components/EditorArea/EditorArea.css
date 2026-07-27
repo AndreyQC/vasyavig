@@ -138,3 +138,23 @@
   justify-content: center;
   margin: var(--g-spacing-3) 0;
 }
+
+.status-bar__right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--g-spacing-2);
+}
+
+.spellcheck-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--g-spacing-1);
+}
+
+/* wavy-подчёркивание орфографических ошибок в WYSIWYG */
+.spell-error {
+  text-decoration: underline wavy var(--g-color-text-danger);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 2px;
+}
