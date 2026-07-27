@@ -18,6 +18,7 @@ export function ModeSwitcher({path}: Props) {
     >
       <SegmentedRadioGroup.Option value="wysiwyg">WYSIWYG</SegmentedRadioGroup.Option>
       <SegmentedRadioGroup.Option value="markup">Markup</SegmentedRadioGroup.Option>
+      <SegmentedRadioGroup.Option value="split">Split</SegmentedRadioGroup.Option>
     </SegmentedRadioGroup>
   );
 }

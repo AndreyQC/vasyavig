@@ -2,7 +2,7 @@ import {create} from "zustand";
 import {getExtension, getFileName, isMdYfmSwap, type FileKind} from "../lib/utils";
 import {saveFileDialog, writeFile} from "../hooks/useTauriFS";
 
-export type EditorMode = "wysiwyg" | "markup";
+export type EditorMode = "wysiwyg" | "markup" | "split";
 
 export interface EditorTab {
   path: string;

@@ -6,6 +6,7 @@ import {EmptyState} from "./components/EditorArea/EmptyState";
 import {EditorTabs} from "./components/EditorArea/EditorTabs";
 import {MarkdownEditor} from "./components/EditorArea/MarkdownEditor";
 import {MonacoViewer} from "./components/EditorArea/MonacoViewer";
+import {SplitView} from "./components/EditorArea/SplitView";
 import {MainToolbar} from "./components/Toolbar/MainToolbar";
 import {StatusBar} from "./components/StatusBar/StatusBar";
 import {SaveConfirmModal} from "./components/Modals/SaveConfirmModal";
@@ -55,11 +56,15 @@ function App() {
             </div>
             <div className="editor-area__content">
               {activeTab.kind === "markdown" ? (
-                <MarkdownEditor
-                  key={activeTab.path}
-                  path={activeTab.path}
-                  initialContent={activeTab.content}
-                />
+                activeTab.mode === "split" ? (
+                  <SplitView key={activeTab.path} tab={activeTab} />
+                ) : (
+                  <MarkdownEditor
+                    key={activeTab.path}
+                    path={activeTab.path}
+                    initialContent={activeTab.content}
+                  />
+                )
               ) : (
                 <MonacoViewer content={activeTab.content} path={activeTab.path} />
               )}

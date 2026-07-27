@@ -34,11 +34,13 @@ export function MarkdownEditor({path, initialContent}: Props) {
     };
   }, [editor, path]);
 
-  // Синхронизация режима из store (переключается через ModeSwitcher)
+  // Синхронизация режима из store (переключается через ModeSwitcher).
+  // split = редактор WYSIWYG + отдельная панель превью (рендерится снаружи).
   const mode = useEditorStore((s) => s.tabs.find((t) => t.path === path)?.mode ?? "wysiwyg");
   useEffect(() => {
-    if (editor.currentMode !== mode) {
-      editor.setEditorMode(mode, {emit: false});
+    const editorMode = mode === "markup" ? "markup" : "wysiwyg";
+    if (editor.currentMode !== editorMode) {
+      editor.setEditorMode(editorMode, {emit: false});
     }
   }, [editor, mode]);
 
