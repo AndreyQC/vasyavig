@@ -111,7 +111,31 @@ win.onCloseRequested(async (event) => {
 3. **В handler `Ctrl+S` читать `editorStore.getState().currentDoc.content`**, а не
    замыкание из `onMount` — иначе сохранится устаревший текст.
 
-## 6. Шпаргалка: быстрые проверки при «белом окне Tauri»
+## 6. Gravity UI `MarkdownEditorView` требует `ToasterProvider`
+
+**Что произошло.** При первом открытии `.md` файла — белый экран. Ошибка:
+`Toaster: useToaster hook is used out of context` внутри `MarkdownEditorView`.
+
+**Правило.** При подключении `@gravity-ui/markdown-editor` приложение обязано быть
+обёрнуто в `ToasterProvider` + `ToasterComponent` из `@gravity-ui/uikit`
+(в uikit v7 `ToasterComponent` без пропов — берёт toaster из контекста):
+
+```tsx
+const toaster = new Toaster();
+
+<ThemeProvider theme="system">
+  <ToasterProvider toaster={toaster}>
+    <App />
+    <ToasterComponent />
+  </ToasterProvider>
+</ThemeProvider>
+```
+
+**Дополнительно.** Вокруг редактора полезен `ErrorBoundary`, который рендерит текст
+ошибки вместо белого экрана и пишет её в `localStorage` — ускоряет диагностику
+внутри WebView, где нет DevTools под рукой.
+
+## 7. Шпаргалка: быстрые проверки при «белом окне Tauri»
 
 | Симптом | Скорее всего | Проверка |
 |---|---|---|
