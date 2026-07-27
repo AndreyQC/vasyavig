@@ -156,6 +156,7 @@ const toaster = new Toaster();
 | Белое окно, в Edge-DevTools `Maximum update depth` | некэшированный Zustand-селектор | аудит всех `useStore(selector)` |
 | Окно белое, в консоли Tauri-API TypeError | Tauri-импорт вне try/catch | обернуть в try/catch или `isTauri`-guard |
 | Кнопка закрытия не работает | `onCloseRequested` блокирует | try/catch, не звать `preventDefault` при ошибке |
+| `beforeDevCommand terminated with non-zero status` | порт 1420 занят старым dev-процессом | `taskkill` старого vasyavig.exe / node, перезапуск |
 
 **Методология:** при «белом окне» проверять слои по порядку — не пытаться чинить
 всё сразу:
