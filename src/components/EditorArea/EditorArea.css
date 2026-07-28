@@ -17,7 +17,8 @@
 .editor-area__content {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
+  /* панели (редактор/превью/Monaco) скроллят себя сами */
+  overflow: hidden;
   padding-top: var(--g-spacing-3);
 }
 
@@ -56,6 +57,9 @@
 
 .md-editor {
   height: 100%;
+  /* собственный вертикальный скролл редактора (sticky-тулбар остаётся на месте) */
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .main-toolbar {
@@ -106,7 +110,8 @@
 .split-view__editor {
   flex: 1;
   min-width: 0;
-  overflow-y: auto;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .split-view__divider {
@@ -123,7 +128,9 @@
 .split-view__preview {
   flex-shrink: 0;
   min-width: 300px;
+  min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 0 var(--g-spacing-3);
   border-left: 1px solid var(--g-color-line-generic);
 }
