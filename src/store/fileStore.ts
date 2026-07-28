@@ -2,6 +2,7 @@ import {create} from "zustand";
 import type {FileNode} from "../types";
 import {listDirectory, openFolderDialog, readFile, watchFolder} from "../hooks/useTauriFS";
 import {getFileKind, getFileName} from "../lib/utils";
+import i18n from "../lib/i18n";
 import {useEditorStore} from "./editorStore";
 
 interface FileState {
@@ -80,7 +81,7 @@ export const useFileStore = create<FileState>((set, get) => ({
   openFile: async (path) => {
     const kind = getFileKind(path);
     if (kind === "unsupported") {
-      set({error: `Неподдерживаемый тип файла: ${getFileName(path)}`});
+      set({error: i18n.t("errors.unsupportedType", {name: getFileName(path)})});
       return;
     }
     set({error: null, activeFilePath: path});

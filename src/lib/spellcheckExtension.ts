@@ -4,6 +4,7 @@ import type {Node as PMNode} from "prosemirror-model";
 import type {Extension} from "@gravity-ui/markdown-editor";
 import {invoke} from "@tauri-apps/api/core";
 import {useSpellStore, type BlockErrors, type MisspelledWord} from "../store/spellStore";
+import i18n from "./i18n";
 
 const DEBOUNCE_MS = 500;
 const REBUILD_META = "vasyavig-spellcheck-rebuild";
@@ -41,7 +42,7 @@ function buildDecorations(doc: PMNode): DecorationSet {
         decos.push(
           Decoration.inline(from, to, {
             class: "spell-error",
-            title: `Возможно, опечатка: ${err.word}`,
+            title: i18n.t("spell.tooltip", {word: err.word}),
           }),
         );
       }

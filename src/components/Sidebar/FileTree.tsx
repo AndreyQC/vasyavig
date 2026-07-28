@@ -1,8 +1,10 @@
 import {Loader, Text} from "@gravity-ui/uikit";
+import {useTranslation} from "react-i18next";
 import {useFileStore} from "../../store/fileStore";
 import {FileTreeNode} from "./FileTreeNode";
 
 export function FileTree() {
+  const {t} = useTranslation();
   const tree = useFileStore((s) => s.tree);
   const isLoadingTree = useFileStore((s) => s.isLoadingTree);
   const hasRoot = useFileStore((s) => s.rootPath !== null);
@@ -10,7 +12,7 @@ export function FileTree() {
   if (!hasRoot) {
     return (
       <Text variant="body-2" color="secondary" className="file-tree__empty">
-        Папка не открыта
+        {t("sidebar.noFolder")}
       </Text>
     );
   }

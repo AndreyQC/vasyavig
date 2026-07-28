@@ -1,5 +1,6 @@
 import {Button, Icon, Tooltip} from "@gravity-ui/uikit";
 import {FloppyDisk} from "@gravity-ui/icons";
+import {useTranslation} from "react-i18next";
 import {useEditorStore} from "../../store/editorStore";
 import {useSaveActions} from "../../hooks/useSaveActions";
 import {ModeSwitcher} from "./ModeSwitcher";
@@ -10,8 +11,9 @@ interface Props {
 
 /** Тулбар: переключатель режимов + кнопки сохранения. */
 export function MainToolbar({path}: Props) {
-  const dirty = useEditorStore((s) => s.tabs.find((t) => t.path === path)?.dirty ?? false);
-  const kind = useEditorStore((s) => s.tabs.find((t) => t.path === path)?.kind);
+  const {t} = useTranslation();
+  const dirty = useEditorStore((s) => s.tabs.find((tab) => tab.path === path)?.dirty ?? false);
+  const kind = useEditorStore((s) => s.tabs.find((tab) => tab.path === path)?.kind);
   const {saveActive, saveActiveAs} = useSaveActions();
 
   const isMarkdown = kind === "markdown";
@@ -20,22 +22,18 @@ export function MainToolbar({path}: Props) {
     <div className="main-toolbar">
       <div className="main-toolbar__center">{isMarkdown && <ModeSwitcher path={path} />}</div>
       <div className="main-toolbar__right">
-        <Tooltip content="Сохранить (Ctrl+S)">
+        <Tooltip content={t("toolbar.saveTooltip")}>
           <span>
-            <Button
-              view="outlined"
-              disabled={!isMarkdown || !dirty}
-              onClick={saveActive}
-            >
+            <Button view="outlined" disabled={!isMarkdown || !dirty} onClick={saveActive}>
               <Icon data={FloppyDisk} />
-              Сохранить
+              {t("toolbar.save")}
             </Button>
           </span>
         </Tooltip>
-        <Tooltip content="Сохранить как… (Ctrl+Shift+S)">
+        <Tooltip content={t("toolbar.saveAsTooltip")}>
           <span>
             <Button view="flat" disabled={!isMarkdown} onClick={saveActiveAs}>
-              Сохранить как…
+              {t("toolbar.saveAs")}
             </Button>
           </span>
         </Tooltip>

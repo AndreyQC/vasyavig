@@ -1,9 +1,11 @@
 import {Button, Icon, Text} from "@gravity-ui/uikit";
 import {Xmark} from "@gravity-ui/icons";
+import {useTranslation} from "react-i18next";
 import {useEditorStore} from "../../store/editorStore";
 
 /** Горизонтальные табы открытых файлов: точка ● у «грязных», крестик закрытия. */
 export function EditorTabs() {
+  const {t} = useTranslation();
   const tabs = useEditorStore((s) => s.tabs);
   const activePath = useEditorStore((s) => s.activePath);
   const setActiveTab = useEditorStore((s) => s.setActiveTab);
@@ -30,7 +32,7 @@ export function EditorTabs() {
             size="s"
             className="editor-tabs__close"
             onClick={() => closeTab(tab.path)}
-            title="Закрыть"
+            title={t("tabs.close")}
           >
             <Icon data={Xmark} size={12} />
           </Button>
