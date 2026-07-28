@@ -1,6 +1,12 @@
 import {create} from "zustand";
 import type {FileNode} from "../types";
-import {listDirectory, openFolderDialog, readFile, watchFolder} from "../hooks/useTauriFS";
+import {
+  listDirectory,
+  openFileDialog,
+  openFolderDialog,
+  readFile,
+  watchFolder,
+} from "../hooks/useTauriFS";
 import {getFileKind, getFileName} from "../lib/utils";
 import i18n from "../lib/i18n";
 import {useEditorStore} from "./editorStore";
@@ -17,6 +23,8 @@ interface FileState {
   error: string | null;
 
   openFolder: () => Promise<void>;
+  openFolderPath: (path: string) => Promise<void>;
+  openFileDialog: () => Promise<void>;
   refreshTree: () => Promise<void>;
   toggleDir: (path: string) => void;
   collapseAll: () => void;
@@ -37,7 +45,10 @@ export const useFileStore = create<FileState>((set, get) => ({
 
   openFolder: async () => {
     const path = await openFolderDialog();
-    if (!path) return;
+    if (path) await get().openFolderPath(path);
+  },
+
+  openFolderPath: async (path) => {
     set({rootPath: path, error: null, isLoadingTree: true});
     try {
       const tree = await listDirectory(path);
@@ -47,6 +58,11 @@ export const useFileStore = create<FileState>((set, get) => ({
     } catch (e) {
       set({error: String(e), isLoadingTree: false});
     }
+  },
+
+  openFileDialog: async () => {
+    const path = await openFileDialog();
+    if (path) await get().openFile(path);
   },
 
   refreshTree: async () => {
@@ -74,10 +90,6 @@ export const useFileStore = create<FileState>((set, get) => ({
 
   toggleShowHidden: () => set((s) => ({showHidden: !s.showHidden})),
 
-  setActiveFilePath: (path) => set({activeFilePath: path}),
-
-  setError: (error) => set({error}),
-
   openFile: async (path) => {
     const kind = getFileKind(path);
     if (kind === "unsupported") {
@@ -93,4 +105,8 @@ export const useFileStore = create<FileState>((set, get) => ({
       set({error: String(e)});
     }
   },
+
+  setActiveFilePath: (path) => set({activeFilePath: path}),
+
+  setError: (error) => set({error}),
 }));

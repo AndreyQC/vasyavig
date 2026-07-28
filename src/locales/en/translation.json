@@ -43,6 +43,7 @@
     "label": "Interface language"
   },
   "errors": {
-    "unsupportedType": "Unsupported file type: {{name}}"
+    "unsupportedType": "Unsupported file type: {{name}}",
+    "toastTitle": "Error"
   }
 }

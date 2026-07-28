@@ -43,6 +43,7 @@
     "label": "Язык интерфейса"
   },
   "errors": {
-    "unsupportedType": "Неподдерживаемый тип файла: {{name}}"
+    "unsupportedType": "Неподдерживаемый тип файла: {{name}}",
+    "toastTitle": "Ошибка"
   }
 }

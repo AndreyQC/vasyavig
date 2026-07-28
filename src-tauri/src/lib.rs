@@ -13,6 +13,7 @@ pub fn run() {
             commands::fs::list_directory,
             commands::fs::read_file,
             commands::fs::write_file,
+            commands::fs::get_file_metadata,
             commands::watcher::watch_folder,
             commands::spellcheck::check_spelling_blocks,
             commands::spellcheck::suggest_word,

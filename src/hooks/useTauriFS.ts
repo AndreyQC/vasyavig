@@ -8,6 +8,32 @@ export async function openFolderDialog(): Promise<string | null> {
   return typeof selected === "string" ? selected : null;
 }
 
+/** Нативный диалог выбора файла (Ctrl+O). Путь или null. */
+export async function openFileDialog(): Promise<string | null> {
+  const selected = await open({
+    multiple: false,
+    filters: [
+      {name: "Markdown", extensions: ["md", "markdown", "yfm", "mdx"]},
+      {
+        name: "Text",
+        extensions: ["txt", "json", "py", "sql", "js", "ts", "jsx", "tsx", "yaml", "yml", "xml", "log", "rs", "go", "java", "cpp", "c", "h"],
+      },
+    ],
+  });
+  return typeof selected === "string" ? selected : null;
+}
+
+export interface FileMeta {
+  name: string;
+  extension: string;
+  isDir: boolean;
+  size: number;
+}
+
+export function getFileMetadata(path: string): Promise<FileMeta> {
+  return invoke<FileMeta>("get_file_metadata", {path});
+}
+
 export function listDirectory(path: string): Promise<FileNode[]> {
   return invoke<FileNode[]>("list_directory", {path});
 }
