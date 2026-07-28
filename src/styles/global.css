@@ -1,0 +1,19 @@
+/* Глобальный сброс: без него дефолтный margin body (8px) делает документ
+   прокручиваемым (100vh + 16px) — scroll chaining из панелей сдвигает всю страницу */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+#root {
+  height: 100%;
+}
+
+/* Колёсико в конце панели не передаётся предку (защита от scroll chaining) */
+.split-view__preview,
+.md-editor {
+  overscroll-behavior: contain;
+}

@@ -8,6 +8,7 @@ import "./lib/i18n";
 import "@gravity-ui/uikit/styles/fonts.css";
 import "@gravity-ui/uikit/styles/styles.css";
 import "@gravity-ui/markdown-editor/styles/styles.css";
+import "./styles/global.css";
 
 // Toaster обязателен: MarkdownEditorView использует useToaster (без провайдера — белый экран)
 const toaster = new Toaster();

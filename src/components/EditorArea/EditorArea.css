@@ -56,10 +56,9 @@
 }
 
 .md-editor {
+  /* Gravity-редактор скроллит себя сам внутри корня; overflow здесь не добавлять —
+     ломает внутренний layout (потеря панели preview в split) */
   height: 100%;
-  /* собственный вертикальный скролл редактора (sticky-тулбар остаётся на месте) */
-  overflow-y: auto;
-  overflow-x: hidden;
 }
 
 .main-toolbar {
