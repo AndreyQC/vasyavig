@@ -1,7 +1,54 @@
-# Tauri + React + Typescript
+# Vasyavig (Васявиг)
 
-This template should help get you started developing with Tauri, React and Typescript in Vite.
+Лёгкий desktop-редактор **Markdown/YFM** на Tauri v2 с двойным режимом
+(WYSIWYG + разметка), файловым деревом, предпросмотром и проверкой орфографии.
 
-## Recommended IDE Setup
+Платформы: Windows, macOS, Linux.
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+## Назначение
+
+Редактирование документации в форматах `.md` / `.yfm` (Yandex Flavored Markdown):
+визуальный редактор на базе Gravity UI, живое превью, работа с папками документации
+как с проектами. Текстовые файлы (`.json`, `.py`, `.yaml`, `.rs` и др.) открываются
+в read-only просмотрщике с подсветкой синтаксиса.
+
+## Краткий функционал
+
+- **Файловое дерево** с автообновлением (watcher), скрытыми файлами, drag-and-drop папок и файлов в окно.
+- **Редактор Markdown/YFM** (Gravity UI): режимы **WYSIWYG / Markup / Split** (превью рядом, resizable).
+- **Табы** открытых файлов с индикатором несохранённых изменений.
+- **Сохранение**: Ctrl+S, «Сохранить как» (Ctrl+Shift+S) с защитой от случайной смены формата md↔yfm.
+- **Статус-бар**: бейдж расширения, переключатель орфографии, язык интерфейса, тема.
+- **Проверка орфографии** (ru/en/both, движок zspell) с live-подчёркиванием в WYSIWYG.
+- **Monaco Viewer** для текстовых файлов — read-only, подсветка по расширению.
+- **Превью**: рендер YFM в HTML (включая mermaid-диаграммы), безопасная санитизация.
+- **i18n**: русский и английский интерфейс.
+- **Темы**: светлая / тёмная / системная (выбор сохраняется).
+
+## Как запустить
+
+Требования: [Node.js](https://nodejs.org/) 22+, [pnpm](https://pnpm.io/) 10+,
+[Rust](https://rustup.rs/) 1.90+, для Windows — WebView2 (входит в Windows 10/11).
+
+```bash
+pnpm install
+pnpm tauri dev        # dev-режим с hot reload
+pnpm tauri build      # production-сборка (нативный бинарник)
+```
+
+Проверки:
+
+```bash
+pnpm test             # vitest (frontend)
+cd src-tauri && cargo test   # тесты Rust (spellcheck)
+npx tsc --noEmit      # проверка типов
+```
+
+## Документация
+
+Технические детали, архитектура и история решений:
+
+- `LESSONS_LEARNED.md` — уроки отладки (обязательно к прочтению перед доработками).
+- `-=docs=-/-=CHECKPOINTS=-/` — снапшоты текущего состояния проекта.
+- `-=docs=-/-=Phases=-/` — своды по завершённым фазам (что сделано, решения, ограничения).
+- `-=docs=-/-=tasks=-/` — идея проекта, планы и результаты по задачам.
