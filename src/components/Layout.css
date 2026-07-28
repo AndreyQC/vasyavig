@@ -1,0 +1,50 @@
+.layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  grid-template-rows: 1fr auto;
+  grid-template-areas:
+    "sidebar main"
+    "statusbar statusbar";
+  height: 100vh;
+}
+
+.layout__sidebar {
+  grid-area: sidebar;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid var(--g-color-line-generic);
+  padding: var(--g-spacing-3);
+  overflow-y: auto;
+}
+
+.layout__main {
+  grid-area: main;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: var(--g-spacing-3) var(--g-spacing-5);
+  /* страница не скроллится — скроллят панели редактора/превью по отдельности */
+  overflow: hidden;
+}
+
+.layout__statusbar {
+  grid-area: statusbar;
+  border-top: 1px solid var(--g-color-line-generic);
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.file-viewer {
+  margin: 0;
+  font-family: var(--g-font-family-monospace, monospace);
+  font-size: 13px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

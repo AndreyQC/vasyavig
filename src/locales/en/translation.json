@@ -1,0 +1,49 @@
+{
+  "sidebar": {
+    "openFolder": "Open folder",
+    "refresh": "Refresh tree",
+    "collapseAll": "Collapse all",
+    "showHidden": "Show hidden files",
+    "hideHidden": "Hide hidden files",
+    "noFolder": "No folder opened"
+  },
+  "empty": {
+    "hint": "Open a folder and pick a Markdown/YFM file"
+  },
+  "toolbar": {
+    "save": "Save",
+    "saveAs": "Save as…",
+    "saveTooltip": "Save (Ctrl+S)",
+    "saveAsTooltip": "Save as… (Ctrl+Shift+S)"
+  },
+  "tabs": {
+    "close": "Close"
+  },
+  "modal": {
+    "formatTitle": "File format change",
+    "formatText": "You are about to save the file with the .{{newExt}} extension, but the current format is .{{oldExt}}. Continue?",
+    "saveAsExt": "Save as {{ext}}",
+    "backToExt": "Back to {{ext}}",
+    "cancel": "Cancel"
+  },
+  "spell": {
+    "on": "ON",
+    "off": "OFF",
+    "enable": "Enable spellcheck",
+    "disable": "Disable spellcheck",
+    "dictionary": "Spellcheck dictionary",
+    "tooltip": "Possible typo: {{word}}"
+  },
+  "theme": {
+    "light": "Light theme",
+    "dark": "Dark theme",
+    "system": "System theme"
+  },
+  "lang": {
+    "label": "Interface language"
+  },
+  "errors": {
+    "unsupportedType": "Unsupported file type: {{name}}",
+    "toastTitle": "Error"
+  }
+}

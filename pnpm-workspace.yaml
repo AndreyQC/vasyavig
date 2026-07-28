@@ -1,0 +1,4 @@
+# Явное разрешение build-скриптов (LESSONS_LEARNED.md §1):
+# pnpm 10/11 блокирует postinstall зависимостей, esbuild не собирается без этого списка.
+onlyBuiltDependencies:
+  - esbuild

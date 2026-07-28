@@ -1,0 +1,49 @@
+{
+  "sidebar": {
+    "openFolder": "Открыть папку",
+    "refresh": "Обновить дерево",
+    "collapseAll": "Свернуть все",
+    "showHidden": "Показать скрытые файлы",
+    "hideHidden": "Скрыть скрытые файлы",
+    "noFolder": "Папка не открыта"
+  },
+  "empty": {
+    "hint": "Откройте папку и выберите Markdown/YFM файл"
+  },
+  "toolbar": {
+    "save": "Сохранить",
+    "saveAs": "Сохранить как…",
+    "saveTooltip": "Сохранить (Ctrl+S)",
+    "saveAsTooltip": "Сохранить как… (Ctrl+Shift+S)"
+  },
+  "tabs": {
+    "close": "Закрыть"
+  },
+  "modal": {
+    "formatTitle": "Изменение формата файла",
+    "formatText": "Вы пытаетесь сохранить файл с расширением .{{newExt}}, но текущий формат — .{{oldExt}}. Продолжить?",
+    "saveAsExt": "Сохранить как {{ext}}",
+    "backToExt": "Вернуться к {{ext}}",
+    "cancel": "Отмена"
+  },
+  "spell": {
+    "on": "ON",
+    "off": "OFF",
+    "enable": "Включить проверку орфографии",
+    "disable": "Выключить проверку орфографии",
+    "dictionary": "Словарь проверки",
+    "tooltip": "Возможно, опечатка: {{word}}"
+  },
+  "theme": {
+    "light": "Светлая тема",
+    "dark": "Тёмная тема",
+    "system": "Системная тема"
+  },
+  "lang": {
+    "label": "Язык интерфейса"
+  },
+  "errors": {
+    "unsupportedType": "Неподдерживаемый тип файла: {{name}}",
+    "toastTitle": "Ошибка"
+  }
+}
