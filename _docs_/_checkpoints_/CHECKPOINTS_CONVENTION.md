@@ -1,7 +1,7 @@
 # Checkpoints — conventions
 
-Purpose of `-=CHECKPOINTS=-`: give a new agent session (or a returning human)
-**fast project context** without reading the full `-=tasks=-` and `-=PHASES=-` history or chat
+Purpose of `_checkpoints_`: give a new agent session (or a returning human)
+**fast project context** without reading the full `_tasks_` and `_phases_` history or chat
 logs. A checkpoint is a snapshot of *where the project is right now*.
 
 ---
@@ -64,7 +64,7 @@ gaps list (§5) — they carry the most value.
   `app\src\store\dictionaries.ts`, not "the graph module").
 - **Commit hashes** for the last state — lets the reader `git show` to verify.
 - **No new design** here — checkpoints describe *what is*, not *what should be*.
-  Design discussion belongs in `-=tasks=-/YYYY-MM-DD/YYYYMMDD_NN_<desc>_draft.md`.
+  Design discussion belongs in `_tasks_/YYYY-MM-DD/YYYYMMDD_NN_<desc>_draft.md`.
 - **Cross-link, don't duplicate.** If a decision is explained in
   `Phase_2_vision_final.md` Q4, link it; don't re-explain in the checkpoint.
 - **Plain markdown, ASCII tables, no emojis.** Works in any viewer, diffs
@@ -75,7 +75,7 @@ gaps list (§5) — they carry the most value.
 ## 5. Length target
 
 Aim for **80–150 lines**. If it's longer, the architecture map or gap list is
-probably duplicating `-=tasks=-` content — link instead. If shorter, the
+probably duplicating `_tasks_` content — link instead. If shorter, the
 architecture map is likely incomplete.
 
 ## 6. Commit the checkpoint
@@ -87,14 +87,14 @@ docs(checkpoint): add 20260719_001 — Phase 2 complete status
 Commit the checkpoint together with the convention file only on first setup;
 after that, checkpoints are individual commits.
 
-## 7. Relationship to `-=tasks=-`
+## 7. Relationship to `_tasks_`
 
-| `-=tasks=-` | `-=CHECKPOINTS=-` |
+| `_tasks_` | `_checkpoints_` |
 |-------------|-------------------|
 | Design history (drafts, plans, vision) — *how we got here* | Current snapshot — *where we are now* |
 | Detailed, often long | Dense, skimmable |
 | Append-only (drafts kept) | Newest = current truth; older ones are historical snapshots |
 | Read when designing the next step | Read first, every new session |
 
-A new session should read **the latest checkpoint first**, then dive into `-=PHASES=-` and
-`-=tasks=-/YYYY-MM-DD/` only for the specific phase it's working on.
+A new session should read **the latest checkpoint first**, then dive into `_phases_` and
+`_tasks_/YYYY-MM-DD/` only for the specific phase it's working on.
