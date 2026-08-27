@@ -1,7 +1,8 @@
 import {Button, Icon, Tooltip} from "@gravity-ui/uikit";
-import {ArrowRotateRight, Eye, EyeSlash, FolderOpen, ListUl} from "@gravity-ui/icons";
+import {ArrowRotateRight, Eye, EyeSlash, FilePlus, FolderOpen, ListUl, TrashBin} from "@gravity-ui/icons";
 import {useTranslation} from "react-i18next";
 import {useFileStore} from "../../store/fileStore";
+import {useFileActions} from "../../hooks/useFileActions";
 
 export function SidebarHeader() {
   const {t} = useTranslation();
@@ -11,6 +12,19 @@ export function SidebarHeader() {
   const toggleShowHidden = useFileStore((s) => s.toggleShowHidden);
   const showHidden = useFileStore((s) => s.showHidden);
   const hasRoot = useFileStore((s) => s.rootPath !== null);
+  const activeDirPath = useFileStore((s) => s.activeDirPath);
+  const activeFilePath = useFileStore((s) => s.activeFilePath);
+  const {requestCreate, requestDelete} = useFileActions();
+
+  const handleCreate = () => {
+    const dir = activeDirPath ?? useFileStore.getState().rootPath;
+    if (dir) requestCreate(dir);
+  };
+
+  const handleDelete = () => {
+    const target = activeFilePath ?? activeDirPath;
+    if (target) requestDelete(target);
+  };
 
   return (
     <div className="sidebar-header">
@@ -19,6 +33,16 @@ export function SidebarHeader() {
         {t("sidebar.openFolder")}
       </Button>
       <div className="sidebar-header__actions">
+        <Tooltip content={t("sidebar.createFile")}>
+          <Button view="flat" size="m" disabled={!hasRoot} onClick={handleCreate}>
+            <Icon data={FilePlus} />
+          </Button>
+        </Tooltip>
+        <Tooltip content={t("sidebar.delete")}>
+          <Button view="flat" size="m" disabled={!activeFilePath && !activeDirPath} onClick={handleDelete}>
+            <Icon data={TrashBin} />
+          </Button>
+        </Tooltip>
         <Tooltip content={t("sidebar.refresh")}>
           <Button view="flat" size="m" disabled={!hasRoot} onClick={refreshTree}>
             <Icon data={ArrowRotateRight} />

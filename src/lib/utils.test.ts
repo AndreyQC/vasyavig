@@ -3,8 +3,11 @@ import {
   getExtension,
   getFileKind,
   getFileName,
+  getParentDir,
   isMdYfmSwap,
+  joinPath,
   normalizeMdExt,
+  remapPath,
   replaceExtension,
 } from "./utils";
 
@@ -37,6 +40,12 @@ describe("getFileKind", () => {
   it("текстовые расширения -> text", () => {
     for (const p of ["a.txt", "a.json", "a.py", "a.yaml", "a.rs"]) {
       expect(getFileKind(p)).toBe("text");
+    }
+  });
+
+  it("офисные расширения -> office", () => {
+    for (const p of ["a.docx", "a.xlsx", "a.pdf", "a.ppt", "a.csv", "a.rtf", "a.epub"]) {
+      expect(getFileKind(p)).toBe("office");
     }
   });
 
@@ -76,5 +85,40 @@ describe("replaceExtension", () => {
 
   it("добавляет расширение, если его не было", () => {
     expect(replaceExtension("C:/docs/a", "md")).toBe("C:/docs/a.md");
+  });
+});
+
+describe("getParentDir", () => {
+  it("возвращает каталог для windows и posix путей", () => {
+    expect(getParentDir("C:\\docs\\a.md")).toBe("C:\\docs");
+    expect(getParentDir("/home/user/b.md")).toBe("/home/user");
+  });
+
+  it("без разделителя возвращает путь как есть", () => {
+    expect(getParentDir("a.md")).toBe("a.md");
+  });
+});
+
+describe("joinPath", () => {
+  it("склеивает каталог и имя с нужным разделителем", () => {
+    expect(joinPath("C:\\docs", "a.md")).toBe("C:\\docs\\a.md");
+    expect(joinPath("/home/user", "b.md")).toBe("/home/user/b.md");
+  });
+
+  it("не дублирует разделитель", () => {
+    expect(joinPath("C:\\docs\\", "a.md")).toBe("C:\\docs\\a.md");
+    expect(joinPath("/home/user/", "b.md")).toBe("/home/user/b.md");
+  });
+});
+
+describe("remapPath", () => {
+  it("переименование файла — только сам файл", () => {
+    expect(remapPath("C:\\docs\\a.md", "C:\\docs\\a.md", "C:\\docs\\b.md")).toBe("C:\\docs\\b.md");
+    expect(remapPath("C:\\docs\\other.md", "C:\\docs\\a.md", "C:\\docs\\b.md")).toBeNull();
+  });
+
+  it("переименование папки — пути внутри неё", () => {
+    expect(remapPath("C:\\docs\\sub\\a.md", "C:\\docs\\sub", "C:\\docs\\renamed")).toBe("C:\\docs\\renamed\\a.md");
+    expect(remapPath("C:\\docs\\x.md", "C:\\docs\\sub", "C:\\docs\\renamed")).toBeNull();
   });
 });

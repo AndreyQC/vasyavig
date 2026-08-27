@@ -100,6 +100,11 @@
   margin-top: var(--g-spacing-5);
 }
 
+.modal-file-list {
+  margin: var(--g-spacing-3) 0 0;
+  padding-left: var(--g-spacing-5);
+}
+
 .split-view {
   display: flex;
   height: 100%;
