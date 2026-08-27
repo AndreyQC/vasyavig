@@ -5,7 +5,10 @@
     "collapseAll": "Свернуть все",
     "showHidden": "Показать скрытые файлы",
     "hideHidden": "Скрыть скрытые файлы",
-    "noFolder": "Папка не открыта"
+    "noFolder": "Папка не открыта",
+    "createFile": "Создать файл",
+    "rename": "Переименовать",
+    "delete": "Удалить"
   },
   "empty": {
     "hint": "Откройте папку и выберите Markdown/YFM файл"
@@ -24,7 +27,27 @@
     "formatText": "Вы пытаетесь сохранить файл с расширением .{{newExt}}, но текущий формат — .{{oldExt}}. Продолжить?",
     "saveAsExt": "Сохранить как {{ext}}",
     "backToExt": "Вернуться к {{ext}}",
-    "cancel": "Отмена"
+    "cancel": "Отмена",
+    "save": "Сохранить",
+    "saveAs": "Сохранить как…",
+    "dontSave": "Не сохранять",
+    "closeTabTitle": "Закрыть вкладку",
+    "closeTabText": "Файл «{{name}}» содержит несохранённые изменения. Сохранить перед закрытием?",
+    "openFolderTitle": "Открыть папку",
+    "openFolderText": "Следующие файлы содержат несохранённые изменения:",
+    "saveAll": "Сохранить все",
+    "discard": "Сбросить изменения",
+    "deleteTitle": "Удаление",
+    "deleteText": "Удалить «{{name}}» безвозвратно? Это действие нельзя отменить.",
+    "deleteConfirm": "Удалить",
+    "createTitle": "Создать файл",
+    "createText": "Файл будет создан в: {{dir}}",
+    "createConfirm": "Создать",
+    "convertTitle": "Конвертация в Markdown",
+    "convertText": "Создать Markdown-версию «{{target}}» из «{{name}}»? Изображения будут извлечены в отдельную папку.",
+    "convertConfirm": "Создать Markdown",
+    "renameTitle": "Переименование",
+    "renameConfirm": "Переименовать"
   },
   "spell": {
     "on": "ON",

@@ -12,6 +12,12 @@ import {SplitView} from "./components/EditorArea/SplitView";
 import {MainToolbar} from "./components/Toolbar/MainToolbar";
 import {StatusBar} from "./components/StatusBar/StatusBar";
 import {SaveConfirmModal} from "./components/Modals/SaveConfirmModal";
+import {CloseTabModal} from "./components/Modals/CloseTabModal";
+import {OpenFolderModal} from "./components/Modals/OpenFolderModal";
+import {DeleteConfirmModal} from "./components/Modals/DeleteConfirmModal";
+import {CreateFileModal} from "./components/Modals/CreateFileModal";
+import {ConvertModal} from "./components/Modals/ConvertModal";
+import {RenameModal} from "./components/Modals/RenameModal";
 import {ErrorToasts} from "./components/ErrorToasts";
 import {useFileStore} from "./store/fileStore";
 import {useEditorStore} from "./store/editorStore";
@@ -84,6 +90,12 @@ function App() {
           <EmptyState />
         )}
         <SaveConfirmModal />
+        <CloseTabModal />
+        <OpenFolderModal />
+        <DeleteConfirmModal />
+        <CreateFileModal />
+        <ConvertModal />
+        <RenameModal />
         <ErrorToasts />
       </ErrorBoundary>
     </Layout>

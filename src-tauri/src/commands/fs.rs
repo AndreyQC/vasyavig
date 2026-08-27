@@ -48,3 +48,21 @@ pub async fn get_file_metadata(path: String) -> Result<FileMeta, String> {
         size: meta.len(),
     })
 }
+
+/// Создаёт пустой файл по указанному пути (ошибка, если файл существует).
+#[tauri::command]
+pub async fn create_file(path: String) -> Result<(), String> {
+    crate::services::file_service::create_file(Path::new(&path))
+}
+
+/// Удаляет файл или папку (папки — рекурсивно, безвозвратно).
+#[tauri::command]
+pub async fn delete_path(path: String) -> Result<(), String> {
+    crate::services::file_service::delete_path(Path::new(&path))
+}
+
+/// Переименовывает/перемещает файл или папку.
+#[tauri::command]
+pub async fn rename_path(from: String, to: String) -> Result<(), String> {
+    crate::services::file_service::rename_path(Path::new(&from), Path::new(&to))
+}

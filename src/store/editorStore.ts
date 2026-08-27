@@ -1,5 +1,5 @@
 import {create} from "zustand";
-import {getExtension, getFileName, isMdYfmSwap, type FileKind} from "../lib/utils";
+import {getExtension, getFileName, isMdYfmSwap, remapPath, type FileKind} from "../lib/utils";
 import {saveFileDialog, writeFile} from "../hooks/useTauriFS";
 
 export type EditorMode = "wysiwyg" | "markup" | "split";
@@ -33,6 +33,14 @@ interface EditorState {
   updateContent: (path: string, content: string) => void;
   setMode: (path: string, mode: EditorMode) => void;
 
+  /** Сохраняет конкретную вкладку (только markdown и только dirty). */
+  saveTab: (path: string) => Promise<string | null>;
+  /** Сохраняет все dirty markdown-вкладки; возвращает первую ошибку (или null). */
+  saveAllDirty: () => Promise<string | null>;
+  /** Закрывает все вкладки без промптов (промпт строится в UI ДО вызова). */
+  closeAllTabs: () => void;
+  /** Переименование/перемещение: пересчитывает пути вкладок и activePath. */
+  remapPath: (oldPath: string, newPath: string) => void;
   /** Ctrl+S: прямое сохранение, расширение не меняется никогда (идея §4.1.3). */
   saveActive: () => Promise<string | null>;
   /** Ctrl+Shift+S: диалог «Сохранить как». */
@@ -114,9 +122,8 @@ export const useEditorStore = create<EditorState>((set, get) => {
       set((s) => ({tabs: s.tabs.map((t) => (t.path === path ? {...t, mode} : t))}));
     },
 
-    saveActive: async () => {
-      const {tabs, activePath} = get();
-      const tab = tabs.find((t) => t.path === activePath);
+    saveTab: async (path) => {
+      const tab = get().tabs.find((t) => t.path === path);
       if (!tab || tab.kind !== "markdown" || !tab.dirty) return null;
       try {
         await writeFile(tab.path, tab.content);
@@ -125,10 +132,41 @@ export const useEditorStore = create<EditorState>((set, get) => {
       }
       set((s) => ({
         tabs: s.tabs.map((t) =>
-          t.path === tab.path ? {...t, savedContent: t.content, dirty: false} : t,
+          t.path === path ? {...t, savedContent: t.content, dirty: false} : t,
         ),
       }));
       return null;
+    },
+
+    saveAllDirty: async () => {
+      const dirty = get().tabs.filter((t) => t.dirty && t.kind === "markdown");
+      let firstError: string | null = null;
+      for (const tab of dirty) {
+        const error = await get().saveTab(tab.path);
+        if (error && firstError === null) firstError = error;
+      }
+      return firstError;
+    },
+
+    closeAllTabs: () => set({tabs: [], activePath: null}),
+
+    remapPath: (oldPath, newPath) => {
+      set((s) => {
+        const tabs = s.tabs.map((t) => {
+          const np = remapPath(t.path, oldPath, newPath);
+          return np ? {...t, path: np, name: getFileName(np)} : t;
+        });
+        const activePath = s.activePath
+          ? (remapPath(s.activePath, oldPath, newPath) ?? s.activePath)
+          : s.activePath;
+        return {tabs, activePath};
+      });
+    },
+
+    saveActive: async () => {
+      const {activePath} = get();
+      if (!activePath) return null;
+      return get().saveTab(activePath);
     },
 
     saveActiveAs: async () => {

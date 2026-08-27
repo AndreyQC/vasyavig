@@ -83,3 +83,32 @@ describe("editorStore.setMode", () => {
     expect(useEditorStore.getState().tabs[0].mode).toBe("markup");
   });
 });
+
+describe("editorStore.saveTab", () => {
+  it("не сохраняет чистую вкладку", async () => {
+    const st = useEditorStore.getState();
+    st.openTab({path: "/a.md", kind: "markdown", content: "A"});
+    await expect(st.saveTab("/a.md")).resolves.toBeNull();
+    expect(useEditorStore.getState().tabs[0].dirty).toBe(false);
+  });
+
+  it("не сохраняет текстовую вкладку", async () => {
+    const st = useEditorStore.getState();
+    st.openTab({path: "/a.txt", kind: "text", content: "A"});
+    st.updateContent("/a.txt", "B");
+    await expect(st.saveTab("/a.txt")).resolves.toBeNull();
+    expect(useEditorStore.getState().tabs[0].dirty).toBe(true);
+  });
+});
+
+describe("editorStore.closeAllTabs", () => {
+  it("закрывает все вкладки", () => {
+    const st = useEditorStore.getState();
+    st.openTab({path: "/a.md", kind: "markdown", content: "A"});
+    st.openTab({path: "/b.md", kind: "markdown", content: "B"});
+    st.closeAllTabs();
+    const s = useEditorStore.getState();
+    expect(s.tabs).toHaveLength(0);
+    expect(s.activePath).toBeNull();
+  });
+});

@@ -5,7 +5,10 @@
     "collapseAll": "Collapse all",
     "showHidden": "Show hidden files",
     "hideHidden": "Hide hidden files",
-    "noFolder": "No folder opened"
+    "noFolder": "No folder opened",
+    "createFile": "Create file",
+    "rename": "Rename",
+    "delete": "Delete"
   },
   "empty": {
     "hint": "Open a folder and pick a Markdown/YFM file"
@@ -24,7 +27,27 @@
     "formatText": "You are about to save the file with the .{{newExt}} extension, but the current format is .{{oldExt}}. Continue?",
     "saveAsExt": "Save as {{ext}}",
     "backToExt": "Back to {{ext}}",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "save": "Save",
+    "saveAs": "Save as…",
+    "dontSave": "Don't save",
+    "closeTabTitle": "Close tab",
+    "closeTabText": "«{{name}}» has unsaved changes. Save before closing?",
+    "openFolderTitle": "Open folder",
+    "openFolderText": "The following files have unsaved changes:",
+    "saveAll": "Save all",
+    "discard": "Discard changes",
+    "deleteTitle": "Delete",
+    "deleteText": "Delete «{{name}}» permanently? This cannot be undone.",
+    "deleteConfirm": "Delete",
+    "createTitle": "Create file",
+    "createText": "File will be created in: {{dir}}",
+    "createConfirm": "Create",
+    "convertTitle": "Convert to Markdown",
+    "convertText": "Create a Markdown version \"{{target}}\" from \"{{name}}\"? Images will be extracted to a separate folder.",
+    "convertConfirm": "Create Markdown",
+    "renameTitle": "Rename",
+    "renameConfirm": "Rename"
   },
   "spell": {
     "on": "ON",

@@ -75,3 +75,86 @@ pub fn write_file_atomic(path: &Path, content: &str) -> Result<(), String> {
         format!("cannot rename to {}: {e}", path.display())
     })
 }
+
+/// Создаёт пустой файл по указанному пути. Ошибка, если файл уже существует.
+pub fn create_file(path: &Path) -> Result<(), String> {
+    use std::fs::OpenOptions;
+    OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(path)
+        .map(|_| ())
+        .map_err(|e| format!("cannot create {}: {e}", path.display()))
+}
+
+/// Удаляет файл или папку (папки — рекурсивно, безвозвратно).
+pub fn delete_path(path: &Path) -> Result<(), String> {
+    let meta = fs::metadata(path).map_err(|e| format!("cannot stat {}: {e}", path.display()))?;
+    if meta.is_dir() {
+        fs::remove_dir_all(path).map_err(|e| format!("cannot remove dir {}: {e}", path.display()))
+    } else {
+        fs::remove_file(path).map_err(|e| format!("cannot remove file {}: {e}", path.display()))
+    }
+}
+
+/// Переименовывает/перемещает файл или папку (fs::rename).
+pub fn rename_path(from: &Path, to: &Path) -> Result<(), String> {
+    fs::rename(from, to)
+        .map_err(|e| format!("cannot rename {} to {}: {e}", from.display(), to.display()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    fn temp_path(name: &str) -> PathBuf {
+        std::env::temp_dir().join(format!(
+            "vasyavig-test-{}-{}-{}",
+            std::process::id(),
+            name,
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ))
+    }
+
+    #[test]
+    fn create_file_makes_empty_file_and_rejects_existing() {
+        let p = temp_path("create.md");
+        create_file(&p).unwrap();
+        assert!(p.exists());
+        assert_eq!(fs::read(&p).unwrap().len(), 0);
+        assert!(create_file(&p).is_err());
+        let _ = fs::remove_file(&p);
+    }
+
+    #[test]
+    fn delete_path_removes_file_and_dir_recursively() {
+        let dir = temp_path("del-dir");
+        fs::create_dir_all(dir.join("sub")).unwrap();
+        fs::write(dir.join("sub").join("a.txt"), b"x").unwrap();
+        fs::write(dir.join("root.txt"), b"y").unwrap();
+
+        delete_path(&dir.join("root.txt")).unwrap();
+        assert!(!dir.join("root.txt").exists());
+
+        delete_path(&dir).unwrap();
+        assert!(!dir.exists());
+    }
+
+    #[test]
+    fn rename_path_renames_file() {
+        let dir = temp_path("rename-dir");
+        fs::create_dir_all(&dir).unwrap();
+        let from = dir.join("a.txt");
+        let to = dir.join("b.txt");
+        fs::write(&from, b"x").unwrap();
+
+        rename_path(&from, &to).unwrap();
+        assert!(!from.exists());
+        assert!(to.exists());
+        let _ = fs::remove_dir_all(&dir);
+    }
+}

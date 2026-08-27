@@ -1,6 +1,6 @@
-import {MARKDOWN_EXTENSIONS, TEXT_EXTENSIONS} from "./constants";
+import {MARKDOWN_EXTENSIONS, OFFICE_EXTENSIONS, TEXT_EXTENSIONS} from "./constants";
 
-export type FileKind = "markdown" | "text" | "unsupported";
+export type FileKind = "markdown" | "text" | "office" | "unsupported";
 
 /** Извлекает расширение файла из пути (без точки, в нижнем регистре). */
 export function getExtension(path: string): string {
@@ -15,11 +15,34 @@ export function getFileName(path: string): string {
   return path.split(/[\\/]/).pop() ?? path;
 }
 
+/** Родительский каталог пути (по последнему разделителю / или \). */
+export function getParentDir(path: string): string {
+  const sep = path.includes("\\") ? "\\" : "/";
+  const idx = path.lastIndexOf(sep);
+  return idx > 0 ? path.slice(0, idx) : path;
+}
+
+/** Склейка каталога и имени файла/папки, сохраняя разделитель каталога. */
+export function joinPath(dir: string, name: string): string {
+  const sep = dir.includes("\\") ? "\\" : "/";
+  return dir.endsWith(sep) ? dir + name : dir + sep + name;
+}
+
+/** Если path равен oldPath или лежит внутри него — возвращает путь с новым префиксом, иначе null. */
+export function remapPath(path: string, oldPath: string, newPath: string): string | null {
+  if (path === oldPath) return newPath;
+  const sep = oldPath.includes("\\") ? "\\" : "/";
+  const prefix = oldPath.endsWith(sep) ? oldPath : oldPath + sep;
+  if (path.startsWith(prefix)) return newPath + path.slice(oldPath.length);
+  return null;
+}
+
 /** Определяет способ открытия файла по расширению. */
 export function getFileKind(path: string): FileKind {
   const ext = getExtension(path);
   if ((MARKDOWN_EXTENSIONS as readonly string[]).includes(ext)) return "markdown";
   if ((TEXT_EXTENSIONS as readonly string[]).includes(ext)) return "text";
+  if ((OFFICE_EXTENSIONS as readonly string[]).includes(ext)) return "office";
   return "unsupported";
 }
 
