@@ -3,6 +3,7 @@ import {MarkdownEditorView, useMarkdownEditor} from "@gravity-ui/markdown-editor
 import {useEditorStore} from "../../store/editorStore";
 import {spellcheckExtension} from "../../lib/spellcheckExtension";
 import {preserveUrlsExtension} from "../../lib/preserveUrlsExtension";
+import {anchorNavigationExtension} from "../../lib/anchorNavigationExtension";
 import {combineExtensions} from "../../lib/combineExtensions";
 import {registerEditor, unregisterEditor} from "../../lib/editorRegistry";
 
@@ -24,7 +25,11 @@ export function MarkdownEditor({path, initialContent}: Props) {
       initial: {markup: initialContent, mode: "wysiwyg"},
       experimental: {preserveEmptyRows: true},
       wysiwygConfig: {
-        extensions: combineExtensions(spellcheckExtension(), preserveUrlsExtension()),
+        extensions: combineExtensions(
+          spellcheckExtension(),
+          preserveUrlsExtension(),
+          anchorNavigationExtension(),
+        ),
       },
     },
     [path],
