@@ -69,6 +69,11 @@
   padding-bottom: var(--g-spacing-2);
 }
 
+.main-toolbar__left {
+  display: flex;
+  gap: var(--g-spacing-2);
+}
+
 .main-toolbar__right {
   display: flex;
   gap: var(--g-spacing-2);

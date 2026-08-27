@@ -21,7 +21,9 @@ export function SplitPreview({content}: Props) {
 
   const html = useMemo(() => {
     try {
-      const {result} = transform(deferred);
+      // supportGithubAnchors: заголовки получают кириллические якоря github-стиля
+      // (id="1-введение") в дополнение к транслит-id — оглавления кликабельны
+      const {result} = transform(deferred, {supportGithubAnchors: true});
       return DOMPurify.sanitize(result.html);
     } catch (e) {
       return `<pre class="split-preview__error">Ошибка рендера превью: ${String(e)}</pre>`;

@@ -2,6 +2,9 @@ import {useEffect} from "react";
 import {MarkdownEditorView, useMarkdownEditor} from "@gravity-ui/markdown-editor";
 import {useEditorStore} from "../../store/editorStore";
 import {spellcheckExtension} from "../../lib/spellcheckExtension";
+import {preserveUrlsExtension} from "../../lib/preserveUrlsExtension";
+import {combineExtensions} from "../../lib/combineExtensions";
+import {registerEditor, unregisterEditor} from "../../lib/editorRegistry";
 
 interface Props {
   path: string;
@@ -20,10 +23,18 @@ export function MarkdownEditor({path, initialContent}: Props) {
       md: {html: true, breaks: true, linkify: true},
       initial: {markup: initialContent, mode: "wysiwyg"},
       experimental: {preserveEmptyRows: true},
-      wysiwygConfig: {extensions: spellcheckExtension()},
+      wysiwygConfig: {
+        extensions: combineExtensions(spellcheckExtension(), preserveUrlsExtension()),
+      },
     },
     [path],
   );
+
+  // editor-instance доступен кнопкам тулбара (phase 4)
+  useEffect(() => {
+    registerEditor(path, editor);
+    return () => unregisterEditor(path);
+  }, [editor, path]);
 
   // change -> store (урок §5: состояние текста живёт в Zustand, не в компоненте)
   useEffect(() => {

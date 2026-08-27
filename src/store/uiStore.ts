@@ -21,6 +21,8 @@ interface UiState {
   pendingConvertPath: string | null;
   /** Файл/папка, ожидающие переименования. */
   pendingRenamePath: string | null;
+  /** Markdown-вкладка, ожидающая выбора «заменить/вставить» оглавление. */
+  pendingTocPath: string | null;
 
   setTheme: (theme: ThemeMode) => void;
   setLang: (lang: UiLang) => void;
@@ -31,6 +33,7 @@ interface UiState {
   setPendingCreateDir: (dir: string | null) => void;
   setPendingConvertPath: (path: string | null) => void;
   setPendingRenamePath: (path: string | null) => void;
+  setPendingTocPath: (path: string | null) => void;
 }
 
 /** Настройки (theme, lang) персистятся в localStorage (идея §4.5). */
@@ -46,6 +49,7 @@ export const useUiStore = create<UiState>()(
       pendingCreateDir: null,
       pendingConvertPath: null,
       pendingRenamePath: null,
+      pendingTocPath: null,
 
       setTheme: (theme) => set({theme}),
       setLang: (lang) => set({lang}),
@@ -56,6 +60,7 @@ export const useUiStore = create<UiState>()(
       setPendingCreateDir: (dir) => set({pendingCreateDir: dir}),
       setPendingConvertPath: (path) => set({pendingConvertPath: path}),
       setPendingRenamePath: (path) => set({pendingRenamePath: path}),
+      setPendingTocPath: (path) => set({pendingTocPath: path}),
     }),
     {
       name: "vasyavig.settings",

@@ -18,6 +18,7 @@ import {DeleteConfirmModal} from "./components/Modals/DeleteConfirmModal";
 import {CreateFileModal} from "./components/Modals/CreateFileModal";
 import {ConvertModal} from "./components/Modals/ConvertModal";
 import {RenameModal} from "./components/Modals/RenameModal";
+import {TocModal} from "./components/Modals/TocModal";
 import {ErrorToasts} from "./components/ErrorToasts";
 import {useFileStore} from "./store/fileStore";
 import {useEditorStore} from "./store/editorStore";
@@ -96,6 +97,7 @@ function App() {
         <CreateFileModal />
         <ConvertModal />
         <RenameModal />
+        <TocModal />
         <ErrorToasts />
       </ErrorBoundary>
     </Layout>

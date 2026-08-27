@@ -19,6 +19,14 @@
     "saveTooltip": "Save (Ctrl+S)",
     "saveAsTooltip": "Save as… (Ctrl+Shift+S)"
   },
+  "tools": {
+    "restoreUrls": "Restore Cyrillic",
+    "restoreUrlsTooltip": "Decode percent-encoded Cyrillic in file links",
+    "toc": "Table of contents",
+    "tocTooltip": "Generate a table of contents from H1–H4 headings",
+    "nothingToRestore": "No percent-encoded links found",
+    "noHeadings": "No headings found"
+  },
   "tabs": {
     "close": "Close"
   },
@@ -47,7 +55,11 @@
     "convertText": "Create a Markdown version \"{{target}}\" from \"{{name}}\"? Images will be extracted to a separate folder.",
     "convertConfirm": "Create Markdown",
     "renameTitle": "Rename",
-    "renameConfirm": "Rename"
+    "renameConfirm": "Rename",
+    "tocTitle": "Table of contents",
+    "tocText": "The document already has a table of contents block. Replace it with a fresh heading list, or insert another block at the top of the document?",
+    "tocReplace": "Replace block",
+    "tocInsert": "Insert new"
   },
   "spell": {
     "on": "ON",
