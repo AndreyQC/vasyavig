@@ -7,17 +7,55 @@ import {resolveImageDisplayUrl} from "./resolveImageSrc";
 /**
  * Отображение локальных картинок в WYSIWYG (phase 5).
  *
- * NodeView перехватывает рендер image-ноды (дефолтный toDOM — ['img', attrs])
- * и подставляет asset-URL в src для показа. Атрибуты документа не меняются:
- * сериализация идёт из сырого src, вкладка не становится dirty (идея
- * src/renderSrc из gramax). НЕ через normalizeLink — он кругооборотит в
- * сохраняемый markup (урок phase 4).
+ * 1. NodeView перехватывает рендер image-ноды (дефолтный toDOM — ['img', attrs])
+ *    и подставляет asset-URL в src для показа. Атрибуты документа не меняются:
+ *    сериализация идёт из сырого src, вкладка не становится dirty (идея
+ *    src/renderSrc из gramax). НЕ через normalizeLink — он кругооборотит в
+ *    сохраняемый markup (урок phase 4).
+ *
+ * 2. Переопределение сериализатора: штатный пишет dest через state.esc()
+ *    (`\_`-экранирование) и голым текстом — путь с пробелами/скобками
+ *    ломается при переключении WYSIWYG -> Markup и сохранении. Наш вариант
+ *    оборачивает такие dest в <...> (как format_url в anydoc) и экранирует
+ *    только действительно опасные для dest символы.
  *
  * baseDir фиксируется на файл (редактор создаётся per-file, deps [path]);
  * rootPath читается лениво — папка может быть открыта после файла.
  */
+
+/** imageNodeName из @gravity-ui/markdown-editor (пакетом не экспортируется). */
+const IMAGE_NODE_NAME = "image";
+
+/** Экранирование символов, ломающих markdown-destination. */
+function escapeDest(src: string): string {
+  return src.replace(/[\\<>]/g, "\\$&");
+}
+
+/** Title-обёртка как state.quote() сериализатора Gravity (в d.ts не экспортирован). */
+function quoteTitle(title: string): string {
+  const wrap = !title.includes('"') ? '""' : !title.includes("'") ? "''" : "()";
+  return wrap[0] + title + wrap[1];
+}
+
 export function imageSrcExtension(baseDir: string, getRootPath: () => string | null): Extension {
   return (builder) => {
+    builder.overrideNodeSerializerSpec(
+      IMAGE_NODE_NAME,
+      () =>
+        (state, node) => {
+          const {attrs} = node;
+          let result = "![";
+          if (attrs.alt) result += state.esc(attrs.alt);
+          result += "](";
+          if (attrs.src) {
+            const src = String(attrs.src);
+            result += /[()\s]/.test(src) ? `<${escapeDest(src)}>` : escapeDest(src);
+          }
+          if (attrs.title) result += ` ${quoteTitle(String(attrs.title))}`;
+          result += ")";
+          state.write(result);
+        },
+    );
     builder.addPlugin(
       () =>
         new Plugin({
