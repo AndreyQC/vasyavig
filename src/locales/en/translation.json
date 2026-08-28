@@ -20,11 +20,11 @@
     "saveAsTooltip": "Save as… (Ctrl+Shift+S)"
   },
   "tools": {
-    "restoreUrls": "Restore Cyrillic",
-    "restoreUrlsTooltip": "Decode percent-encoded Cyrillic in file links",
+    "restoreUrls": "Restore links",
+    "restoreUrlsTooltip": "Decode percent-encoded Cyrillic and remove \\_-escapes in file links",
     "toc": "Table of contents",
     "tocTooltip": "Generate a table of contents from H1–H4 headings",
-    "nothingToRestore": "No percent-encoded links found",
+    "nothingToRestore": "No repairable links found",
     "noHeadings": "No headings found"
   },
   "tabs": {

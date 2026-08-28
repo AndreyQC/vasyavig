@@ -12,8 +12,38 @@ describe("restoreCyrillicUrls", () => {
   it("декодирует путь картинки с %-кодированием и балансом скобок", () => {
     const src = "![](V2_%D0%A2%D0%97%20Total%20(1)\\_assets/img-0.png)";
     const {text} = restoreCyrillicUrls(src);
-    // пробел после декодирования -> angle-форма, markdown остаётся валидным
-    expect(text).toBe("![](<V2_ТЗ Total (1)\\_assets/img-0.png>)");
+    // пробел после декодирования -> angle-форма, markdown остаётся валидным;
+    // \_-escape артефакта anydoc снимается (phase 5)
+    expect(text).toBe("![](<V2_ТЗ Total (1)_assets/img-0.png>)");
+  });
+
+  it("снимает \\_-escape в destination картинки (артефакт anydoc)", () => {
+    const src = "![alt](assets\\_img-0.png)";
+    expect(restoreCyrillicUrls(src)).toMatchObject({
+      text: "![alt](assets_img-0.png)",
+      changedUrls: 1,
+    });
+  });
+
+  it("снимает \\_-escape вместе с %-декодированием", () => {
+    const src = "![](%D0%B0%D0%B1\\_assets/img.png)";
+    expect(restoreCyrillicUrls(src)).toMatchObject({
+      text: "![](аб_assets/img.png)",
+      changedUrls: 1,
+    });
+  });
+
+  it("не трогает \\_-экранирование в прозе (вне destinations)", () => {
+    const src = "файл a\\_b.png и [x](#%D0%B2)";
+    expect(restoreCyrillicUrls(src)).toMatchObject({
+      text: "файл a\\_b.png и [x](#в)",
+      changedUrls: 1,
+    });
+  });
+
+  it("bare destination с \\_ остаётся bare (пробелов нет)", () => {
+    const src = "[a](b\\_c)";
+    expect(restoreCyrillicUrls(src)).toMatchObject({text: "[a](b_c)", changedUrls: 1});
   });
 
   it("angle-destination декодируется без смены формы", () => {

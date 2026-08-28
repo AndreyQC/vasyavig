@@ -8,8 +8,8 @@ import {restoreCyrillicUrls} from "../lib/restoreCyrillicUrls";
 import {applyTocInsert, applyTocReplace, buildTocPlan} from "../lib/generateToc";
 
 /**
- * Инструменты MainToolbar для markdown-вкладок (phase 4):
- * восстановление кириллицы в ссылках и генерация оглавления.
+ * Инструменты MainToolbar для markdown-вкладок (phase 4–5):
+ * «Восстановить ссылки» (%-кириллица + \_-escape) и генерация оглавления.
  * Правки применяются через editor.replace() — вкладка становится dirty,
  * сохранение остаётся за пользователем.
  */
@@ -35,7 +35,7 @@ export function useMarkdownTools(path: string) {
     [toaster],
   );
 
-  /** Кнопка «Восстановить кириллицу»: декодировать %-кодирование в URL файла. */
+  /** Кнопка «Восстановить ссылки»: %-декодирование + снятие \_-escape (phase 5). */
   const restoreUrls = useCallback(() => {
     const tab = useEditorStore.getState().tabs.find((x) => x.path === path);
     if (!tab) return;

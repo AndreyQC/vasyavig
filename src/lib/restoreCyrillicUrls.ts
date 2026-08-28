@@ -30,19 +30,23 @@ function decodeNonAsciiRuns(url: string): string {
 }
 
 /**
- * Декодирует dest целиком. Сначала пробует полное декодирование: если оно
- * валидно и даёт не-ASCII — используем его. Bare-dest с пробелами/скобками
- * после декодирования переключается на <angle> форму (иначе ломается markdown).
- * При частично битых последовательностях — консервативный режим по цепочкам.
+ * Декодирует dest целиком. Сначала снимает escape-артефакты anydoc (`\_` -> `_`,
+ * phase 5), затем пробует полное %-декодирование: если оно валидно и даёт
+ * не-ASCII — используем его. Bare-dest с пробелами/скобками после декодирования
+ * переключается на <angle> форму (иначе ломается markdown). При частично битых
+ * последовательностях — консервативный режим по цепочкам.
  */
 function decodeDest(dest: string): string {
   const angle = dest.startsWith("<") && dest.endsWith(">");
-  const wrap = (body: string, isAngle: boolean): string => {
-    if (isAngle || !/[()\s]/.test(body)) return isAngle ? `<${body}>` : body;
-    return `<${body}>`;
-  };
+  const raw = angle ? dest.slice(1, -1) : dest;
+  // `\_` в destination — всегда интерпретируется как `_` (CommonMark),
+  // unescape семантически нейтрален и не добавляет пробелов/скобок
+  const body = raw.replace(/\\_/g, "_");
 
-  const body = angle ? dest.slice(1, -1) : dest;
+  const wrap = (b: string): string => {
+    if (angle) return `<${b}>`;
+    return /[()\s]/.test(b) ? `<${b}>` : b;
+  };
 
   let full: string | null = null;
   try {
@@ -51,20 +55,22 @@ function decodeDest(dest: string): string {
     full = null;
   }
   if (full !== null) {
-    // чистый ASCII (например, только %20) — не трогаем
-    if (full === body || !/[^\x00-\x7F]/.test(full)) return dest;
-    return wrap(full, angle);
+    // чистый ASCII (например, только %20) — не декодируем, но unescape остаётся
+    if (full !== body && /[^\x00-\x7F]/.test(full)) return wrap(full);
+    return body === raw ? dest : wrap(body);
   }
 
   const partial = decodeNonAsciiRuns(body);
-  if (partial === body) return dest;
-  return wrap(partial, angle);
+  if (partial !== body) return wrap(partial);
+  return body === raw ? dest : wrap(body);
 }
 
 /**
- * Возвращает %-кодированную кириллицу (и другой не-ASCII) в URL к исходному
- * виду: якоря `#1-%D0%B2...` -> `#1-введение`, пути картинок — аналогично.
- * Текст вне URL не меняется (phase 4, план §3.2).
+ * Чинит ссылки/пути картинок в markdown (кнопка «Восстановить ссылки»):
+ * декодирует %-кодированную кириллицу (`#1-%D0%B2...` -> `#1-введение`) и
+ * снимает escape-артефакты anydoc в destinations (`assets\_img.png` ->
+ * `assets_img.png`). Проза со штатным экранированием `\_` не меняется
+ * (phase 4, план §3.6).
  */
 export function restoreCyrillicUrls(md: string): RestoreResult {
   let changedUrls = 0;
