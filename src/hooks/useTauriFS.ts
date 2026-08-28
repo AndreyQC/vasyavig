@@ -83,3 +83,8 @@ export async function saveFileDialog(defaultPath: string): Promise<string | null
 export function watchFolder(path: string): Promise<void> {
   return invoke("watch_folder", {path});
 }
+
+/** Разрешает asset protocol доступ к каталогу (рекурсивно) — картинки phase 5. */
+export function grantAssetScope(path: string): Promise<void> {
+  return invoke("grant_asset_scope", {path});
+}

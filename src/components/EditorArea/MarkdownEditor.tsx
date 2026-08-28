@@ -1,11 +1,14 @@
 import {useEffect} from "react";
 import {MarkdownEditorView, useMarkdownEditor} from "@gravity-ui/markdown-editor";
 import {useEditorStore} from "../../store/editorStore";
+import {useFileStore} from "../../store/fileStore";
 import {spellcheckExtension} from "../../lib/spellcheckExtension";
 import {preserveUrlsExtension} from "../../lib/preserveUrlsExtension";
 import {anchorNavigationExtension} from "../../lib/anchorNavigationExtension";
+import {imageSrcExtension} from "../../lib/imageSrcExtension";
 import {combineExtensions} from "../../lib/combineExtensions";
 import {registerEditor, unregisterEditor} from "../../lib/editorRegistry";
+import {getParentDir} from "../../lib/utils";
 
 interface Props {
   path: string;
@@ -29,6 +32,7 @@ export function MarkdownEditor({path, initialContent}: Props) {
           spellcheckExtension(),
           preserveUrlsExtension(),
           anchorNavigationExtension(),
+          imageSrcExtension(getParentDir(path), () => useFileStore.getState().rootPath),
         ),
       },
     },

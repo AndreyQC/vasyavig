@@ -17,6 +17,7 @@ pub fn run() {
             commands::fs::create_file,
             commands::fs::delete_path,
             commands::fs::rename_path,
+            commands::fs::grant_asset_scope,
             commands::convert::convert_to_markdown,
             commands::watcher::watch_folder,
             commands::spellcheck::check_spelling_blocks,

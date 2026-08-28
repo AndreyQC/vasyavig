@@ -4,6 +4,7 @@ import {
   convertToMarkdown,
   createFile as createFileFs,
   deletePath as deletePathFs,
+  grantAssetScope,
   listDirectory,
   openFileDialog,
   openFolderDialog,
@@ -80,6 +81,9 @@ export const useFileStore = create<FileState>((set, get) => ({
       activeDirPath: null,
       activeFilePath: null,
     });
+    // картинки phase 5: asset protocol получает доступ к открытой папке;
+    // ошибка гранта не блокирует работу — просто не покажутся изображения
+    grantAssetScope(path).catch((e) => console.warn("grant_asset_scope failed:", e));
     try {
       const tree = await listDirectory(path);
       set({tree, isLoadingTree: false, expandedPaths: {}});
@@ -132,6 +136,9 @@ export const useFileStore = create<FileState>((set, get) => ({
       return;
     }
     set({error: null, activeFilePath: path});
+    // файл мог быть открыт вне корня (Ctrl+O / drag-and-drop) — грантим его
+    // каталог; внутри открытой папки грант избыточен, но идемпотентен
+    grantAssetScope(getParentDir(path)).catch((e) => console.warn("grant_asset_scope failed:", e));
     try {
       const content = await readFile(path);
       useEditorStore.getState().openTab({path, kind, content});
@@ -217,6 +224,7 @@ export const useFileStore = create<FileState>((set, get) => ({
     });
 
     if (wasRoot) {
+      grantAssetScope(newPath).catch((e) => console.warn("grant_asset_scope failed:", e));
       await watchFolder(newPath).catch((e) => console.warn("watch_folder failed:", e));
     }
 
