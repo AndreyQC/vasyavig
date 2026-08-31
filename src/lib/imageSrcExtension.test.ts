@@ -9,6 +9,7 @@ function makeMockBuilder() {
   return {
     builders: {serializers, pluginFactories},
     builder: {
+      Priority: {Highest: 1_000_000},
       overrideNodeSerializerSpec: (name: string, cb: (prev: unknown) => unknown) => {
         serializers.set(name, cb(null));
       },

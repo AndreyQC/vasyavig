@@ -56,6 +56,10 @@ export function imageSrcExtension(baseDir: string, getRootPath: () => string | n
           state.write(result);
         },
     );
+    // Highest: preset 'full' включает Yfm ImgSize, чей плагин тоже регистрирует
+    // nodeView на ноду 'image' (React ImageNodeView). При одноимённых записях
+    // prosemirror-view берёт источник, стоящий раньше (BundlePreset идёт перед
+    // extraExtensions), поэтому наш плагин должен отсортироваться выше.
     builder.addPlugin(
       () =>
         new Plugin({
@@ -89,6 +93,7 @@ export function imageSrcExtension(baseDir: string, getRootPath: () => string | n
             },
           },
         }),
+      builder.Priority.Highest,
     );
   };
 }
