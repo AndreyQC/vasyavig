@@ -1,6 +1,7 @@
 {
   "sidebar": {
-    "openFolder": "Open folder",
+    "currentDirectory": "Current directory",
+    "openFolder": "Open directory",
     "refresh": "Refresh tree",
     "collapseAll": "Collapse all",
     "showHidden": "Show hidden files",

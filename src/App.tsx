@@ -1,5 +1,4 @@
 import {useEffect} from "react";
-import {Text} from "@gravity-ui/uikit";
 import {invoke} from "@tauri-apps/api/core";
 import {Layout} from "./components/Layout";
 import {SidebarHeader} from "./components/Sidebar/SidebarHeader";
@@ -20,7 +19,6 @@ import {ConvertModal} from "./components/Modals/ConvertModal";
 import {RenameModal} from "./components/Modals/RenameModal";
 import {TocModal} from "./components/Modals/TocModal";
 import {ErrorToasts} from "./components/ErrorToasts";
-import {useFileStore} from "./store/fileStore";
 import {useEditorStore} from "./store/editorStore";
 import {useFileWatcher} from "./hooks/useFileWatcher";
 import {useHotkeys} from "./hooks/useHotkeys";
@@ -30,7 +28,6 @@ import "./components/Sidebar/Sidebar.css";
 import "./components/EditorArea/EditorArea.css";
 
 function App() {
-  const rootPath = useFileStore((s) => s.rootPath);
   const activeTab = useEditorStore((s) => s.tabs.find((t) => t.path === s.activePath));
 
   useFileWatcher();
@@ -52,13 +49,6 @@ function App() {
     <>
       <SidebarHeader />
       <FileTree />
-      {rootPath && (
-        <div className="sidebar-footer">
-          <Text variant="caption-2" color="secondary" ellipsis title={rootPath}>
-            {rootPath}
-          </Text>
-        </div>
-      )}
     </>
   );
 

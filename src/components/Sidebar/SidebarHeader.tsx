@@ -1,8 +1,9 @@
-import {Button, Icon, Tooltip} from "@gravity-ui/uikit";
+import {Button, Icon, Text, Tooltip} from "@gravity-ui/uikit";
 import {ArrowRotateRight, Eye, EyeSlash, FilePlus, FolderOpen, ListUl, TrashBin} from "@gravity-ui/icons";
 import {useTranslation} from "react-i18next";
 import {useFileStore} from "../../store/fileStore";
 import {useFileActions} from "../../hooks/useFileActions";
+import {getFileName} from "../../lib/utils";
 
 export function SidebarHeader() {
   const {t} = useTranslation();
@@ -12,6 +13,7 @@ export function SidebarHeader() {
   const toggleShowHidden = useFileStore((s) => s.toggleShowHidden);
   const showHidden = useFileStore((s) => s.showHidden);
   const hasRoot = useFileStore((s) => s.rootPath !== null);
+  const rootPath = useFileStore((s) => s.rootPath);
   const activeDirPath = useFileStore((s) => s.activeDirPath);
   const activeFilePath = useFileStore((s) => s.activeFilePath);
   const {requestCreate, requestDelete} = useFileActions();
@@ -28,6 +30,18 @@ export function SidebarHeader() {
 
   return (
     <div className="sidebar-header">
+      {rootPath && (
+        <div className="sidebar-header__current-dir">
+          <Text variant="caption-2" color="secondary">
+            {t("sidebar.currentDirectory")}
+          </Text>
+          <Tooltip content={rootPath}>
+            <Text variant="body-2" ellipsis className="sidebar-header__current-dir-name">
+              {getFileName(rootPath)}
+            </Text>
+          </Tooltip>
+        </div>
+      )}
       <Button view="outlined" width="max" onClick={openFolder}>
         <Icon data={FolderOpen} />
         {t("sidebar.openFolder")}

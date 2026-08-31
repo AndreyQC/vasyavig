@@ -1,6 +1,7 @@
 {
   "sidebar": {
-    "openFolder": "Открыть папку",
+    "currentDirectory": "Текущая директория",
+    "openFolder": "Открыть директорию",
     "refresh": "Обновить дерево",
     "collapseAll": "Свернуть все",
     "showHidden": "Показать скрытые файлы",
