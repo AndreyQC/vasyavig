@@ -49,7 +49,11 @@ export function EditorTabs() {
             style={style}
             title={tab.path}
           >
-            <button type="button" className="editor-tabs__label" onClick={() => setActiveTab(tab.path)}>
+            <button
+              type="button"
+              className={`editor-tabs__label${tab.preview ? " editor-tabs__label--preview" : ""}`}
+              onClick={() => setActiveTab(tab.path)}
+            >
               <Text variant="body-1" ellipsis>
                 {tab.name}
               </Text>

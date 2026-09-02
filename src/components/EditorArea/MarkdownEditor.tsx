@@ -71,5 +71,8 @@ export function MarkdownEditor({path, initialContent}: Props) {
     }
   }, [editor, mode]);
 
-  return <MarkdownEditorView autofocus stickyToolbar editor={editor} className="md-editor" />;
+  // stickyToolbar=false: тулбар Gravity и так не уезжает (он сиблинг скроллера,
+  // а не его содержимое), а sticky-измерения дёргаются на каждый resize/scroll
+  // и являются главным подозреваемым пропадания панелей (спека layout-stability)
+  return <MarkdownEditorView autofocus stickyToolbar={false} editor={editor} className="md-editor" />;
 }

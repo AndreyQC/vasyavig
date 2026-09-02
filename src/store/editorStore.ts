@@ -14,6 +14,12 @@ export interface EditorTab {
   savedContent: string;
   dirty: boolean;
   mode: EditorMode;
+  /**
+   * Эфемерная вкладка просмотра (спека preview-tabs): открывается одиночным
+   * кликом по дереву, замещает предыдущую preview-вкладку, закрепляется
+   * двойным кликом или первой правкой. Preview-вкладка никогда не dirty.
+   */
+  preview: boolean;
 }
 
 /** Результат «Сохранить как»: saved — записано; confirm — нужна модалка md↔yfm; cancelled — отмена. */
@@ -27,7 +33,7 @@ interface EditorState {
   tabs: EditorTab[];
   activePath: string | null;
 
-  openTab: (tab: {path: string; kind: FileKind; content: string}) => void;
+  openTab: (tab: {path: string; kind: FileKind; content: string}, opts?: {preview?: boolean}) => void;
   closeTab: (path: string) => void;
   setActiveTab: (path: string) => void;
   updateContent: (path: string, content: string) => void;
@@ -81,10 +87,15 @@ export const useEditorStore = create<EditorState>((set, get) => {
     tabs: [],
     activePath: null,
 
-    openTab: ({path, kind, content}) => {
+    openTab: ({path, kind, content}, opts) => {
       const existing = get().tabs.find((t) => t.path === path);
       if (existing) {
-        set({activePath: path});
+        // закреплённое открытие уже открытого файла (двойной клик) закрепляет
+        // вкладку; preview-открытие лишь активирует её, статус не меняя
+        set((s) => ({
+          tabs: opts?.preview ? s.tabs : s.tabs.map((t) => (t.path === path ? {...t, preview: false} : t)),
+          activePath: path,
+        }));
         return;
       }
       const tab: EditorTab = {
@@ -95,8 +106,14 @@ export const useEditorStore = create<EditorState>((set, get) => {
         savedContent: content,
         dirty: false,
         mode: "wysiwyg",
+        preview: opts?.preview ?? false,
       };
-      set((s) => ({tabs: [...s.tabs, tab], activePath: path}));
+      set((s) => ({
+        // новая preview-вкладка замещает предыдущую (та не бывает dirty —
+        // первая правка закрепляет, поэтому промпт не нужен)
+        tabs: [...(opts?.preview ? s.tabs.filter((t) => !t.preview) : s.tabs), tab],
+        activePath: path,
+      }));
     },
 
     closeTab: (path) => {
@@ -112,9 +129,13 @@ export const useEditorStore = create<EditorState>((set, get) => {
 
     updateContent: (path, content) => {
       set((s) => ({
-        tabs: s.tabs.map((t) =>
-          t.path === path ? {...t, content, dirty: content !== t.savedContent} : t,
-        ),
+        tabs: s.tabs.map((t) => {
+          if (t.path !== path) return t;
+          const dirty = content !== t.savedContent;
+          // переход в dirty закрепляет preview-вкладку (первая правка);
+          // закрепление необратимо — возврат текста к saved не возвращает preview
+          return {...t, content, dirty, preview: dirty ? false : t.preview};
+        }),
       }));
     },
 

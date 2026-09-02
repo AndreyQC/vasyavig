@@ -71,7 +71,9 @@ interface FileState {
   toggleDir: (path: string) => void;
   collapseAll: () => void;
   toggleShowHidden: () => void;
-  openFile: (path: string) => Promise<void>;
+  /** Открытие файла; preview=true — эфемерная вкладка просмотра (одиночный
+   *  клик по дереву), по умолчанию — закреплённая (Ctrl+O, drop, двойной клик). */
+  openFile: (path: string, opts?: {preview?: boolean}) => Promise<void>;
   setActiveFilePath: (path: string | null) => void;
   selectDir: (path: string) => void;
   createFile: (path: string) => Promise<void>;
@@ -307,7 +309,7 @@ export const useFileStore = create<FileState>((set, get) => ({
 
   toggleShowHidden: () => set((s) => ({showHidden: !s.showHidden})),
 
-  openFile: async (path) => {
+  openFile: async (path, opts) => {
     const kind = getFileKind(path);
     if (kind === "unsupported") {
       set({error: i18n.t("errors.unsupportedType", {name: getFileName(path)})});
@@ -324,7 +326,7 @@ export const useFileStore = create<FileState>((set, get) => ({
     grantAssetScope(getParentDir(path)).catch((e) => console.warn("grant_asset_scope failed:", e));
     try {
       const content = await readFile(path);
-      useEditorStore.getState().openTab({path, kind, content});
+      useEditorStore.getState().openTab({path, kind, content}, opts);
     } catch (e) {
       set({error: String(e)});
     }

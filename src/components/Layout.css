@@ -1,7 +1,9 @@
 .layout {
   display: grid;
   grid-template-columns: 260px 5px 1fr;
-  grid-template-rows: 1fr auto;
+  /* minmax(0,1fr): контент основной области никогда не распирает строку
+     (спека layout-stability — рост футера не съедает редактор) */
+  grid-template-rows: minmax(0, 1fr) auto;
   grid-template-areas:
     "sidebar divider main"
     "statusbar statusbar statusbar";
@@ -41,6 +43,11 @@
 .layout__statusbar {
   grid-area: statusbar;
   border-top: 1px solid var(--g-color-line-generic);
+  /* жёсткий кап высоты футера: даже если контент статус-бара временно
+     распирается (перемежающийся баг), строка auto не вырастает и не
+     съедает основную область (спека layout-stability) */
+  max-height: 36px;
+  overflow: hidden;
 }
 
 .empty-state {
