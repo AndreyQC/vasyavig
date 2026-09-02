@@ -14,7 +14,8 @@
   flex-direction: column;
   min-height: 0;
   padding: var(--g-spacing-3);
-  overflow-y: auto;
+  /* сам не скроллится: шапка закреплена, скроллит только .sidebar__content */
+  overflow: hidden;
 }
 
 .layout__divider {

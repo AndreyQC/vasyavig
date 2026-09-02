@@ -1,18 +1,23 @@
 {
   "sidebar": {
-    "currentDirectory": "Current directory",
-    "openFolder": "Open directory",
+    "addFolder": "Add folder",
+    "workspaceMenu": "Workspace actions",
+    "openWorkspace": "Open workspace",
+    "newWorkspace": "New workspace",
+    "emptyWorkspace": "No folders in workspace",
+    "emptyWorkspaceHint": "Add a folder with the button above or drop one into the window",
+    "changeColor": "Change color",
+    "removeRoot": "Remove from workspace",
     "refresh": "Refresh tree",
     "collapseAll": "Collapse all",
     "showHidden": "Show hidden files",
     "hideHidden": "Hide hidden files",
-    "noFolder": "No folder opened",
     "createFile": "Create file",
     "rename": "Rename",
     "delete": "Delete"
   },
   "empty": {
-    "hint": "Open a folder and pick a Markdown/YFM file"
+    "hint": "Add a folder to the workspace and pick a Markdown/YFM file"
   },
   "toolbar": {
     "save": "Save",
@@ -42,8 +47,11 @@
     "dontSave": "Don't save",
     "closeTabTitle": "Close tab",
     "closeTabText": "«{{name}}» has unsaved changes. Save before closing?",
-    "openFolderTitle": "Open folder",
-    "openFolderText": "The following files have unsaved changes:",
+    "removeRootTitle": "Remove folder from workspace",
+    "removeRootText": "Tabs of files in «{{name}}» will be closed. The following have unsaved changes:",
+    "openWorkspaceTitle": "Open workspace",
+    "newWorkspaceTitle": "New workspace",
+    "switchWorkspaceText": "Current tabs will be closed. The following files have unsaved changes:",
     "saveAll": "Save all",
     "discard": "Discard changes",
     "deleteTitle": "Delete",
@@ -80,6 +88,15 @@
   },
   "errors": {
     "unsupportedType": "Unsupported file type: {{name}}",
-    "toastTitle": "Error"
+    "toastTitle": "Error",
+    "workspaceLoad": "Failed to load workspace: {{reason}}",
+    "workspaceBadFormat": "unsupported file version or structure",
+    "workspaceSave": "Failed to write workspace file: {{reason}}"
+  },
+  "notices": {
+    "toastTitle": "Workspace",
+    "rootAlreadyAdded": "Folder «{{name}}» is already in the workspace",
+    "rootNested": "Folder «{{name}}» is inside the «{{parent}}» root and shown as a separate section",
+    "rootContains": "Root «{{name}}» contains the already added root «{{child}}»"
   }
 }

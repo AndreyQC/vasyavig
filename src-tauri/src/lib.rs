@@ -20,6 +20,7 @@ pub fn run() {
             commands::fs::grant_asset_scope,
             commands::convert::convert_to_markdown,
             commands::watcher::watch_folder,
+            commands::watcher::unwatch_folder,
             commands::spellcheck::check_spelling_blocks,
             commands::spellcheck::suggest_word,
             commands::spellcheck::add_word_to_dictionary,

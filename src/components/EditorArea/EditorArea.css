@@ -32,11 +32,18 @@
   display: flex;
   align-items: center;
   border-radius: var(--g-border-radius-m);
-  background: var(--g-color-base-generic);
+  /* тинт цвета корня файла (вне корней — neutral); задаётся инлайном через --tint */
+  background: var(--tint, var(--g-color-base-generic));
 }
 
+/*
+ * Активная вкладка — широкая рамка насыщенного цвета корня (спека folder-colors).
+ * outline, не border: не участвует в layout — активация не сдвигает соседние
+ * вкладки и не дёргает flex-цепочки со скроллом (урок §8).
+ */
 .editor-tabs__tab--active {
-  background: var(--g-color-base-selection);
+  outline: 2px solid var(--accent, var(--g-color-base-selection));
+  outline-offset: -1px;
 }
 
 .editor-tabs__label {

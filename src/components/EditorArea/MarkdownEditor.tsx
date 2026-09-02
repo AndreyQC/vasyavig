@@ -9,6 +9,7 @@ import {imageSrcExtension} from "../../lib/imageSrcExtension";
 import {combineExtensions} from "../../lib/combineExtensions";
 import {registerEditor, unregisterEditor} from "../../lib/editorRegistry";
 import {getParentDir} from "../../lib/utils";
+import {resolveRoot} from "../../lib/roots";
 
 interface Props {
   path: string;
@@ -32,7 +33,11 @@ export function MarkdownEditor({path, initialContent}: Props) {
           spellcheckExtension(),
           preserveUrlsExtension(),
           anchorNavigationExtension(),
-          imageSrcExtension(getParentDir(path), () => useFileStore.getState().rootPath),
+          // rootPath читается лениво — корни могут добавиться после файла
+          imageSrcExtension(getParentDir(path), () => {
+            const roots = useFileStore.getState().roots;
+            return resolveRoot(path, roots)?.path ?? null;
+          }),
         ),
       },
     },

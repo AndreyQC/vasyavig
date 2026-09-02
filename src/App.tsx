@@ -12,14 +12,17 @@ import {MainToolbar} from "./components/Toolbar/MainToolbar";
 import {StatusBar} from "./components/StatusBar/StatusBar";
 import {SaveConfirmModal} from "./components/Modals/SaveConfirmModal";
 import {CloseTabModal} from "./components/Modals/CloseTabModal";
-import {OpenFolderModal} from "./components/Modals/OpenFolderModal";
+import {WorkspaceSwitchModal} from "./components/Modals/WorkspaceSwitchModal";
+import {RemoveRootModal} from "./components/Modals/RemoveRootModal";
 import {DeleteConfirmModal} from "./components/Modals/DeleteConfirmModal";
 import {CreateFileModal} from "./components/Modals/CreateFileModal";
 import {ConvertModal} from "./components/Modals/ConvertModal";
 import {RenameModal} from "./components/Modals/RenameModal";
 import {TocModal} from "./components/Modals/TocModal";
 import {ErrorToasts} from "./components/ErrorToasts";
+import {NoticeToasts} from "./components/NoticeToasts";
 import {useEditorStore} from "./store/editorStore";
+import {useFileStore} from "./store/fileStore";
 import {useFileWatcher} from "./hooks/useFileWatcher";
 import {useHotkeys} from "./hooks/useHotkeys";
 import {useDragDrop} from "./hooks/useDragDrop";
@@ -39,17 +42,26 @@ function App() {
     invoke("load_user_dictionary").catch((e) => console.warn("load_user_dictionary failed:", e));
   }, []);
 
+  // Восстановление последнего workspace на старте (спека workspace-file);
+  // отсутствие/ошибка файла — чистый старт внутри openWorkspaceFile
+  useEffect(() => {
+    void useFileStore.getState().restoreLastWorkspace();
+  }, []);
+
   // Заголовок окна: {filename} — Vasyavig (идея §4.1.2)
   const activeName = activeTab?.name ?? null;
   useEffect(() => {
     document.title = activeName ? `${activeName} — Vasyavig` : "Vasyavig";
   }, [activeName]);
 
+  // шапка сайдбара закреплена; скроллится только дерево (flex-колонка)
   const sidebar = (
-    <>
+    <div className="sidebar">
       <SidebarHeader />
-      <FileTree />
-    </>
+      <div className="sidebar__content">
+        <FileTree />
+      </div>
+    </div>
   );
 
   return (
@@ -82,13 +94,15 @@ function App() {
         )}
         <SaveConfirmModal />
         <CloseTabModal />
-        <OpenFolderModal />
+        <WorkspaceSwitchModal />
+        <RemoveRootModal />
         <DeleteConfirmModal />
         <CreateFileModal />
         <ConvertModal />
         <RenameModal />
         <TocModal />
         <ErrorToasts />
+        <NoticeToasts />
       </ErrorBoundary>
     </Layout>
   );

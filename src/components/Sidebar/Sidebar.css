@@ -1,23 +1,125 @@
+/* Сайдбар: закреплённая шапка + отдельно скроллящееся дерево */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.sidebar__content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  /* колёсико в конце панели не передаётся предку (урок §8) */
+  overscroll-behavior: contain;
+}
+
 .sidebar-header {
   display: flex;
   flex-direction: column;
   gap: var(--g-spacing-2);
   margin-bottom: var(--g-spacing-3);
+  flex-shrink: 0;
 }
 
-.sidebar-header__current-dir {
+.sidebar-header__row {
   display: flex;
-  flex-direction: column;
-  min-width: 0;
+  gap: var(--g-spacing-1);
+  align-items: stretch;
 }
 
-.sidebar-header__current-dir-name {
-  font-weight: 600;
+.sidebar-header__add {
+  flex: 1;
+  min-width: 0;
 }
 
 .sidebar-header__actions {
   display: flex;
   gap: var(--g-spacing-1);
+}
+
+/* Секция корня: фон — тинт цвета корня (спека folder-colors) */
+.root-section {
+  margin-bottom: var(--g-spacing-2);
+  padding: var(--g-spacing-2);
+  border-radius: var(--g-border-radius-m);
+  background: var(--tint);
+}
+
+.root-section__header {
+  display: flex;
+  align-items: center;
+  gap: var(--g-spacing-2);
+  min-width: 0;
+  margin-bottom: var(--g-spacing-1);
+  cursor: default;
+}
+
+.root-section__chip {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.root-section__name {
+  flex: 1;
+  min-width: 0;
+}
+
+.root-section__icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: var(--g-border-radius-s);
+  background: transparent;
+  color: var(--g-color-text-secondary);
+  cursor: pointer;
+}
+
+.root-section__icon-btn:hover {
+  background: var(--g-color-base-simple-hover);
+  color: var(--g-color-text-primary);
+}
+
+.root-section__loader {
+  display: block;
+  margin: var(--g-spacing-2) auto;
+}
+
+/* Палитра из 9 цветов: раскрывается в потоке сразу под заголовком корня —
+   всегда в зоне видимости независимо от длины списка файлов */
+.root-color-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--g-spacing-2);
+  max-width: 180px;
+  margin: 0 0 var(--g-spacing-2);
+  padding: var(--g-spacing-2);
+  background: var(--g-color-base-float);
+  border: 1px solid var(--g-color-line-generic);
+  border-radius: var(--g-border-radius-m);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.root-color-picker__swatch {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+}
+
+.root-color-picker__swatch--current {
+  border-color: var(--g-color-text-primary);
 }
 
 .file-tree__empty,

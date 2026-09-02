@@ -1,18 +1,23 @@
 {
   "sidebar": {
-    "currentDirectory": "Текущая директория",
-    "openFolder": "Открыть директорию",
+    "addFolder": "Добавить папку",
+    "workspaceMenu": "Действия с workspace",
+    "openWorkspace": "Открыть workspace",
+    "newWorkspace": "Новый workspace",
+    "emptyWorkspace": "В workspace нет папок",
+    "emptyWorkspaceHint": "Добавьте папку кнопкой выше или перетащите её в окно",
+    "changeColor": "Сменить цвет",
+    "removeRoot": "Убрать из workspace",
     "refresh": "Обновить дерево",
     "collapseAll": "Свернуть все",
     "showHidden": "Показать скрытые файлы",
     "hideHidden": "Скрыть скрытые файлы",
-    "noFolder": "Папка не открыта",
     "createFile": "Создать файл",
     "rename": "Переименовать",
     "delete": "Удалить"
   },
   "empty": {
-    "hint": "Откройте папку и выберите Markdown/YFM файл"
+    "hint": "Добавьте папку в workspace и выберите Markdown/YFM файл"
   },
   "toolbar": {
     "save": "Сохранить",
@@ -42,8 +47,11 @@
     "dontSave": "Не сохранять",
     "closeTabTitle": "Закрыть вкладку",
     "closeTabText": "Файл «{{name}}» содержит несохранённые изменения. Сохранить перед закрытием?",
-    "openFolderTitle": "Открыть папку",
-    "openFolderText": "Следующие файлы содержат несохранённые изменения:",
+    "removeRootTitle": "Убрать папку из workspace",
+    "removeRootText": "Вкладки файлов папки «{{name}}» будут закрыты. Следующие содержат несохранённые изменения:",
+    "openWorkspaceTitle": "Открыть workspace",
+    "newWorkspaceTitle": "Новый workspace",
+    "switchWorkspaceText": "Текущие вкладки будут закрыты. Следующие файлы содержат несохранённые изменения:",
     "saveAll": "Сохранить все",
     "discard": "Сбросить изменения",
     "deleteTitle": "Удаление",
@@ -80,6 +88,15 @@
   },
   "errors": {
     "unsupportedType": "Неподдерживаемый тип файла: {{name}}",
-    "toastTitle": "Ошибка"
+    "toastTitle": "Ошибка",
+    "workspaceLoad": "Не удалось загрузить workspace: {{reason}}",
+    "workspaceBadFormat": "неподдерживаемая версия или структура файла",
+    "workspaceSave": "Не удалось записать файл workspace: {{reason}}"
+  },
+  "notices": {
+    "toastTitle": "Workspace",
+    "rootAlreadyAdded": "Папка «{{name}}» уже добавлена в workspace",
+    "rootNested": "Папка «{{name}}» входит в корень «{{parent}}» и показана отдельной секцией",
+    "rootContains": "Корень «{{name}}» содержит уже добавленный корень «{{child}}»"
   }
 }

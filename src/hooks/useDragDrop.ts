@@ -5,7 +5,7 @@ import {useFileStore} from "../store/fileStore";
 
 /**
  * Drag-and-drop файлов и папок в окно приложения (идея §9):
- * папка — открывается как корень дерева, файлы — в табах.
+ * папка — ДОБАВЛЯЕТСЯ как корень workspace (не заменяет), файлы — в табы.
  */
 export function useDragDrop() {
   useEffect(() => {
@@ -43,7 +43,7 @@ async function handleDrop(paths: string[]) {
     try {
       const meta = await getFileMetadata(path);
       if (meta.isDir) {
-        await fileStore.openFolderPath(path);
+        await fileStore.addRootInteractive(path);
       } else {
         await fileStore.openFile(path);
       }

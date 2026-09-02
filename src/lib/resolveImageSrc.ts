@@ -1,4 +1,5 @@
 import {convertFileSrc} from "@tauri-apps/api/core";
+import {normalizeJoin} from "./utils";
 
 /**
  * Резолвинг src картинок для отображения (phase 5).
@@ -39,22 +40,6 @@ function decodePercentRuns(path: string): string {
       return run;
     }
   });
-}
-
-/** Лексическое склеивание base + rel с нормализацией `./`, `..` и смешанных сепараторов. */
-function normalizeJoin(base: string, rel: string): string {
-  const sep = base.includes("\\") ? "\\" : "/";
-  const segs = base.split(/[\\/]+/).filter((s, i) => s !== "" || i < 2);
-  for (const part of rel.split(/[\\/]+/)) {
-    if (!part || part === ".") continue;
-    if (part === "..") {
-      // не поднимаемся выше корня склейки (диск/UNC-префикс остаётся)
-      if (segs.length > 1) segs.pop();
-      continue;
-    }
-    segs.push(part);
-  }
-  return segs.join(sep);
 }
 
 /**
