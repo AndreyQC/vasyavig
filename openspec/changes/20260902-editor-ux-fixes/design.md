@@ -36,20 +36,31 @@
 
 ## Decisions
 
-### D1. Таблицы WYSIWYG: scroll-обёртка средствами prosemirror-tables, не CSS-хак
+### D1. Таблицы WYSIWYG: чистый CSS, полоса прокрутки у всего документа
 
-Предпочтительный путь — обёртка таблицы, которую сам prosemirror-tables
-предоставляет через `TableView` (рендерит `<div class="tableWrapper">` вокруг
-`<table>`): обёртке даётся `overflow-x: auto`, таблице — естественная ширина.
-Как именно подключена таблица внутри Gravity YfmTable (есть ли уже обёртка,
-регистрирует ли он свой nodeView) — выясняется на первом шаге реализации;
-если свой nodeView существует, перекрываем по уроку §10 (`builder.addPlugin`
-с `Priority.Highest`, первый nodeView выигрывает).
+Таблицы не сжимаются: отменяем `.yfm table` (inline-block + max-width:100%)
+и break-spaces ячеек (`.yfm.yfm-editor table th/td/code`) селекторами
+`.editor-area .md-editor .ProseMirror table …` с запасом специфичности —
+gravity-стили грузятся в CSS-бандле после наших (main.tsx импортирует App
+раньше styles), равная специфичность проигрывает каскад. Таблица
+естественной ширины переполняет скроллер редактора
+(`.g-md-wysiwyg-editor__editor`, overflow-y: auto → вторая ось вычисляется
+в auto), и весь документ получает горизонтальную полосу — по уточнению
+пользователя («полоса для всего документа», не per-table).
 
-Альтернатива `table { display: block; overflow-x: auto }` чистым CSS отклонена
-для WYSIWYG: ломает табличный layout и ручки колонок внутри ProseMirror.
-Прокрутка каретки в ячейку за краем — штатный scroll-into-view ProseMirror
-работает внутри скроллящегося предка.
+Альтернативы отклонены: nodeview-обёртка с локальным overflow (первая
+версия, противоречит уточнённому требованию); CSS-хак `table { display:
+block }` (ломает табличный layout). Перенос ячеек возвращается к word-wrap:
+min-content колонки = самое длинное слово, а не символ.
+
+Markup-режим (уточнение пользователя, там же): CodeMirror переносит строки —
+`EditorView.lineWrapping` включён в `createCodemirror` без публичной опции
+отключения. CM6 определяет режим переноса по computed `white-space`
+контента (HeightOracle.refresh), поэтому CSS-откат
+`.cm-lineWrapping .cm-content { white-space: pre }` отключает и перенос, и
+измерения высот CM; горизонтальную полосу даёт штатный `.cm-scroller`
+(overflow: auto). Превью остаётся со скроллом таблицы в своей области
+(решение пользователя).
 
 ### D2. Таблицы превью: чистый CSS
 
