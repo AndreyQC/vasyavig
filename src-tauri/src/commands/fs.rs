@@ -1,6 +1,7 @@
 use crate::services::file_service::{list_dir_tree, read_file_utf8, write_file_atomic, FileNode};
 use serde::Serialize;
 use std::path::Path;
+use tauri::Manager;
 
 /// Возвращает дерево файлов/папок (рекурсивно, с лимитом глубины).
 /// FileNode: { name, path, isDir, children }
@@ -65,4 +66,14 @@ pub async fn delete_path(path: String) -> Result<(), String> {
 #[tauri::command]
 pub async fn rename_path(from: String, to: String) -> Result<(), String> {
     crate::services::file_service::rename_path(Path::new(&from), Path::new(&to))
+}
+
+/// Разрешает asset protocol доступ к каталогу (рекурсивно). Гранты выдаются
+/// в рантайме при открытии пользователем папки/файла — статический scope пуст
+/// (phase 5: отображение локальных изображений).
+#[tauri::command]
+pub fn grant_asset_scope(app: tauri::AppHandle, path: String) -> Result<(), String> {
+    app.asset_protocol_scope()
+        .allow_directory(path, true)
+        .map_err(|e| e.to_string())
 }

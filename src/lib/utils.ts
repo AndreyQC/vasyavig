@@ -28,6 +28,22 @@ export function joinPath(dir: string, name: string): string {
   return dir.endsWith(sep) ? dir + name : dir + sep + name;
 }
 
+/** Лексическое склеивание base + rel с нормализацией `./`, `..` и смешанных сепараторов. */
+export function normalizeJoin(base: string, rel: string): string {
+  const sep = base.includes("\\") ? "\\" : "/";
+  const segs = base.split(/[\\/]+/).filter((s, i) => s !== "" || i < 2);
+  for (const part of rel.split(/[\\/]+/)) {
+    if (!part || part === ".") continue;
+    if (part === "..") {
+      // не поднимаемся выше корня склейки (диск/UNC-префикс остаётся)
+      if (segs.length > 1) segs.pop();
+      continue;
+    }
+    segs.push(part);
+  }
+  return segs.join(sep);
+}
+
 /** Если path равен oldPath или лежит внутри него — возвращает путь с новым префиксом, иначе null. */
 export function remapPath(path: string, oldPath: string, newPath: string): string | null {
   if (path === oldPath) return newPath;

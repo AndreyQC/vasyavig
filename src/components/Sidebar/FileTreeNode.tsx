@@ -60,13 +60,20 @@ export function FileTreeNode({node, depth}: Props) {
 
   const isActive = activeFilePath === node.path;
 
+  // Одиночный клик — preview-вкладка (эфемерная); двойной клик — закреплённая
+  // (спека preview-tabs). Двойной клик = два клика + dblclick: первый уже
+  // открыл preview, dblclick закрепляет её — спец. задержка не нужна.
   const handleClick = () => {
     if (node.isDir) {
       toggleDir(node.path);
       selectDir(node.path);
     } else {
-      openFile(node.path);
+      openFile(node.path, {preview: true});
     }
+  };
+
+  const handleDoubleClick = () => {
+    if (!node.isDir) openFile(node.path);
   };
 
   const handleContextMenu = (e: React.MouseEvent) => {
@@ -81,6 +88,7 @@ export function FileTreeNode({node, depth}: Props) {
         className={`file-tree-node__row${isActive ? " file-tree-node__row--active" : ""}`}
         style={{paddingLeft: 8 + depth * 16}}
         onClick={handleClick}
+        onDoubleClick={handleDoubleClick}
         onContextMenu={handleContextMenu}
         title={node.path}
       >

@@ -83,3 +83,31 @@ export async function saveFileDialog(defaultPath: string): Promise<string | null
 export function watchFolder(path: string): Promise<void> {
   return invoke("watch_folder", {path});
 }
+
+/** Перестаёт следить за папкой (мульти-root watcher). */
+export function unwatchFolder(path: string): Promise<void> {
+  return invoke("unwatch_folder", {path});
+}
+
+/** Диалог выбора файла workspace. Путь или null. */
+export async function openWorkspaceDialog(): Promise<string | null> {
+  const selected = await open({
+    multiple: false,
+    filters: [{name: "Vasyavig workspace", extensions: ["vasyavig-workspace"]}],
+  });
+  return typeof selected === "string" ? selected : null;
+}
+
+/** Диалог выбора места файла workspace. Путь или null (отмена). */
+export async function saveWorkspaceFileDialog(defaultPath?: string): Promise<string | null> {
+  const selected = await save({
+    defaultPath,
+    filters: [{name: "Vasyavig workspace", extensions: ["vasyavig-workspace"]}],
+  });
+  return typeof selected === "string" ? selected : null;
+}
+
+/** Разрешает asset protocol доступ к каталогу (рекурсивно) — картинки phase 5. */
+export function grantAssetScope(path: string): Promise<void> {
+  return invoke("grant_asset_scope", {path});
+}

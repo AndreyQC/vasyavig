@@ -1,5 +1,8 @@
-import {useCallback, useRef, useState} from "react";
+import {useCallback, useMemo, useRef, useState} from "react";
 import {useEditorStore, type EditorTab} from "../../store/editorStore";
+import {useFileStore} from "../../store/fileStore";
+import {getParentDir} from "../../lib/utils";
+import {resolveRoot} from "../../lib/roots";
 import {MarkdownEditor} from "./MarkdownEditor";
 import {SplitPreview} from "./SplitPreview";
 
@@ -16,6 +19,9 @@ export function SplitView({tab}: Props) {
 
   // контент из store: stable-ref find, обновляется по мере печати
   const content = useEditorStore((s) => s.tabs.find((t) => t.path === tab.path)?.content ?? tab.content);
+  const roots = useFileStore((s) => s.roots);
+  // корень файла для root-relative картинок (phase 5): самый глубокой корень
+  const rootPath = useMemo(() => resolveRoot(tab.path, roots)?.path ?? null, [tab.path, roots]);
 
   const onDividerMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -45,7 +51,7 @@ export function SplitView({tab}: Props) {
       </div>
       <div className="split-view__divider" onMouseDown={onDividerMouseDown} />
       <div className="split-view__preview" style={{width: previewWidth}}>
-        <SplitPreview content={content} />
+        <SplitPreview content={content} basePath={getParentDir(tab.path)} rootPath={rootPath} />
       </div>
     </div>
   );

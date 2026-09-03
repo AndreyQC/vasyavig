@@ -1,5 +1,4 @@
 import {useEffect} from "react";
-import {Text} from "@gravity-ui/uikit";
 import {invoke} from "@tauri-apps/api/core";
 import {Layout} from "./components/Layout";
 import {SidebarHeader} from "./components/Sidebar/SidebarHeader";
@@ -13,14 +12,17 @@ import {MainToolbar} from "./components/Toolbar/MainToolbar";
 import {StatusBar} from "./components/StatusBar/StatusBar";
 import {SaveConfirmModal} from "./components/Modals/SaveConfirmModal";
 import {CloseTabModal} from "./components/Modals/CloseTabModal";
-import {OpenFolderModal} from "./components/Modals/OpenFolderModal";
+import {WorkspaceSwitchModal} from "./components/Modals/WorkspaceSwitchModal";
+import {RemoveRootModal} from "./components/Modals/RemoveRootModal";
 import {DeleteConfirmModal} from "./components/Modals/DeleteConfirmModal";
 import {CreateFileModal} from "./components/Modals/CreateFileModal";
 import {ConvertModal} from "./components/Modals/ConvertModal";
 import {RenameModal} from "./components/Modals/RenameModal";
+import {TocModal} from "./components/Modals/TocModal";
 import {ErrorToasts} from "./components/ErrorToasts";
-import {useFileStore} from "./store/fileStore";
+import {NoticeToasts} from "./components/NoticeToasts";
 import {useEditorStore} from "./store/editorStore";
+import {useFileStore} from "./store/fileStore";
 import {useFileWatcher} from "./hooks/useFileWatcher";
 import {useHotkeys} from "./hooks/useHotkeys";
 import {useDragDrop} from "./hooks/useDragDrop";
@@ -29,7 +31,6 @@ import "./components/Sidebar/Sidebar.css";
 import "./components/EditorArea/EditorArea.css";
 
 function App() {
-  const rootPath = useFileStore((s) => s.rootPath);
   const activeTab = useEditorStore((s) => s.tabs.find((t) => t.path === s.activePath));
 
   useFileWatcher();
@@ -41,24 +42,26 @@ function App() {
     invoke("load_user_dictionary").catch((e) => console.warn("load_user_dictionary failed:", e));
   }, []);
 
+  // Восстановление последнего workspace на старте (спека workspace-file);
+  // отсутствие/ошибка файла — чистый старт внутри openWorkspaceFile
+  useEffect(() => {
+    void useFileStore.getState().restoreLastWorkspace();
+  }, []);
+
   // Заголовок окна: {filename} — Vasyavig (идея §4.1.2)
   const activeName = activeTab?.name ?? null;
   useEffect(() => {
     document.title = activeName ? `${activeName} — Vasyavig` : "Vasyavig";
   }, [activeName]);
 
+  // шапка сайдбара закреплена; скроллится только дерево (flex-колонка)
   const sidebar = (
-    <>
+    <div className="sidebar">
       <SidebarHeader />
-      <FileTree />
-      {rootPath && (
-        <div className="sidebar-footer">
-          <Text variant="caption-2" color="secondary" ellipsis title={rootPath}>
-            {rootPath}
-          </Text>
-        </div>
-      )}
-    </>
+      <div className="sidebar__content">
+        <FileTree />
+      </div>
+    </div>
   );
 
   return (
@@ -91,12 +94,15 @@ function App() {
         )}
         <SaveConfirmModal />
         <CloseTabModal />
-        <OpenFolderModal />
+        <WorkspaceSwitchModal />
+        <RemoveRootModal />
         <DeleteConfirmModal />
         <CreateFileModal />
         <ConvertModal />
         <RenameModal />
+        <TocModal />
         <ErrorToasts />
+        <NoticeToasts />
       </ErrorBoundary>
     </Layout>
   );

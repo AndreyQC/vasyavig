@@ -32,11 +32,18 @@
   display: flex;
   align-items: center;
   border-radius: var(--g-border-radius-m);
-  background: var(--g-color-base-generic);
+  /* тинт цвета корня файла (вне корней — neutral); задаётся инлайном через --tint */
+  background: var(--tint, var(--g-color-base-generic));
 }
 
+/*
+ * Активная вкладка — широкая рамка насыщенного цвета корня (спека folder-colors).
+ * outline, не border: не участвует в layout — активация не сдвигает соседние
+ * вкладки и не дёргает flex-цепочки со скроллом (урок §8).
+ */
 .editor-tabs__tab--active {
-  background: var(--g-color-base-selection);
+  outline: 2px solid var(--accent, var(--g-color-base-selection));
+  outline-offset: -1px;
 }
 
 .editor-tabs__label {
@@ -55,10 +62,57 @@
   color: var(--g-color-text-warning-heavy);
 }
 
+/* preview-вкладка (спека preview-tabs): курсив — как в VS Code, вкладка
+   исчезнет при переходе к другому файлу; тинт корня не трогаем (его смысл
+   занят принадлежностью файла корню) */
+.editor-tabs__label--preview {
+  font-style: italic;
+}
+
 .md-editor {
   /* Gravity-редактор скроллит себя сам внутри корня; overflow здесь не добавлять —
      ломает внутренний layout (потеря панели preview в split) */
   height: 100%;
+}
+
+/*
+ * WYSIWYG: широкие таблицы не сжимаются в ширину редактора — контент
+ * переполняет скроллер редактора, и весь документ получает горизонтальную
+ * полосу прокрутки (запрос пользователя: полоса для всего документа).
+ *
+ * Отменяем два правила, глушащих переполнение: `.yfm table`
+ * (display:inline-block + max-width:100% зажимают таблицу в контейнер) и
+ * `.yfm.yfm-editor table th/td/code` (break-spaces коллапсирует min-content
+ * до символа). .ProseMirror в цепочке даёт запас специфичности: gravity-стили
+ * грузятся в CSS-бандле ПОСЛЕ наших (main.tsx импортирует App раньше styles),
+ * равной специфичности недостаточно. Скроллер — .g-md-wysiwyg-editor__editor
+ * (overflow-y:auto): вторая ось вычисляется в auto, полоса появляется сама.
+ */
+.editor-area .md-editor .ProseMirror table {
+  display: table;
+  max-width: none;
+}
+
+.editor-area .md-editor .ProseMirror table th,
+.editor-area .md-editor .ProseMirror table td,
+.editor-area .md-editor .ProseMirror table code {
+  white-space: normal;
+}
+
+/*
+ * Markup (CodeMirror): без переноса строк — горизонтальная полоса на весь
+ * документ, как в VS Code (уточнение пользователя 2026-09-02). Gravity
+ * включает EditorView.lineWrapping без публичной опции отключения; класс
+ * .cm-lineWrapping даёт white-space: break-spaces. CM6 определяет режим
+ * переноса по computed white-space контента — откат в pre отключает и
+ * перенос, и измерения высот CM; полосу даёт штатный .cm-scroller
+ * (overflow: auto). Специфичность — запас против theme-классов CM.
+ */
+.editor-area .md-editor .cm-lineWrapping .cm-content {
+  white-space: pre;
+  word-break: normal;
+  overflow-wrap: normal;
+  flex-shrink: 0;
 }
 
 .main-toolbar {
@@ -67,6 +121,11 @@
   justify-content: space-between;
   gap: var(--g-spacing-3);
   padding-bottom: var(--g-spacing-2);
+}
+
+.main-toolbar__left {
+  display: flex;
+  gap: var(--g-spacing-2);
 }
 
 .main-toolbar__right {

@@ -185,3 +185,34 @@ const toaster = new Toaster();
 4. Сеть до сервера (Edge по тому же URL)
 5. Фронтенд-рантайм (DevTools Console)
 6. Tauri-окружение (capabilities, плагины)
+
+## 10. Gravity markdown-editor: одноимённые nodeViews — побеждает первый плагин
+
+**Что произошло.** Phase 5: nodeView для картинок через `builder.addPlugin`
+молча не применялся — изображения рендерил чужой view с сырым src. Причина:
+preset `'full'` включает Yfm-расширение ImgSize, чей плагин тоже регистрирует
+`props.nodeViews.image` (React ImageNodeView), и стоит он в списке плагинов
+раньше extraExtensions. `buildNodeViews` в prosemirror-view мержит записи
+nodeViews по принципу «первый источник выигрывает» (direct props -> плагины
+по порядку; порядок плагинов — по убыванию priority из ExtensionBuilder).
+
+**Правило.** Перекрывать чужой nodeView в Gravity-редакторе только через
+`builder.addPlugin(cb, builder.Priority.Highest)`. Диагностика: временный
+`console.log` в фабрике nodeView — если не печатается, view перекрыт.
+
+**Дополнительно (сериализация).** Штатный сериализатор картинки пишет src через
+`state.esc()` и голым текстом: путь с пробелами ломается при WYSIWYG -> Markup.
+Лечение: `builder.overrideNodeSerializerSpec(name, ...)` — angle-форма
+`![](<путь с пробелами>)`.
+
+## 11. Dev-процессы Tauri: «призрачные» провалы после правок Rust
+
+**Что произошло.** Пользователь проверял новую функцию в приложении, которое
+работало на старом бинарнике: порт 1420 держал dev-сервер, запущенный до
+правок (HMR обновил фронтенд, но Rust-часть — asset protocol, новые команды —
+осталась старой). Симптом: «сделано, но не работает».
+
+**Правило.** После правок в `src-tauri` — перезапуск `tauri dev`. Диагностика:
+`netstat -ano | findstr :1420` + `tasklist` — убить старые vite/vasyavig.exe.
+Иногда `tauri dev` умирает при автоперезапуске (кривой кавычкинг re-run в
+cmd) — просто запустить заново.

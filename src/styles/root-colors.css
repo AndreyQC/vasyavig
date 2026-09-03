@@ -1,0 +1,60 @@
+/*
+ * Цвета корней workspace (спека folder-colors): тинт (фон секции дерева и
+ * вкладки) и акцент (насыщенный — широкая рамка активной вкладки, chip).
+ * Определены для обеих тем Gravity UI через color-mix с фоном темы.
+ *
+ * Селекторы — модификаторы корневого класса Gravity (BEM `block_mod_val`):
+ * ThemeProvider (scoped: false) вешает `g-root g-root_theme_light` на <body>,
+ * там же Gravity объявляет --g-color-base-background — наши color-mix
+ * резолвятся на том же элементе.
+ */
+
+.g-root_theme_light {
+  --root-tint-red: color-mix(in srgb, #e5484d 10%, var(--g-color-base-background));
+  --root-tint-orange: color-mix(in srgb, #f76b15 12%, var(--g-color-base-background));
+  --root-tint-amber: color-mix(in srgb, #ffb224 14%, var(--g-color-base-background));
+  --root-tint-lime: color-mix(in srgb, #99d52a 14%, var(--g-color-base-background));
+  --root-tint-teal: color-mix(in srgb, #12a594 12%, var(--g-color-base-background));
+  --root-tint-cyan: color-mix(in srgb, #00a2c7 12%, var(--g-color-base-background));
+  --root-tint-blue: color-mix(in srgb, #0091ff 12%, var(--g-color-base-background));
+  --root-tint-violet: color-mix(in srgb, #6e56cf 12%, var(--g-color-base-background));
+  --root-tint-pink: color-mix(in srgb, #d6409f 12%, var(--g-color-base-background));
+
+  --root-accent-red: color-mix(in srgb, #e5484d 85%, #000);
+  --root-accent-orange: color-mix(in srgb, #f76b15 85%, #000);
+  --root-accent-amber: color-mix(in srgb, #ffb224 80%, #000);
+  --root-accent-lime: color-mix(in srgb, #99d52a 75%, #000);
+  --root-accent-teal: color-mix(in srgb, #12a594 85%, #000);
+  --root-accent-cyan: color-mix(in srgb, #00a2c7 85%, #000);
+  --root-accent-blue: color-mix(in srgb, #0091ff 85%, #000);
+  --root-accent-violet: color-mix(in srgb, #6e56cf 85%, #000);
+  --root-accent-pink: color-mix(in srgb, #d6409f 85%, #000);
+
+  --root-tint-neutral: color-mix(in srgb, #6f737c 8%, var(--g-color-base-background));
+  --root-accent-neutral: #6f737c;
+}
+
+.g-root_theme_dark {
+  --root-tint-red: color-mix(in srgb, #e5484d 20%, var(--g-color-base-background));
+  --root-tint-orange: color-mix(in srgb, #f76b15 20%, var(--g-color-base-background));
+  --root-tint-amber: color-mix(in srgb, #ffb224 20%, var(--g-color-base-background));
+  --root-tint-lime: color-mix(in srgb, #99d52a 20%, var(--g-color-base-background));
+  --root-tint-teal: color-mix(in srgb, #12a594 20%, var(--g-color-base-background));
+  --root-tint-cyan: color-mix(in srgb, #00a2c7 20%, var(--g-color-base-background));
+  --root-tint-blue: color-mix(in srgb, #0091ff 20%, var(--g-color-base-background));
+  --root-tint-violet: color-mix(in srgb, #6e56cf 20%, var(--g-color-base-background));
+  --root-tint-pink: color-mix(in srgb, #d6409f 20%, var(--g-color-base-background));
+
+  --root-accent-red: #ff6369;
+  --root-accent-orange: #ff9557;
+  --root-accent-amber: #ffc853;
+  --root-accent-lime: #ace155;
+  --root-accent-teal: #37c6b2;
+  --root-accent-cyan: #3fc1e8;
+  --root-accent-blue: #4cb2ff;
+  --root-accent-violet: #9a88e8;
+  --root-accent-pink: #ee6fbf;
+
+  --root-tint-neutral: color-mix(in srgb, #a9aeb8 14%, var(--g-color-base-background));
+  --root-accent-neutral: #a9aeb8;
+}

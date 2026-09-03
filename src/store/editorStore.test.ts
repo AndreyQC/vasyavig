@@ -112,3 +112,72 @@ describe("editorStore.closeAllTabs", () => {
     expect(s.activePath).toBeNull();
   });
 });
+
+describe("editorStore preview-вкладки (спека preview-tabs)", () => {
+  it("preview-открытие закрывает предыдущую preview-вкладку, закреплённые не трогает", () => {
+    const st = useEditorStore.getState();
+    st.openTab({path: "/a.md", kind: "markdown", content: "A"}); // закреплённая
+    st.openTab({path: "/b.md", kind: "markdown", content: "B"}, {preview: true});
+    st.openTab({path: "/c.md", kind: "markdown", content: "C"}, {preview: true});
+    const s = useEditorStore.getState();
+    expect(s.tabs.map((t) => t.path)).toEqual(["/a.md", "/c.md"]);
+    expect(s.tabs[1].preview).toBe(true);
+    expect(s.activePath).toBe("/c.md");
+  });
+
+  it("последовательные preview A→B→C оставляют одну preview-вкладку", () => {
+    const st = useEditorStore.getState();
+    st.openTab({path: "/a.md", kind: "markdown", content: "A"}, {preview: true});
+    st.openTab({path: "/b.md", kind: "markdown", content: "B"}, {preview: true});
+    st.openTab({path: "/c.md", kind: "markdown", content: "C"}, {preview: true});
+    const s = useEditorStore.getState();
+    expect(s.tabs).toHaveLength(1);
+    expect(s.tabs[0].path).toBe("/c.md");
+  });
+
+  it("повторный preview-клик по тому же файлу не создаёт дубль и не меняет статус", () => {
+    const st = useEditorStore.getState();
+    st.openTab({path: "/a.md", kind: "markdown", content: "A"}, {preview: true});
+    st.openTab({path: "/a.md", kind: "markdown", content: "A"}, {preview: true});
+    const s = useEditorStore.getState();
+    expect(s.tabs).toHaveLength(1);
+    expect(s.tabs[0].preview).toBe(true);
+  });
+
+  it("закреплённое открытие существующей preview-вкладки закрепляет её (двойной клик)", () => {
+    const st = useEditorStore.getState();
+    st.openTab({path: "/a.md", kind: "markdown", content: "A"}, {preview: true});
+    st.openTab({path: "/a.md", kind: "markdown", content: "A"});
+    const s = useEditorStore.getState();
+    expect(s.tabs).toHaveLength(1);
+    expect(s.tabs[0].preview).toBe(false);
+    // закреплённая больше не замещается следующим preview
+    st.openTab({path: "/b.md", kind: "markdown", content: "B"}, {preview: true});
+    expect(useEditorStore.getState().tabs.map((t) => t.path)).toEqual(["/a.md", "/b.md"]);
+  });
+
+  it("первая правка (переход в dirty) закрепляет preview-вкладку необратимо", () => {
+    const st = useEditorStore.getState();
+    st.openTab({path: "/a.md", kind: "markdown", content: "orig"}, {preview: true});
+    st.updateContent("/a.md", "changed");
+    let s = useEditorStore.getState();
+    expect(s.tabs[0].dirty).toBe(true);
+    expect(s.tabs[0].preview).toBe(false);
+    st.updateContent("/a.md", "orig"); // dirty снова false — закрепление остаётся
+    s = useEditorStore.getState();
+    expect(s.tabs[0].preview).toBe(false);
+  });
+
+  it("программный updateContent без изменения текста не закрепляет", () => {
+    const st = useEditorStore.getState();
+    st.openTab({path: "/a.md", kind: "markdown", content: "orig"}, {preview: true});
+    st.updateContent("/a.md", "orig");
+    expect(useEditorStore.getState().tabs[0].preview).toBe(true);
+  });
+
+  it("preview-вкладка не бывает dirty до закрепления", () => {
+    const st = useEditorStore.getState();
+    st.openTab({path: "/a.md", kind: "markdown", content: "A"}, {preview: true});
+    expect(useEditorStore.getState().tabs[0].dirty).toBe(false);
+  });
+});

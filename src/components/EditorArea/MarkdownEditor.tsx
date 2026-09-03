@@ -1,7 +1,15 @@
 import {useEffect} from "react";
 import {MarkdownEditorView, useMarkdownEditor} from "@gravity-ui/markdown-editor";
 import {useEditorStore} from "../../store/editorStore";
+import {useFileStore} from "../../store/fileStore";
 import {spellcheckExtension} from "../../lib/spellcheckExtension";
+import {preserveUrlsExtension} from "../../lib/preserveUrlsExtension";
+import {anchorNavigationExtension} from "../../lib/anchorNavigationExtension";
+import {imageSrcExtension} from "../../lib/imageSrcExtension";
+import {combineExtensions} from "../../lib/combineExtensions";
+import {registerEditor, unregisterEditor} from "../../lib/editorRegistry";
+import {getParentDir} from "../../lib/utils";
+import {resolveRoot} from "../../lib/roots";
 
 interface Props {
   path: string;
@@ -20,10 +28,27 @@ export function MarkdownEditor({path, initialContent}: Props) {
       md: {html: true, breaks: true, linkify: true},
       initial: {markup: initialContent, mode: "wysiwyg"},
       experimental: {preserveEmptyRows: true},
-      wysiwygConfig: {extensions: spellcheckExtension()},
+      wysiwygConfig: {
+        extensions: combineExtensions(
+          spellcheckExtension(),
+          preserveUrlsExtension(),
+          anchorNavigationExtension(),
+          // rootPath читается лениво — корни могут добавиться после файла
+          imageSrcExtension(getParentDir(path), () => {
+            const roots = useFileStore.getState().roots;
+            return resolveRoot(path, roots)?.path ?? null;
+          }),
+        ),
+      },
     },
     [path],
   );
+
+  // editor-instance доступен кнопкам тулбара (phase 4)
+  useEffect(() => {
+    registerEditor(path, editor);
+    return () => unregisterEditor(path);
+  }, [editor, path]);
 
   // change -> store (урок §5: состояние текста живёт в Zustand, не в компоненте)
   useEffect(() => {
@@ -46,5 +71,8 @@ export function MarkdownEditor({path, initialContent}: Props) {
     }
   }, [editor, mode]);
 
-  return <MarkdownEditorView autofocus stickyToolbar editor={editor} className="md-editor" />;
+  // stickyToolbar=false: тулбар Gravity и так не уезжает (он сиблинг скроллера,
+  // а не его содержимое), а sticky-измерения дёргаются на каждый resize/scroll
+  // и являются главным подозреваемым пропадания панелей (спека layout-stability)
+  return <MarkdownEditorView autofocus stickyToolbar={false} editor={editor} className="md-editor" />;
 }
