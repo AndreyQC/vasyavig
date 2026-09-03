@@ -29,6 +29,11 @@ export type SaveAsResult =
   | {type: "cancelled"}
   | {type: "error"; error: string};
 
+/** Вкладки с полным циклом правки/сохранения; image/email — только просмотр. */
+function isSavableKind(kind: FileKind): boolean {
+  return kind === "markdown" || kind === "text";
+}
+
 interface EditorState {
   tabs: EditorTab[];
   activePath: string | null;
@@ -39,9 +44,9 @@ interface EditorState {
   updateContent: (path: string, content: string) => void;
   setMode: (path: string, mode: EditorMode) => void;
 
-  /** Сохраняет конкретную вкладку (только markdown и только dirty). */
+  /** Сохраняет конкретную вкладку (markdown/text и только dirty). */
   saveTab: (path: string) => Promise<string | null>;
-  /** Сохраняет все dirty markdown-вкладки; возвращает первую ошибку (или null). */
+  /** Сохраняет все dirty вкладки (markdown/text); возвращает первую ошибку (или null). */
   saveAllDirty: () => Promise<string | null>;
   /** Закрывает все вкладки без промптов (промпт строится в UI ДО вызова). */
   closeAllTabs: () => void;
@@ -131,6 +136,8 @@ export const useEditorStore = create<EditorState>((set, get) => {
       set((s) => ({
         tabs: s.tabs.map((t) => {
           if (t.path !== path) return t;
+          // вкладки-просмотрщики (image/email) не редактируются (design D1)
+          if (t.kind === "image" || t.kind === "email") return t;
           const dirty = content !== t.savedContent;
           // переход в dirty закрепляет preview-вкладку (первая правка);
           // закрепление необратимо — возврат текста к saved не возвращает preview
@@ -145,7 +152,7 @@ export const useEditorStore = create<EditorState>((set, get) => {
 
     saveTab: async (path) => {
       const tab = get().tabs.find((t) => t.path === path);
-      if (!tab || tab.kind !== "markdown" || !tab.dirty) return null;
+      if (!tab || !isSavableKind(tab.kind) || !tab.dirty) return null;
       try {
         await writeFile(tab.path, tab.content);
       } catch (e) {
@@ -160,7 +167,7 @@ export const useEditorStore = create<EditorState>((set, get) => {
     },
 
     saveAllDirty: async () => {
-      const dirty = get().tabs.filter((t) => t.dirty && t.kind === "markdown");
+      const dirty = get().tabs.filter((t) => t.dirty && isSavableKind(t.kind));
       let firstError: string | null = null;
       for (const tab of dirty) {
         const error = await get().saveTab(tab.path);
@@ -193,13 +200,13 @@ export const useEditorStore = create<EditorState>((set, get) => {
     saveActiveAs: async () => {
       const {tabs, activePath} = get();
       const tab = tabs.find((t) => t.path === activePath);
-      if (!tab || tab.kind !== "markdown") return {type: "cancelled"};
+      if (!tab || !isSavableKind(tab.kind)) return {type: "cancelled"};
 
       const newPath = await saveFileDialog(tab.path);
       if (!newPath) return {type: "cancelled"};
 
-      // Защита от случайной смены формата md ↔ yfm (идея §10.3)
-      if (isMdYfmSwap(getExtension(tab.path), getExtension(newPath))) {
+      // Защита от случайной смены формата md ↔ yfm (идея §10.3) — только markdown
+      if (tab.kind === "markdown" && isMdYfmSwap(getExtension(tab.path), getExtension(newPath))) {
         return {type: "confirm", newPath};
       }
 

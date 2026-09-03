@@ -9,6 +9,7 @@ import {
   openFileDialog,
   openFolderDialog,
   readFile,
+  readFileLatin1,
   renamePath,
   saveWorkspaceFileDialog,
   unwatchFolder,
@@ -324,8 +325,15 @@ export const useFileStore = create<FileState>((set, get) => ({
     // файл мог быть открыт вне корней (Ctrl+O / drag-and-drop) — грантим его
     // каталог; внутри корня грант избыточен, но идемпотентен
     grantAssetScope(getParentDir(path)).catch((e) => console.warn("grant_asset_scope failed:", e));
+    if (kind === "image") {
+      // бинарный контент не читаем — вкладка рендерит файл через asset URL (design D1)
+      useEditorStore.getState().openTab({path, kind, content: ""}, opts);
+      return;
+    }
     try {
-      const content = await readFile(path);
+      // .eml может быть не-UTF-8 (8bit + windows-1251 и т.п.) — читаем
+      // побайтово latin-1, декодирование по объявленному charset делает emlParser
+      const content = kind === "email" ? await readFileLatin1(path) : await readFile(path);
       useEditorStore.getState().openTab({path, kind, content}, opts);
     } catch (e) {
       set({error: String(e)});

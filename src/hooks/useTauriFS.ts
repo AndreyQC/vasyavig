@@ -1,7 +1,8 @@
 import {invoke} from "@tauri-apps/api/core";
 import {open, save} from "@tauri-apps/plugin-dialog";
 import type {FileNode} from "../types";
-import {OFFICE_EXTENSIONS} from "../lib/constants";
+import {EML_EXTENSIONS, IMAGE_EXTENSIONS, OFFICE_EXTENSIONS, TEXT_EXTENSIONS} from "../lib/constants";
+import {getExtension} from "../lib/utils";
 
 /** Нативный диалог выбора папки. Возвращает абсолютный путь или null (отмена). */
 export async function openFolderDialog(): Promise<string | null> {
@@ -20,6 +21,8 @@ export async function openFileDialog(): Promise<string | null> {
         extensions: ["txt", "json", "py", "sql", "js", "ts", "jsx", "tsx", "yaml", "yml", "xml", "log", "rs", "go", "java", "cpp", "c", "h"],
       },
       {name: "Office", extensions: [...OFFICE_EXTENSIONS]},
+      {name: "Images", extensions: [...IMAGE_EXTENSIONS]},
+      {name: "Email", extensions: [...EML_EXTENSIONS]},
     ],
   });
   return typeof selected === "string" ? selected : null;
@@ -42,6 +45,14 @@ export function listDirectory(path: string): Promise<FileNode[]> {
 
 export function readFile(path: string): Promise<string> {
   return invoke<string>("read_file", {path});
+}
+
+/**
+ * Читает файл побайтово в latin-1-строку (байт = символ U+00XX): транспорт
+ * не-UTF-8 текста (.eml с 8bit-кодировкой) для декодирования на фронте.
+ */
+export function readFileLatin1(path: string): Promise<string> {
+  return invoke<string>("read_file_latin1", {path});
 }
 
 export function writeFile(path: string, content: string): Promise<void> {
@@ -68,15 +79,27 @@ export function convertToMarkdown(path: string): Promise<string> {
   return invoke<string>("convert_to_markdown", {path});
 }
 
-/** Диалог «Сохранить как». Возвращает выбранный путь или null (отмена). */
+/**
+ * Диалог «Сохранить как». Возвращает выбранный путь или null (отмена).
+ * Фильтры — по расширению текущего файла: markdown-семейство как раньше,
+ * прочие текстовые — текущее расширение + все текстовые + все файлы.
+ */
 export async function saveFileDialog(defaultPath: string): Promise<string | null> {
-  const selected = await save({
-    defaultPath,
-    filters: [
-      {name: "Markdown", extensions: ["md", "markdown"]},
-      {name: "YFM", extensions: ["yfm"]},
-    ],
-  });
+  const ext = getExtension(defaultPath);
+  const isMd = ["md", "markdown", "yfm"].includes(ext);
+  const filters = isMd
+    ? [
+        {name: "Markdown", extensions: ["md", "markdown"]},
+        {name: "YFM", extensions: ["yfm"]},
+      ]
+    : [
+        {
+          name: "Text",
+          extensions: Array.from(new Set([ext || "txt", ...TEXT_EXTENSIONS])),
+        },
+        {name: "All files", extensions: ["*"]},
+      ];
+  const selected = await save({defaultPath, filters});
   return typeof selected === "string" ? selected : null;
 }
 

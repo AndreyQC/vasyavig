@@ -24,6 +24,7 @@ vi.mock("../hooks/useTauriFS", () => ({
   openFileDialog: vi.fn(),
   openFolderDialog: vi.fn(),
   readFile: vi.fn(),
+  readFileLatin1: vi.fn(),
   renamePath: vi.fn(),
   saveWorkspaceFileDialog: vi.fn(),
   unwatchFolder: vi.fn(async () => {}),
@@ -31,7 +32,7 @@ vi.mock("../hooks/useTauriFS", () => ({
   writeFile: vi.fn(async () => {}),
 }));
 
-const {listDirectory, readFile, saveWorkspaceFileDialog, unwatchFolder, watchFolder, writeFile} =
+const {listDirectory, readFile, readFileLatin1, saveWorkspaceFileDialog, unwatchFolder, watchFolder, writeFile} =
   await import("../hooks/useTauriFS");
 
 const initialFile = useFileStore.getState();
@@ -263,5 +264,38 @@ describe("fileStore.newWorkspaceFile", () => {
     const [, content] = calls[calls.length - 1];
     expect(JSON.parse(content).folders).toEqual([]);
     expect(unwatchFolder).toHaveBeenCalledWith("C:/old");
+  });
+});
+
+describe("fileStore.openFile (image/email)", () => {
+  it("изображение открывается без чтения файла (контент пуст)", async () => {
+    await useFileStore.getState().openFile("C:/docs/logo.png");
+    expect(readFile).not.toHaveBeenCalled();
+    expect(readFileLatin1).not.toHaveBeenCalled();
+    const tab = useEditorStore.getState().tabs.find((t) => t.path === "C:/docs/logo.png");
+    expect(tab).toMatchObject({kind: "image", content: "", dirty: false});
+    expect(useFileStore.getState().activeFilePath).toBe("C:/docs/logo.png");
+  });
+
+  it("одиночное клик-открытие изображения — preview-вкладка", async () => {
+    await useFileStore.getState().openFile("C:/docs/logo.png", {preview: true});
+    const tab = useEditorStore.getState().tabs.find((t) => t.path === "C:/docs/logo.png");
+    expect(tab?.preview).toBe(true);
+  });
+
+  it("письмо читается через latin-1 транспорт (не read_file)", async () => {
+    (readFileLatin1 as ReturnType<typeof vi.fn>).mockResolvedValue("Subject: test\r\n\r\nbody");
+    await useFileStore.getState().openFile("C:/mail/letter.eml");
+    expect(readFileLatin1).toHaveBeenCalledWith("C:/mail/letter.eml");
+    expect(readFile).not.toHaveBeenCalled();
+    const tab = useEditorStore.getState().tabs.find((t) => t.path === "C:/mail/letter.eml");
+    expect(tab).toMatchObject({kind: "email", content: "Subject: test\r\n\r\nbody"});
+  });
+
+  it("ошибка чтения письма — ошибка в store, вкладка не открывается", async () => {
+    (readFileLatin1 as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("cannot read"));
+    await useFileStore.getState().openFile("C:/mail/broken.eml");
+    expect(useFileStore.getState().error).toContain("cannot read");
+    expect(useEditorStore.getState().tabs).toHaveLength(0);
   });
 });

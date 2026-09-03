@@ -16,6 +16,13 @@ pub async fn read_file(path: String) -> Result<String, String> {
     read_file_utf8(Path::new(&path))
 }
 
+/// Читает файл побайтово latin-1 (байт = символ) — транспорт для побайтового
+/// декодирования на фронте (.eml с произвольной кодировкой).
+#[tauri::command]
+pub async fn read_file_latin1(path: String) -> Result<String, String> {
+    crate::services::file_service::read_file_latin1(Path::new(&path))
+}
+
 /// Атомарно записывает UTF-8 текст в файл.
 #[tauri::command]
 pub async fn write_file(path: String, content: String) -> Result<(), String> {

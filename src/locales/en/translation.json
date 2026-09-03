@@ -36,6 +36,24 @@
   "tabs": {
     "close": "Close"
   },
+  "imageViewer": {
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "fit": "Fit",
+    "actualSize": "100%",
+    "loadError": "Failed to load image (file is missing, corrupted, or access is not granted)"
+  },
+  "eml": {
+    "from": "From",
+    "to": "To",
+    "cc": "Cc",
+    "subject": "Subject",
+    "date": "Date",
+    "noTextPart": "This email has no plain-text part (HTML-only message)",
+    "parseError": "Failed to parse the file as a MIME email message",
+    "viewParsed": "Parsed",
+    "viewRaw": "Raw source"
+  },
   "modal": {
     "formatTitle": "File format change",
     "formatText": "You are about to save the file with the .{{newExt}} extension, but the current format is .{{oldExt}}. Continue?",

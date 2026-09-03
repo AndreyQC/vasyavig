@@ -1,6 +1,6 @@
-import {MARKDOWN_EXTENSIONS, OFFICE_EXTENSIONS, TEXT_EXTENSIONS} from "./constants";
+import {EML_EXTENSIONS, IMAGE_EXTENSIONS, MARKDOWN_EXTENSIONS, OFFICE_EXTENSIONS, TEXT_EXTENSIONS} from "./constants";
 
-export type FileKind = "markdown" | "text" | "office" | "unsupported";
+export type FileKind = "markdown" | "text" | "office" | "image" | "email" | "unsupported";
 
 /** Извлекает расширение файла из пути (без точки, в нижнем регистре). */
 export function getExtension(path: string): string {
@@ -59,6 +59,8 @@ export function getFileKind(path: string): FileKind {
   if ((MARKDOWN_EXTENSIONS as readonly string[]).includes(ext)) return "markdown";
   if ((TEXT_EXTENSIONS as readonly string[]).includes(ext)) return "text";
   if ((OFFICE_EXTENSIONS as readonly string[]).includes(ext)) return "office";
+  if ((IMAGE_EXTENSIONS as readonly string[]).includes(ext)) return "image";
+  if ((EML_EXTENSIONS as readonly string[]).includes(ext)) return "email";
   return "unsupported";
 }
 

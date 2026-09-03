@@ -1,10 +1,19 @@
-import {beforeEach, describe, expect, it} from "vitest";
+import {beforeEach, describe, expect, it, vi} from "vitest";
 import {useEditorStore} from "./editorStore";
+
+vi.mock("../hooks/useTauriFS", () => ({
+  saveFileDialog: vi.fn(),
+  writeFile: vi.fn(async () => {}),
+}));
+
+const {writeFile} = await import("../hooks/useTauriFS");
 
 const initialState = useEditorStore.getState();
 
 beforeEach(() => {
   useEditorStore.setState(initialState, true);
+  vi.clearAllMocks();
+  (writeFile as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 });
 
 describe("editorStore.openTab", () => {
@@ -90,14 +99,80 @@ describe("editorStore.saveTab", () => {
     st.openTab({path: "/a.md", kind: "markdown", content: "A"});
     await expect(st.saveTab("/a.md")).resolves.toBeNull();
     expect(useEditorStore.getState().tabs[0].dirty).toBe(false);
+    expect(writeFile).not.toHaveBeenCalled();
   });
 
-  it("не сохраняет текстовую вкладку", async () => {
+  it("сохраняет dirty текстовую вкладку и снимает dirty (спека text-file-editing)", async () => {
+    const st = useEditorStore.getState();
+    st.openTab({path: "/a.sql", kind: "text", content: "SELECT 1"});
+    st.updateContent("/a.sql", "SELECT 2");
+    await expect(st.saveTab("/a.sql")).resolves.toBeNull();
+    expect(writeFile).toHaveBeenCalledWith("/a.sql", "SELECT 2");
+    const tab = useEditorStore.getState().tabs[0];
+    expect(tab.dirty).toBe(false);
+    expect(tab.savedContent).toBe("SELECT 2");
+  });
+
+  it("ошибка записи возвращает ошибку и сохраняет dirty", async () => {
+    (writeFile as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error("file locked"));
     const st = useEditorStore.getState();
     st.openTab({path: "/a.txt", kind: "text", content: "A"});
     st.updateContent("/a.txt", "B");
-    await expect(st.saveTab("/a.txt")).resolves.toBeNull();
+    await expect(st.saveTab("/a.txt")).resolves.toContain("file locked");
     expect(useEditorStore.getState().tabs[0].dirty).toBe(true);
+  });
+
+  it("вкладки-просмотрщики (image/email) не сохраняются даже при dirty", async () => {
+    const st = useEditorStore.getState();
+    st.openTab({path: "/a.png", kind: "image", content: ""});
+    st.openTab({path: "/a.eml", kind: "email", content: "Subject: x\r\n\r\ny"});
+    useEditorStore.setState((s) => ({
+      tabs: s.tabs.map((t) => ({...t, dirty: true})),
+    }));
+    await expect(st.saveTab("/a.png")).resolves.toBeNull();
+    await expect(st.saveTab("/a.eml")).resolves.toBeNull();
+    expect(writeFile).not.toHaveBeenCalled();
+  });
+});
+
+describe("editorStore.saveAllDirty", () => {
+  it("сохраняет markdown и text, вкладки-просмотрщики пропускает", async () => {
+    const st = useEditorStore.getState();
+    st.openTab({path: "/a.md", kind: "markdown", content: "A"});
+    st.openTab({path: "/b.sql", kind: "text", content: "B"});
+    st.openTab({path: "/c.png", kind: "image", content: ""});
+    st.updateContent("/a.md", "A2");
+    st.updateContent("/b.sql", "B2");
+    useEditorStore.getState().setActiveTab("/c.png");
+    useEditorStore.setState((s) => ({
+      tabs: s.tabs.map((t) => (t.path === "/c.png" ? {...t, dirty: true} : t)),
+    }));
+    await expect(st.saveAllDirty()).resolves.toBeNull();
+    const calls = (writeFile as ReturnType<typeof vi.fn>).mock.calls as [string, string][];
+    expect(calls).toEqual([
+      ["/a.md", "A2"],
+      ["/b.sql", "B2"],
+    ]);
+  });
+});
+
+describe("editorStore.updateContent: вкладки-просмотрщики (design D1)", () => {
+  it("image/email вкладки не меняют контент и не становятся dirty", () => {
+    const st = useEditorStore.getState();
+    st.openTab({path: "/a.png", kind: "image", content: ""});
+    st.updateContent("/a.png", "hacked");
+    const tab = useEditorStore.getState().tabs[0];
+    expect(tab.content).toBe("");
+    expect(tab.dirty).toBe(false);
+  });
+
+  it("первая правка закрепляет preview text-вкладку (спека preview-tabs)", () => {
+    const st = useEditorStore.getState();
+    st.openTab({path: "/a.json", kind: "text", content: "{}"}, {preview: true});
+    st.updateContent("/a.json", '{"x":1}');
+    const tab = useEditorStore.getState().tabs[0];
+    expect(tab.preview).toBe(false);
+    expect(tab.dirty).toBe(true);
   });
 });
 

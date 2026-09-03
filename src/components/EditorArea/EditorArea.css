@@ -228,3 +228,105 @@
   text-decoration-thickness: 1.5px;
   text-underline-offset: 2px;
 }
+
+/* Вкладка-просмотрщик изображений (спека image-viewer) */
+.image-viewer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.image-viewer__toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--g-spacing-1);
+  padding: 2px 8px;
+  flex: 0 0 auto;
+}
+
+.image-viewer__zoom {
+  min-width: 48px;
+  text-align: center;
+  font-size: var(--g-text-body-2-font-size);
+  color: var(--g-color-text-secondary);
+}
+
+.image-viewer__canvas {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.image-viewer__canvas--fit {
+  display: flex;
+}
+
+.image-viewer__canvas--fit img {
+  max-width: 100%;
+  max-height: 100%;
+  margin: auto;
+}
+
+.image-viewer__canvas img {
+  display: block;
+}
+
+.image-viewer__error {
+  margin: auto;
+  color: var(--g-color-text-danger);
+  padding: var(--g-spacing-4);
+}
+
+/* Вкладка-просмотрщик писем (спека eml-viewer) */
+.eml-viewer {
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: var(--g-spacing-3) var(--g-spacing-4);
+}
+
+.eml-viewer__headers {
+  border-collapse: collapse;
+  margin-bottom: var(--g-spacing-3);
+}
+
+.eml-viewer__headers th {
+  text-align: left;
+  vertical-align: top;
+  padding: 2px 12px 2px 0;
+  color: var(--g-color-text-secondary);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.eml-viewer__headers td {
+  padding: 2px 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.eml-viewer__body {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: var(--g-font-family-monospace);
+  font-size: var(--g-text-body-2-font-size);
+}
+
+.eml-viewer__notice {
+  color: var(--g-color-text-secondary);
+  padding: var(--g-spacing-4);
+}
+
+.eml-viewer__mode {
+  display: flex;
+  gap: var(--g-spacing-1);
+  margin-bottom: var(--g-spacing-3);
+}
+
+.eml-viewer__body--raw {
+  white-space: pre;
+}

@@ -58,6 +58,14 @@ pub fn read_file_utf8(path: &Path) -> Result<String, String> {
     String::from_utf8(bytes).map_err(|_| "Файл не в UTF-8".to_string())
 }
 
+/// Читает файл побайтово в latin-1-строку (байт → символ U+00XX). Транспорт
+/// не-UTF-8 текста (.eml с 8bit-кодировкой) через валидную UTF-8 строку IPC:
+/// фронт восстанавливает байты по charCodeAt и декодирует по charset из MIME.
+pub fn read_file_latin1(path: &Path) -> Result<String, String> {
+    let bytes = fs::read(path).map_err(|e| format!("cannot read {}: {e}", path.display()))?;
+    Ok(bytes.into_iter().map(|b| b as char).collect())
+}
+
 /// Атомарная запись: temp-файл в той же директории + rename (идея §6.1).
 pub fn write_file_atomic(path: &Path, content: &str) -> Result<(), String> {
     let dir = path
@@ -156,5 +164,19 @@ mod tests {
         assert!(!from.exists());
         assert!(to.exists());
         let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn read_file_latin1_transports_non_utf8_bytes() {
+        let p = temp_path("cp1251.eml");
+        // «тест» в windows-1251 + ноль и байт >0x7F — не-UTF-8 и «бинарный» для read_file_utf8
+        fs::write(&p, [0xF2, 0xE5, 0xF1, 0xF2, 0x00, 0xFF]).unwrap();
+
+        assert!(read_file_utf8(&p).is_err());
+
+        let s = read_file_latin1(&p).unwrap();
+        let bytes: Vec<u8> = s.chars().map(|c| c as u32 as u8).collect();
+        assert_eq!(bytes, vec![0xF2, 0xE5, 0xF1, 0xF2, 0x00, 0xFF]);
+        let _ = fs::remove_file(&p);
     }
 }

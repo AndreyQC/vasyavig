@@ -6,10 +6,13 @@ import {getMonacoLanguage} from "../../lib/utils";
 interface Props {
   content: string;
   path: string;
+  /** Редактируемый режим (text-вкладки); по умолчанию — read-only просмотр. */
+  editable?: boolean;
+  onChange?: (value: string) => void;
 }
 
-/** Read-only просмотр текстовых файлов с подсветкой синтаксиса (идея §4.2.3). */
-export function MonacoViewer({content, path}: Props) {
+/** Monaco: подсветка по расширению; read-only viewer или редактор (идея §4.2.3). */
+export function MonacoViewer({content, path, editable = false, onChange}: Props) {
   const themeValue = useThemeValue();
 
   return (
@@ -19,8 +22,9 @@ export function MonacoViewer({content, path}: Props) {
       language={getMonacoLanguage(path)}
       value={content}
       theme={themeValue === "dark" ? "vs-dark" : "vs"}
+      onChange={editable ? (value) => onChange?.(value ?? "") : undefined}
       options={{
-        readOnly: true,
+        readOnly: !editable,
         minimap: {enabled: false},
         wordWrap: "on",
         scrollBeyondLastLine: false,
