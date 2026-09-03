@@ -19,6 +19,8 @@ export function MainToolbar({path}: Props) {
   const {restoreUrls, startToc} = useMarkdownTools(path);
 
   const isMarkdown = kind === "markdown";
+  // полный цикл правки/сохранения — у markdown и text (design D5)
+  const savable = isMarkdown || kind === "text";
 
   return (
     <div className="main-toolbar">
@@ -48,7 +50,7 @@ export function MainToolbar({path}: Props) {
       <div className="main-toolbar__right">
         <Tooltip content={t("toolbar.saveTooltip")}>
           <span>
-            <Button view="outlined" disabled={!isMarkdown || !dirty} onClick={saveActive}>
+            <Button view="outlined" disabled={!savable || !dirty} onClick={saveActive}>
               <Icon data={FloppyDisk} />
               {t("toolbar.save")}
             </Button>
@@ -56,7 +58,7 @@ export function MainToolbar({path}: Props) {
         </Tooltip>
         <Tooltip content={t("toolbar.saveAsTooltip")}>
           <span>
-            <Button view="flat" disabled={!isMarkdown} onClick={saveActiveAs}>
+            <Button view="flat" disabled={!savable} onClick={saveActiveAs}>
               {t("toolbar.saveAs")}
             </Button>
           </span>

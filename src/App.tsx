@@ -7,6 +7,8 @@ import {EmptyState} from "./components/EditorArea/EmptyState";
 import {EditorTabs} from "./components/EditorArea/EditorTabs";
 import {MarkdownEditor} from "./components/EditorArea/MarkdownEditor";
 import {MonacoViewer} from "./components/EditorArea/MonacoViewer";
+import {ImageViewer} from "./components/EditorArea/ImageViewer";
+import {EmlViewer} from "./components/EditorArea/EmlViewer";
 import {SplitView} from "./components/EditorArea/SplitView";
 import {MainToolbar} from "./components/Toolbar/MainToolbar";
 import {StatusBar} from "./components/StatusBar/StatusBar";
@@ -84,8 +86,19 @@ function App() {
                     initialContent={activeTab.content}
                   />
                 )
+              ) : activeTab.kind === "image" ? (
+                <ImageViewer key={activeTab.path} path={activeTab.path} name={activeTab.name} />
+              ) : activeTab.kind === "email" ? (
+                <EmlViewer key={activeTab.path} content={activeTab.content} />
               ) : (
-                <MonacoViewer content={activeTab.content} path={activeTab.path} />
+                <MonacoViewer
+                  content={activeTab.content}
+                  path={activeTab.path}
+                  editable
+                  onChange={(value) =>
+                    useEditorStore.getState().updateContent(activeTab.path, value)
+                  }
+                />
               )}
             </div>
           </div>

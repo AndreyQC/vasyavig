@@ -49,9 +49,20 @@ describe("getFileKind", () => {
     }
   });
 
+  it("графические расширения -> image", () => {
+    for (const p of ["a.png", "a.PNG", "photo.jpeg", "diagram.webp", "icon.svg", "pic.gif", "x.bmp", "y.ico"]) {
+      expect(getFileKind(p)).toBe("image");
+    }
+  });
+
+  it("письма -> email", () => {
+    expect(getFileKind("letter.eml")).toBe("email");
+    expect(getFileKind("C:/mail/Note.EML")).toBe("email");
+  });
+
   it("прочие -> unsupported", () => {
     expect(getFileKind("a.exe")).toBe("unsupported");
-    expect(getFileKind("a.png")).toBe("unsupported");
+    expect(getFileKind("scan.tiff")).toBe("unsupported");
     expect(getFileKind("README")).toBe("unsupported");
   });
 });
