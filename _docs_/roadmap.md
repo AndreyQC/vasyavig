@@ -16,7 +16,9 @@
 | Phase 5 | Отображение локальных изображений (asset protocol) | завершена (свод: `_phases_/Phase_05.md`) |
 | Phase 6 | Текущая директория в шапке сайдбара + ревизия беклога | завершена (свод: `_phases_/Phase_06.md`) |
 
-- Phase 1–6 завершены в `dev`; `main` отстаёт — следующий шаг: PR `dev` -> `main`.
+- Phase 1–6 и все OpenSpec-change (`20260901-multi-root-workspace`,
+  `20260902-editor-ux-fixes`, `20260903-file-viewers-text-edit`) слиты в
+  `main` (PR #5, 2026-09-03); `dev` и `main` синхронны.
 - Открытые проблемы пользователя собраны в `_docs_/USER_IDEA.md`.
 
 ## Phase 4 — Кириллица в ссылках и авто-оглавление (маленькая фаза)
