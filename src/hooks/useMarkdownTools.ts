@@ -4,6 +4,7 @@ import {useTranslation} from "react-i18next";
 import {useEditorStore} from "../store/editorStore";
 import {useUiStore} from "../store/uiStore";
 import {getEditor} from "../lib/editorRegistry";
+import {getMermaidView, insertMermaidBlock} from "../lib/mermaidWysiwygExtension";
 import {restoreCyrillicUrls} from "../lib/restoreCyrillicUrls";
 import {applyTocInsert, applyTocReplace, buildTocPlan} from "../lib/generateToc";
 
@@ -81,5 +82,25 @@ export function useMarkdownTools(path: string) {
     useUiStore.getState().setPendingTocPath(null);
   }, []);
 
-  return {restoreUrls, startToc, tocReplace, tocInsert, tocCancel};
+  /**
+   * Кнопка «Диаграмма» (спека mermaid-wysiwyg). WYSIWYG: нода код-блока
+   * вставляется напрямую в PM-view — публичный editor.insert() разворачивает
+   * одиночный фенс в текущий абзац (открытый slice), append() пишет в конец.
+   * Markup: append() — штатно отделяет фенс переводами строк.
+   */
+  const insertMermaid = useCallback(() => {
+    const editor = getEditor(path);
+    if (!editor) return;
+    editor.focus();
+    const template = "graph TD;\n    A --> B;";
+    if (editor.currentMode === "markup") {
+      editor.append(`\`\`\`mermaid\n${template}\n\`\`\``);
+      return;
+    }
+    const view = getMermaidView(path);
+    if (view && insertMermaidBlock(view, template)) return;
+    editor.append(`\`\`\`mermaid\n${template}\n\`\`\``); // fallback без view (HMR-край)
+  }, [path]);
+
+  return {restoreUrls, startToc, tocReplace, tocInsert, tocCancel, insertMermaid};
 }

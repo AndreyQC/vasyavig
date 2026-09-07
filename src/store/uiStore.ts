@@ -4,6 +4,15 @@ import {persist} from "zustand/middleware";
 export type ThemeMode = "light" | "dark" | "system";
 export type UiLang = "ru" | "en";
 
+/** Запрос на правку mermaid-диаграммы в модалке (nodeView → модалка, design D3). */
+export interface MermaidEditRequest {
+  source: string;
+  /** Вкладка-владелец: закрытие вкладки закрывает модалку (design D3). */
+  ownerPath: string;
+  /** Перенос правки в документ (транзакция редактора из nodeView). */
+  apply: (next: string) => void;
+}
+
 interface UiState {
   theme: ThemeMode;
   lang: UiLang;
@@ -29,6 +38,8 @@ interface UiState {
   pendingRenamePath: string | null;
   /** Markdown-вкладка, ожидающая выбора «заменить/вставить» оглавление. */
   pendingTocPath: string | null;
+  /** Диаграмма mermaid, ожидающая правки в модалке. */
+  pendingMermaidEdit: MermaidEditRequest | null;
 
   setTheme: (theme: ThemeMode) => void;
   setLang: (lang: UiLang) => void;
@@ -43,6 +54,7 @@ interface UiState {
   setPendingConvertPath: (path: string | null) => void;
   setPendingRenamePath: (path: string | null) => void;
   setPendingTocPath: (path: string | null) => void;
+  setPendingMermaidEdit: (request: MermaidEditRequest | null) => void;
 }
 
 /** Настройки (theme, lang, последний workspace) персистятся в localStorage (идея §4.5). */
@@ -62,6 +74,7 @@ export const useUiStore = create<UiState>()(
       pendingConvertPath: null,
       pendingRenamePath: null,
       pendingTocPath: null,
+      pendingMermaidEdit: null,
 
       setTheme: (theme) => set({theme}),
       setLang: (lang) => set({lang}),
@@ -76,6 +89,7 @@ export const useUiStore = create<UiState>()(
       setPendingConvertPath: (path) => set({pendingConvertPath: path}),
       setPendingRenamePath: (path) => set({pendingRenamePath: path}),
       setPendingTocPath: (path) => set({pendingTocPath: path}),
+      setPendingMermaidEdit: (request) => set({pendingMermaidEdit: request}),
     }),
     {
       name: "vasyavig.settings",
