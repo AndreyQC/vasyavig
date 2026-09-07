@@ -31,7 +31,9 @@
     "toc": "Table of contents",
     "tocTooltip": "Generate a table of contents from H1–H4 headings",
     "nothingToRestore": "No repairable links found",
-    "noHeadings": "No headings found"
+    "noHeadings": "No headings found",
+    "mermaid": "Diagram",
+    "mermaidTooltip": "Insert a mermaid diagram at the cursor (double-click the diagram to edit)"
   },
   "tabs": {
     "close": "Close"
@@ -53,6 +55,11 @@
     "parseError": "Failed to parse the file as a MIME email message",
     "viewParsed": "Parsed",
     "viewRaw": "Raw source"
+  },
+  "mermaid": {
+    "editTitle": "Edit diagram",
+    "previewPending": "Rendering diagram…",
+    "renderError": "Failed to render diagram:"
   },
   "modal": {
     "formatTitle": "File format change",

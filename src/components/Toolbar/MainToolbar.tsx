@@ -1,5 +1,5 @@
 import {Button, Icon, Tooltip} from "@gravity-ui/uikit";
-import {FloppyDisk, ListUl, MagicWand} from "@gravity-ui/icons";
+import {ChartLine, FloppyDisk, ListUl, MagicWand} from "@gravity-ui/icons";
 import {useTranslation} from "react-i18next";
 import {useEditorStore} from "../../store/editorStore";
 import {useSaveActions} from "../../hooks/useSaveActions";
@@ -16,7 +16,7 @@ export function MainToolbar({path}: Props) {
   const dirty = useEditorStore((s) => s.tabs.find((tab) => tab.path === path)?.dirty ?? false);
   const kind = useEditorStore((s) => s.tabs.find((tab) => tab.path === path)?.kind);
   const {saveActive, saveActiveAs} = useSaveActions();
-  const {restoreUrls, startToc} = useMarkdownTools(path);
+  const {restoreUrls, startToc, insertMermaid} = useMarkdownTools(path);
 
   const isMarkdown = kind === "markdown";
   // полный цикл правки/сохранения — у markdown и text (design D5)
@@ -40,6 +40,14 @@ export function MainToolbar({path}: Props) {
                 <Button view="flat" onClick={startToc}>
                   <Icon data={ListUl} />
                   {t("tools.toc")}
+                </Button>
+              </span>
+            </Tooltip>
+            <Tooltip content={t("tools.mermaidTooltip")}>
+              <span>
+                <Button view="flat" onClick={insertMermaid}>
+                  <Icon data={ChartLine} />
+                  {t("tools.mermaid")}
                 </Button>
               </span>
             </Tooltip>

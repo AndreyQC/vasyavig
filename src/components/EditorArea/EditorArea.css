@@ -330,3 +330,117 @@
 .eml-viewer__body--raw {
   white-space: pre;
 }
+
+/* Mermaid-диаграммы в WYSIWYG (спека mermaid-wysiwyg) */
+.mermaid-node {
+  margin: var(--g-spacing-2) 0;
+}
+
+.mermaid-node__card {
+  border: 1px solid var(--g-color-line-generic);
+  border-radius: var(--g-border-radius-m);
+  padding: var(--g-spacing-3);
+  cursor: pointer;
+}
+
+.mermaid-node__card svg {
+  display: block;
+  margin: auto;
+  max-width: 100%;
+  height: auto;
+}
+
+/* skeleton на время рендера */
+.mermaid-node--loading .mermaid-node__card {
+  min-height: 48px;
+  animation: mermaid-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes mermaid-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* код-блок внутри ноды — носитель текста; виден только в режиме ошибки
+   (в загрузке/диаграмме скрыт — иначе кадры загрузки мигают кодом) */
+.mermaid-node__code {
+  margin: 0;
+}
+
+.mermaid-node:not(.mermaid-node--error) .mermaid-node__code {
+  display: none;
+}
+
+.mermaid-node--diagram .mermaid-node__error {
+  display: none;
+}
+
+/* ошибка: код виден и редактируем, сверху — сообщение (спека) */
+.mermaid-node__error {
+  color: var(--g-color-text-danger);
+  font-size: var(--g-text-body-3-font-size);
+  padding: var(--g-spacing-1) 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  cursor: pointer;
+}
+
+.mermaid-node--error .mermaid-node__card {
+  display: none;
+}
+
+/* Модалка правки диаграммы (design D3) */
+.mermaid-modal {
+  display: flex;
+  flex-direction: column;
+  min-width: 720px;
+  min-height: 420px;
+}
+
+.mermaid-modal__body {
+  display: flex;
+  gap: var(--g-spacing-3);
+  flex: 1;
+  min-height: 320px;
+  margin-top: var(--g-spacing-3);
+}
+
+.mermaid-modal__editor,
+.mermaid-modal__preview {
+  flex: 1 1 50%;
+  min-width: 0;
+  border: 1px solid var(--g-color-line-generic);
+  border-radius: var(--g-border-radius-m);
+  overflow: auto;
+}
+
+.mermaid-modal__svg {
+  padding: var(--g-spacing-3);
+}
+
+.mermaid-modal__svg svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.mermaid-modal__placeholder {
+  padding: var(--g-spacing-4);
+  color: var(--g-color-text-secondary);
+}
+
+.mermaid-modal__placeholder--error {
+  color: var(--g-color-text-danger);
+}
+
+.mermaid-modal__error-text {
+  margin: var(--g-spacing-2) 0 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: var(--g-font-family-monospace);
+  font-size: var(--g-text-body-3-font-size);
+}

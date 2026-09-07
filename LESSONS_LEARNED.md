@@ -216,3 +216,43 @@ nodeViews по принципу «первый источник выигрыва
 `netstat -ano | findstr :1420` + `tasklist` — убить старые vite/vasyavig.exe.
 Иногда `tauri dev` умирает при автоперезапуске (кривой кавычкинг re-run в
 cmd) — просто запустить заново.
+
+## 12. NodeView со своими DOM-записями обязан `ignoreMutation`
+
+**Что произошло.** Change 20260904 (mermaid в WYSIWYG): nodeView асинхронно
+инжектил SVG (`card.innerHTML = svg`) без `ignoreMutation`. ProseMirror считал
+эти мутации «внешними правками», уничтожал и пересоздавал nodeView — бесконечный
+цикл skeleton→SVG→пересоздание, видимый как «дрожание экрана». Диагностический
+признак: на скриншоте мерцал кадр загрузки с видимым код-блоком.
+
+**Правило.** NodeView, который пишет в собственный `dom` вне `contentDOM`
+(SVG, классы, стили), обязан определить:
+
+```ts
+ignoreMutation = (m: ViewMutationRecord) => !this.contentDOM.contains(m.target);
+```
+
+Всё вне contentDOM — «наши» записи (PM игнорирует), ввод внутри contentDOM —
+читается PM. См. прецедент `imageSrcExtension` (phase 5). Дополнительно: если
+какой-то элемент скрыт в ЧАСТИ режимов — проверяйте ВСЕ классы состояний
+(код скрывался только в `--diagram`, но не в `--loading` — кадры загрузки
+моргали кодом).
+
+## 13. Публичный insert() Gravity разворачивает одиночный текст-блок
+
+**Что произошло.** Кнопка «Диаграмма» через `editor.insert("```mermaid…```")`
+в WYSIWYG вставляла БЕЗ фенса: insert() кладёт разметку «открытым срезом»
+(`getSliceFromMarkupFragment`: firstChild.isTextblock → openStart=1) —
+одиночный код-блок разворачивается в текущий абзац, `-->` экранируется
+сериализатором в `--\>`. В markup-режиме insert() — это `replaceSelection`
+в CodeMirror: фенс склеивается со строкой курсора и не распознаётся.
+А при курсоре внутри кода insert() вообще вставляет разметку литеральным
+текстом (штатная ветка «вставка в код»).
+
+**Правило.** Для вставки конкретной ноды в WYSIWYG — строить её напрямую
+через PM-view (`schema.nodes[name].create` + `tr.insert/replaceWith`),
+позиции блока брать `$from.before(1)`/`$from.node(1)` (позиция БЛОКА;
+`pos - parentOffset` — это позиция КОНТЕНТА блока, off-by-one, ловится
+только тестом на реальной схеме). Для markup — `append()` (штатно отделяет
+блоки переводами строк), не insert(). PM-view пробрасывается из своего
+плагина (`view(view) { register(path, view); return {destroy} }`).

@@ -21,6 +21,7 @@ import {CreateFileModal} from "./components/Modals/CreateFileModal";
 import {ConvertModal} from "./components/Modals/ConvertModal";
 import {RenameModal} from "./components/Modals/RenameModal";
 import {TocModal} from "./components/Modals/TocModal";
+import {MermaidModal} from "./components/Modals/MermaidModal";
 import {ErrorToasts} from "./components/ErrorToasts";
 import {NoticeToasts} from "./components/NoticeToasts";
 import {useEditorStore} from "./store/editorStore";
@@ -114,6 +115,7 @@ function App() {
         <ConvertModal />
         <RenameModal />
         <TocModal />
+        <MermaidModal />
         <ErrorToasts />
         <NoticeToasts />
       </ErrorBoundary>

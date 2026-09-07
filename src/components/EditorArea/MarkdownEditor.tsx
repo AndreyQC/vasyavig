@@ -1,11 +1,15 @@
 import {useEffect} from "react";
 import {MarkdownEditorView, useMarkdownEditor} from "@gravity-ui/markdown-editor";
+import {useThemeValue} from "@gravity-ui/uikit";
 import {useEditorStore} from "../../store/editorStore";
 import {useFileStore} from "../../store/fileStore";
+import {useUiStore} from "../../store/uiStore";
 import {spellcheckExtension} from "../../lib/spellcheckExtension";
 import {preserveUrlsExtension} from "../../lib/preserveUrlsExtension";
 import {anchorNavigationExtension} from "../../lib/anchorNavigationExtension";
 import {imageSrcExtension} from "../../lib/imageSrcExtension";
+import {mermaidWysiwygExtension} from "../../lib/mermaidWysiwygExtension";
+import {setMermaidTheme} from "../../lib/mermaidRenderer";
 import {combineExtensions} from "../../lib/combineExtensions";
 import {registerEditor, unregisterEditor} from "../../lib/editorRegistry";
 import {getParentDir} from "../../lib/utils";
@@ -38,6 +42,8 @@ export function MarkdownEditor({path, initialContent}: Props) {
             const roots = useFileStore.getState().roots;
             return resolveRoot(path, roots)?.path ?? null;
           }),
+          // mermaid-диаграммы (design D2); ownerPath — для закрытия модалки с вкладкой
+          mermaidWysiwygExtension(path),
         ),
       },
     },
@@ -49,6 +55,21 @@ export function MarkdownEditor({path, initialContent}: Props) {
     registerEditor(path, editor);
     return () => unregisterEditor(path);
   }, [editor, path]);
+
+  // закрытие вкладки закрывает модалку правки её диаграммы (design D3)
+  useEffect(() => {
+    return () => {
+      const ui = useUiStore.getState();
+      if (ui.pendingMermaidEdit?.ownerPath === path) ui.setPendingMermaidEdit(null);
+    };
+  }, [path]);
+
+  // тема диаграмм следует теме приложения (спека); ленивость — библиотека
+  // грузится только при первом рендере диаграммы (design D1)
+  const themeValue = useThemeValue();
+  useEffect(() => {
+    setMermaidTheme(themeValue === "dark");
+  }, [themeValue]);
 
   // change -> store (урок §5: состояние текста живёт в Zustand, не в компоненте)
   useEffect(() => {
