@@ -25,3 +25,7 @@ dist-ssr
 
 # Vite cache
 .vite
+
+# Vendored anydoc: build artifacts of local test runs
+vendor/anydoc/target
+vendor/anydoc/Cargo.lock
