@@ -33,9 +33,10 @@ PowerPoint, PDF и др.) конвертируются в Markdown через an
 Требования: [Node.js](https://nodejs.org/) 22+, [pnpm](https://pnpm.io/) 10+,
 [Rust](https://rustup.rs/) 1.90+, для Windows — WebView2 (входит в Windows 10/11).
 
-> Примечание: конвертация офисных документов использует локальный форк anydoc,
-> подключённый в `src-tauri/Cargo.toml` как `path = "C:/repos/github/anydoc"`.
-> Для сборки нужен этот репозиторий по указанному пути.
+> Примечание: конвертация офисных документов использует вендоренную копию
+> крейта anydoc в `vendor/anydoc` (форк `firecrawl/anydoc` v0.2.3 с доработкой
+> `to_markdown_with_assets`). Происхождение и процедура обновления — в
+> `vendor/anydoc/PROVENANCE.md`. Внешних репозиториев для сборки не требуется.
 
 ```bash
 pnpm install
