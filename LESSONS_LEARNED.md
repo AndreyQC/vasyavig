@@ -20,6 +20,14 @@ pnpm 10/11.x блокирует ВСЕ build-скрипты, esbuild не уст
 После `pnpm install` проверить, что платформенный бинарь esbuild на месте
 (`node_modules/.pnpm/@esbuild/*/esbuild.exe` или аналог).
 
+**Дополнение (pnpm 12, 2026-09-22).** В pnpm 12 `allowBuilds` — валидный ключ
+(карта «пакет → bool»), плейсхолдер скаффолда `set this to true or false` —
+просьба вписать значение, а не мусор. Канонический путь: `pnpm approve-builds
+<pkg>` — одобряет скрипт и сам перезаписывает `pnpm-workspace.yaml` (удалив
+`onlyBuiltDependencies`). Заблокированный esbuild НЕ фатален: бинарь приезжает
+через optional-пакет `@esbuild/win32-x64`, `ERR_PNPM_IGNORED_BUILDS` лечится
+approve-builds. Под pnpm 10/11 актуально прежнее правило (onlyBuiltDependencies).
+
 ## 2. Vite `host: false` — белое окно на Windows
 
 **Что произошло.** WebView2 иногда резолвит `localhost` в IPv6 (`::1`), а Vite с
@@ -256,3 +264,20 @@ ignoreMutation = (m: ViewMutationRecord) => !this.contentDOM.contains(m.target);
 только тестом на реальной схеме). Для markup — `append()` (штатно отделяет
 блоки переводами строк), не insert(). PM-view пробрасывается из своего
 плагина (`view(view) { register(path, view); return {destroy} }`).
+
+## 14. pnpm: битые джанкшены node_modules после переноса каталога репозитория
+
+**Что произошло.** `pnpm tauri dev` падал с `Cannot find module
+'@tauri-apps/cli-win32-x64-msvc'` (MODULE_NOT_FOUND), хотя пакет был в
+`.pnpm`-store и в lockfile. Диагноз: junction
+`.pnpm/@tauri-apps+cli@*/node_modules/@tauri-apps/cli-win32-x64-msvc`
+существовал, но обход через него давал ПУСТОЙ каталог — абсолютный target
+побился (репозиторий переносили/копировали в другой путь). `pnpm install`
+при этом молча отвечал «Already up to date» и ничего не чинил.
+
+**Правило.** Джанкшены pnpm хранят абсолютные пути — после переноса репо
+`node_modules` надо перелинковать принудительно: `pnpm install --force`.
+Диагностика: `ls` через подозрительный junction — пустой вывод при
+существующем entry; `fs.readlinkSync` на джанкшн даёт EINVAL (это не
+symlink). Симптом-подсказка: MODULE_NOT_FOUND на optional-зависимость
+нативного бинаря при целых store и lockfile.
