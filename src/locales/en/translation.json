@@ -56,6 +56,10 @@
     "viewParsed": "Parsed",
     "viewRaw": "Raw source"
   },
+  "html": {
+    "viewRendered": "Preview",
+    "viewSource": "Source"
+  },
   "mermaid": {
     "editTitle": "Edit diagram",
     "previewPending": "Rendering diagram…",

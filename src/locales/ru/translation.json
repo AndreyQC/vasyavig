@@ -56,6 +56,10 @@
     "viewParsed": "Разбор",
     "viewRaw": "Исходник"
   },
+  "html": {
+    "viewRendered": "Просмотр",
+    "viewSource": "Исходник"
+  },
   "mermaid": {
     "editTitle": "Редактирование диаграммы",
     "previewPending": "Рендер диаграммы…",

@@ -331,6 +331,45 @@
   white-space: pre;
 }
 
+/* Вкладка-просмотрщик HTML (спека html-viewer) */
+.html-viewer {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--g-spacing-3) var(--g-spacing-4);
+}
+
+.html-viewer__mode {
+  display: flex;
+  gap: var(--g-spacing-1);
+  margin-bottom: var(--g-spacing-3);
+  flex: none;
+}
+
+/* «Лист» документа: белый фон задаёт сам файл; рамка отделяет его от
+   подложки в тёмной теме */
+.html-viewer__frame-wrap {
+  flex: 1;
+  min-height: 0;
+  border: 1px solid var(--g-color-line-generic);
+  border-radius: var(--g-border-radius-m);
+  overflow: hidden;
+}
+
+.html-viewer__frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #ffffff;
+}
+
+.html-viewer__source {
+  flex: 1;
+  min-height: 0;
+}
+
 /* Mermaid-диаграммы в WYSIWYG (спека mermaid-wysiwyg) */
 .mermaid-node {
   margin: var(--g-spacing-2) 0;

@@ -1,7 +1,7 @@
 import {invoke} from "@tauri-apps/api/core";
 import {open, save} from "@tauri-apps/plugin-dialog";
 import type {FileNode} from "../types";
-import {EML_EXTENSIONS, IMAGE_EXTENSIONS, OFFICE_EXTENSIONS, TEXT_EXTENSIONS} from "../lib/constants";
+import {EML_EXTENSIONS, HTML_EXTENSIONS, IMAGE_EXTENSIONS, OFFICE_EXTENSIONS, TEXT_EXTENSIONS} from "../lib/constants";
 import {getExtension} from "../lib/utils";
 
 /** Нативный диалог выбора папки. Возвращает абсолютный путь или null (отмена). */
@@ -23,6 +23,7 @@ export async function openFileDialog(): Promise<string | null> {
       {name: "Office", extensions: [...OFFICE_EXTENSIONS]},
       {name: "Images", extensions: [...IMAGE_EXTENSIONS]},
       {name: "Email", extensions: [...EML_EXTENSIONS]},
+      {name: "HTML", extensions: [...HTML_EXTENSIONS]},
     ],
   });
   return typeof selected === "string" ? selected : null;
