@@ -5,6 +5,7 @@ import {
   isValidUlidShape,
   parseBookmarkUlid,
   parseHarnessEnvelope,
+  stripHiddenEnvelopes,
 } from "./harnessEnvelope";
 
 /** Эталонная шапка задачного файла из harness-репо (lm_hrdo_2). */
@@ -100,6 +101,32 @@ describe("parseBookmarkUlid", () => {
   });
   it("нет закладки -> null", () => {
     expect(parseBookmarkUlid("# Документ\n")).toBeNull();
+  });
+});
+
+describe("stripHiddenEnvelopes", () => {
+  it("убирает harness-yaml и task-yaml, оставляет закладку/тело/обычный комментарий", () => {
+    const out = stripHiddenEnvelopes(TASK_FILE);
+    expect(out).not.toContain("harness-yaml]]");
+    expect(out).not.toContain("task-yaml]]");
+    expect(out).not.toContain("id: 01M43R3ZGSNXQ0KSMZ9JSZEZ5W");
+    // закладка и тело на месте
+    expect(out).toContain("документ в реестре");
+    expect(out).toContain("# Etl Generator Entity Paths");
+  });
+
+  it("CRLF-файлы обрабатываются, обычные комментарии не трогаются", () => {
+    const crlf = ["<!-- [<[harness-yaml]]", "id: 01M43R3ZGSNXQ0KSMZ9JSZEZ5W", "[[harness-yaml]>] -->", "", "<!-- обычный -->", "", "# Текст"].join("\r\n");
+    const out = stripHiddenEnvelopes(crlf);
+    expect(out).not.toContain("[<[harness-yaml]]");
+    expect(out).toContain("<!-- обычный -->");
+    expect(out).toContain("# Текст");
+  });
+
+  it("незакрытый конверт не вырезает полдокумента (ленивая точка не пересекает маркер)", () => {
+    const broken = "<!-- [<[harness-yaml]]\nid: x\n\n# Заголовок\n\nТекст без закрытия";
+    const out = stripHiddenEnvelopes(broken);
+    expect(out).toContain("# Заголовок");
   });
 });
 

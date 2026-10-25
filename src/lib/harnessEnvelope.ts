@@ -124,6 +124,18 @@ export function parseBookmarkUlid(text: string): string | null {
   return m ? m[1] : null;
 }
 
+/**
+ * Скрытые конверты (`<!-- [<[name]] … [[name]>] -->`, harness-yaml/task-yaml и
+ * любые будущие того же вида) удалить из текста — для рендера превью (план D13:
+ * конверты «скрыты в рендере» по дизайну harness; исходник файла не меняется).
+ * Видимая закладка и обычные HTML-комментарии остаются.
+ */
+const HIDDEN_ENVELOPE_RE = /<!--[^\S\n]*\[<\[(\w[\w-]*)\]\]\r?\n[\s\S]*?\r?\n\[{2}\1\]>\][^\S\n]*-->(?:\r?\n)*/g;
+
+export function stripHiddenEnvelopes(text: string): string {
+  return text.replace(HIDDEN_ENVELOPE_RE, "");
+}
+
 // --- ULID: валидация и поиск в тексте ---
 
 /** Crockford base32 (без I, L, O, U). */

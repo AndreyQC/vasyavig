@@ -1,8 +1,10 @@
 import {create} from "zustand";
 import {
   buildUlidIndex,
+  defaultReadProbe,
   findHarnessIndex,
   HARNESS_INDEX_REL,
+  harnessIndexPath,
   parseDocumentsJsonl,
   resolveUlid,
   type HarnessIndexEntry,
@@ -31,7 +33,7 @@ interface HarnessState {
   version: number;
   /** Загрузить реестр для каталога файла (лениво, при открытии markdown-вкладки). */
   ensureIndex(dir: string): Promise<void>;
-  /** Событие watcher: путь == <root>/_docs_/_index/documents.jsonl — сбросить кэш корня. */
+  /** Событие watcher: путь == <root>/_docs_/_index/documents.jsonl — перечитать реестр. */
   invalidatePath(path: string): void;
   /** Резолв ULID в записи реестра репозитория, которому принадлежит каталог. */
   resolveFor(dir: string, ulid: string):
@@ -54,16 +56,29 @@ export const useHarnessStore = create<HarnessState>((set, get) => ({
 
   ensureIndex: async (dir) => {
     const dirKey = normalizePath(dir);
+    let content: string | null = null;
+    let root: string;
     const cached = rootCache.get(dirKey);
-    if (cached !== undefined) return; // корень известен: индекс уже загружен либо репо нет
-    const found = await findHarnessIndex(dir);
-    rootCache.set(dirKey, found?.repoRoot ?? null);
-    if (!found) return;
-    const rootKey = normalizePath(found.repoRoot);
-    if (get().indexes[rootKey]) return; // репо уже загружен с другого каталога
-    const byUlid = buildUlidIndex(parseDocumentsJsonl(found.content));
+    if (cached === undefined) {
+      const found = await findHarnessIndex(dir);
+      rootCache.set(dirKey, found?.repoRoot ?? null);
+      if (!found) return;
+      root = found.repoRoot;
+      content = found.content; // проба уже прочитала реестр — второго чтения нет
+    } else {
+      if (!cached) return; // репозитория с реестром нет
+      root = cached;
+    }
+    const rootKey = normalizePath(root);
+    if (get().indexes[rootKey]) return; // уже загружен (с этого или другого каталога)
+    if (content === null) {
+      content = await defaultReadProbe(harnessIndexPath(root)); // перезагрузка после инвалидации
+      if (content === null) return; // реестр исчез — не блокируем просмотр
+    }
+    const byUlid = buildUlidIndex(parseDocumentsJsonl(content));
+    const repoRoot = root;
     set((s) => ({
-      indexes: {...s.indexes, [rootKey]: {repoRoot: found.repoRoot, byUlid}},
+      indexes: {...s.indexes, [rootKey]: {repoRoot, byUlid}},
       version: s.version + 1,
     }));
   },
@@ -73,13 +88,17 @@ export const useHarnessStore = create<HarnessState>((set, get) => ({
     const suffix = `/${HARNESS_INDEX_REL}`;
     if (!norm.endsWith(suffix)) return;
     const rootKey = norm.slice(0, norm.length - suffix.length);
-    if (!get().indexes[rootKey]) return;
+    const existing = get().indexes[rootKey];
+    if (!existing) return;
+    // сбрасываем и СРАЗУ перечитываем: открытые вкладки не должны ждать
+    // открытия новой markdown-вкладки, чтобы связи ожили (урок GUI-приёмки:
+    // после git pull/make doc-index чипы оставались «неизвестными»)
     const next = {...get().indexes};
     delete next[rootKey];
-    for (const [dirKey, root] of rootCache) {
-      if (root && normalizePath(root) === rootKey) rootCache.delete(dirKey);
-    }
     set({indexes: next, version: get().version + 1});
+    void get()
+      .ensureIndex(existing.repoRoot)
+      .catch((e) => console.warn("harness index reload failed:", e));
   },
 
   resolveFor: (dir, ulid) => {

@@ -132,6 +132,9 @@
     "ulidUnknown": "ULID не найден в реестре документов",
     "ulidAmbiguous": "Префикс ULID неоднозначен — уточните идентификатор",
     "ulidUnknownTooltip": "ULID не найден в реестре документов",
-    "linkBasedOn": "осн."
+    "linkBasedOn": "осн.",
+    "links": "Связи",
+    "linksTooltip": "Связи документа из конверта harness-yaml (related/based_on)",
+    "linksTitle": "Связи документа"
   }
 }

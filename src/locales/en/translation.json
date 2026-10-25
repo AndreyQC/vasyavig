@@ -132,6 +132,9 @@
     "ulidUnknown": "ULID not found in the document registry",
     "ulidAmbiguous": "ULID prefix is ambiguous — specify the full identifier",
     "ulidUnknownTooltip": "ULID not found in the document registry",
-    "linkBasedOn": "based on"
+    "linkBasedOn": "based on",
+    "links": "Links",
+    "linksTooltip": "Document links from the harness-yaml envelope (related/based_on)",
+    "linksTitle": "Document links"
   }
 }

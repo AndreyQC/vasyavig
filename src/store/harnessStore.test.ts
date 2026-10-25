@@ -82,17 +82,17 @@ describe("harnessStore.ensureIndex / resolveFor", () => {
 });
 
 describe("harnessStore.invalidatePath", () => {
-  it("событие по пути индекса сбрасывает кэш: следующий ensureIndex перечитывает", async () => {
+  it("событие по пути индекса ПЕРЕЧИТЫВАЕТ реестр сразу (открытые вкладки не ждут новой)", async () => {
     await useHarnessStore.getState().ensureIndex(`${REPO}/docs`);
-    const callsAfterFirst = (readFile as ReturnType<typeof vi.fn>).mock.calls.length;
-    expect(callsAfterFirst).toBeGreaterThan(0);
+    expect(useHarnessStore.getState().version).toBe(1);
 
     useHarnessStore.getState().invalidatePath(`${REPO}\\${HARNESS_INDEX_REL}`); // windows-форма пути
-    expect(useHarnessStore.getState().version).toBe(2); // загрузка + сброс — каждая меняет версию
 
-    await useHarnessStore.getState().ensureIndex(`${REPO}/docs`);
-    expect((readFile as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(callsAfterFirst);
-    expect(useHarnessStore.getState().resolveFor(`${REPO}/docs`, ULID_A).status).toBe("found");
+    // перезагрузка асинхронная — ждём, пока индекс вернётся
+    await vi.waitFor(() => {
+      expect(useHarnessStore.getState().resolveFor(`${REPO}/docs`, ULID_A).status).toBe("found");
+    });
+    expect(useHarnessStore.getState().version).toBeGreaterThanOrEqual(3); // сброс + перезагрузка
   });
 
   it("чужие пути не инвалидируют", async () => {

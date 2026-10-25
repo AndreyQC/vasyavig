@@ -5,6 +5,7 @@ import {useEditorStore} from "../../store/editorStore";
 import {useSaveActions} from "../../hooks/useSaveActions";
 import {useMarkdownTools} from "../../hooks/useMarkdownTools";
 import {ModeSwitcher} from "./ModeSwitcher";
+import {HarnessLinksButton} from "./HarnessLinksButton";
 
 interface Props {
   path: string;
@@ -43,6 +44,7 @@ export function MainToolbar({path}: Props) {
                 </Button>
               </span>
             </Tooltip>
+            <HarnessLinksButton path={path} />
             <Tooltip content={t("tools.mermaidTooltip")}>
               <span>
                 <Button view="flat" onClick={insertMermaid}>

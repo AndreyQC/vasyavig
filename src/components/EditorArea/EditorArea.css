@@ -291,6 +291,42 @@
   white-space: nowrap;
 }
 
+/* кнопка «Связи» в тулбаре: поповер с чипами (D11) */
+.harness-links-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--g-spacing-2);
+  max-width: 420px;
+  padding: var(--g-spacing-3);
+  background: var(--g-color-base-float, var(--g-color-base-background));
+  border-radius: var(--g-border-radius-m);
+}
+
+.harness-links-panel__title {
+  font-size: var(--g-text-body-2-font-size);
+  color: var(--g-color-text-hint);
+}
+
+.harness-links-panel__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--g-spacing-1);
+}
+
+.harness-links-panel__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  margin-left: var(--g-spacing-1);
+  border-radius: 9px;
+  background: var(--g-color-base-generic);
+  font-size: var(--g-text-body-3-font-size);
+  color: var(--g-color-text-secondary);
+}
+
 /* ULID-штампы: ссылка на документ реестра / тихая подсветка неизвестного */
 .ulid-link {
   cursor: pointer;

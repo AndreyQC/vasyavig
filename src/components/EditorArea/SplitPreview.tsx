@@ -4,8 +4,10 @@ import DOMPurify from "dompurify";
 import mermaid from "mermaid";
 import {useThemeValue} from "@gravity-ui/uikit";
 import {resolveImageDisplayUrl} from "../../lib/resolveImageSrc";
-import {parseHarnessEnvelope} from "../../lib/harnessEnvelope";
+import {parseHarnessEnvelope, stripHiddenEnvelopes} from "../../lib/harnessEnvelope";
 import {linkifyUlidsInElement, type UlidLinkMeta} from "../../lib/harnessIndex";
+import {buildEnvelopeLinkChips} from "../../lib/harnessLinks";
+import {HarnessLinkChips} from "../HarnessLinkChips";
 import {openUlidTarget, useHarnessStore} from "../../store/harnessStore";
 import i18n from "../../lib/i18n";
 import "@diplodoc/transform/dist/css/yfm.css";
@@ -63,8 +65,9 @@ export function SplitPreview({content, basePath, rootPath, fileName, fallbackKin
   const html = useMemo(() => {
     try {
       // supportGithubAnchors: заголовки получают кириллические якоря github-стиля
-      // (id="1-введение") в дополнение к транслит-id — оглавления кликабельны
-      const {result} = transform(deferred, {supportGithubAnchors: true});
+      // (id="1-введение") в дополнение к транслит-id — оглавления кликабельны;
+      // скрытые конверты harness (harness-yaml/task-yaml) из рендера убираем (D13)
+      const {result} = transform(stripHiddenEnvelopes(deferred), {supportGithubAnchors: true});
       const withImages = rewriteImageSrcs(result.html, basePath, rootPath);
       // ULID-линкификация (D3): один DOM-проход до sanitize, data-атрибуты DOMPurify пропускает
       const doc = new DOMParser().parseFromString(withImages, "text/html");
@@ -121,22 +124,10 @@ export function SplitPreview({content, basePath, rootPath, fileName, fallbackKin
   };
 
   /** Связи конверта (D9): скрытые ULID из related/based_on — кликабельные чипы. */
-  const linkChips = useMemo(() => {
-    if (!envelope) return [];
-    const chips: {ulid: string; kind: "based" | "related"; label: string; title: string; known: boolean}[] = [];
-    const resolve = (ulid: string, kind: "based" | "related") => {
-      const res = useHarnessStore.getState().resolveFor(basePath, ulid);
-      if (res.status === "found") {
-        const title = [res.entry.title ?? res.entry.path, res.entry.type].filter(Boolean).join(" · ");
-        chips.push({ulid, kind, label: res.entry.title ?? ulid, title, known: true});
-      } else {
-        chips.push({ulid, kind, label: ulid, title: i18n.t("harness.ulidUnknownTooltip"), known: false});
-      }
-    };
-    envelope.basedOn.forEach((ulid) => resolve(ulid, "based"));
-    envelope.related.forEach((ulid) => resolve(ulid, "related"));
-    return chips;
-  }, [envelope, basePath, indexVersion]);
+  const linkChips = useMemo(
+    () => (envelope ? buildEnvelopeLinkChips(envelope, basePath) : []),
+    [envelope, basePath, indexVersion],
+  );
 
   const onChipClick = (ulid: string) => void openUlidTarget(basePath, ulid);
 
@@ -153,19 +144,7 @@ export function SplitPreview({content, basePath, rootPath, fileName, fallbackKin
       </div>
       {linkChips.length > 0 && (
         <div className="split-preview__links">
-          {linkChips.map((chip) => (
-            <button
-              key={`${chip.kind}-${chip.ulid}`}
-              type="button"
-              className={`ulid-chip${chip.known ? " ulid-chip--link" : " ulid-chip--unknown"}`}
-              title={chip.title}
-              disabled={!chip.known}
-              onClick={() => onChipClick(chip.ulid)}
-            >
-              {chip.kind === "based" && <span className="ulid-chip__kind">{i18n.t("harness.linkBasedOn")}</span>}
-              <span className="ulid-chip__label">{chip.label}</span>
-            </button>
-          ))}
+          <HarnessLinkChips chips={linkChips} onOpen={onChipClick} />
         </div>
       )}
       <div
