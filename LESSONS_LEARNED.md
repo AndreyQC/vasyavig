@@ -281,3 +281,32 @@ ignoreMutation = (m: ViewMutationRecord) => !this.contentDOM.contains(m.target);
 существующем entry; `fs.readlinkSync` на джанкшн даёт EINVAL (это не
 symlink). Симптом-подсказка: MODULE_NOT_FOUND на optional-зависимость
 нативного бинаря при целых store и lockfile.
+
+## 15. Рантайм-тесты Gravity-редактора: bundler-only ESM и сабпути пакета
+
+**Что произошло.** Задаче 20261025_001 (harness round-trip) нужен был
+реальный парсер/сериализатор WYSIWYG в vitest. Импорт полного бандла
+`@gravity-ui/markdown-editor` (useMarkdownEditor) тянет `@gravity-ui/icons`,
+чей ESM-билд использует БЕЗРАСШИРЁННЫЕ импорты (`./AbbrApi` вместо
+`./AbbrApi.js`) — Node-ESM такое не грузит («Cannot find module …/AbbrApi»).
+Ни `server.deps.inline` (строки И регексы), ни `deps.optimizer`, ни alias на
+стаб не перехватили подгрузку: на Windows часть цепочки уходит в native
+import в обход Vite-резолвера (в т.ч. с сырыми `c:\…`-путями вместо
+`file://`-URL).
+
+**Правило.**
+1. Для тестов парсера/сериализатора НЕ поднимать весь бандл: у пакета есть
+   чистые сабпути `@gravity-ui/markdown-editor/core` (`WysiwygEditor`,
+   только tslib) и `extensions/markdown/specs.js` / `extensions/base/specs.js`
+   (все `*Specs`, включая `Html`). Сборка «BaseSchemaSpecs + commonmark-спеки»
+   повторяет слой `CommonMarkSpecsPreset` пресета `full` без uikit/icons.
+2. Сабпут-шаблон exports (`./extensions/*`) НЕ добавляет `/index.js` —
+   импортировать с явным суффиксом: `…/extensions/markdown/specs.js`
+   (каталог без суффикса Vite не резолвит).
+3. Полные расширения (не `*Specs`) требуют опций (`Breaks` —
+   `preferredBreak`, `CodeBlock` — `lineWrapping`): `builder.use(X)` без
+   второго аргумента падает «Cannot read properties of undefined». Пресет
+   всегда передаёт `{}` — в тестах делать так же.
+4. Парity с полным пресетом (YFM-спеки и т.п.) такими тестами не
+   покрывается — закрывать ручной GUI-приёмкой. Прецедент:
+   `src/lib/harnessRoundTrip.test.ts`.
