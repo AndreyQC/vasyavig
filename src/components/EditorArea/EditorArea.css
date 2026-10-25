@@ -203,6 +203,113 @@
   white-space: pre-wrap;
 }
 
+/* harness-yaml: шапка превью «title · type» + ULID-ссылки (task 20261025_001) */
+.split-preview {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.split-preview__header {
+  display: flex;
+  align-items: center;
+  gap: var(--g-spacing-2);
+  padding: var(--g-spacing-1) 0 var(--g-spacing-2);
+  border-bottom: 1px solid var(--g-color-line-generic);
+  margin-bottom: var(--g-spacing-2);
+}
+
+.split-preview__doc-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--g-text-body-2-font-size);
+  color: var(--g-color-text-secondary);
+}
+
+.split-preview__doc-type {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--g-spacing-2);
+  border-radius: var(--g-border-radius-s);
+  background: var(--g-color-base-generic);
+  color: var(--g-color-text-secondary);
+  font-size: var(--g-text-body-2-font-size);
+}
+
+.split-preview__body {
+  flex: 1;
+  min-height: 0;
+}
+
+/* панель связей конверта: скрытые ULID из related/based_on */
+.split-preview__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--g-spacing-1);
+  padding-bottom: var(--g-spacing-2);
+  border-bottom: 1px solid var(--g-color-line-generic);
+  margin-bottom: var(--g-spacing-2);
+}
+
+.ulid-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--g-spacing-1);
+  max-width: 260px;
+  padding: 0 var(--g-spacing-2);
+  border: 1px solid var(--g-color-line-generic);
+  border-radius: var(--g-border-radius-s);
+  background: transparent;
+  font-size: var(--g-text-body-2-font-size);
+  color: var(--g-color-text-secondary);
+  cursor: pointer;
+}
+
+.ulid-chip--link:hover {
+  border-color: var(--g-color-line-brand);
+  color: var(--g-color-text-link);
+}
+
+.ulid-chip--unknown {
+  cursor: default;
+  border-style: dashed;
+  opacity: 0.8;
+}
+
+.ulid-chip__kind {
+  flex-shrink: 0;
+  font-size: var(--g-text-body-3-font-size);
+  color: var(--g-color-text-hint);
+}
+
+.ulid-chip__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ULID-штампы: ссылка на документ реестра / тихая подсветка неизвестного */
+.ulid-link {
+  cursor: pointer;
+  color: var(--g-color-text-link);
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+}
+
+.ulid-link:hover {
+  text-decoration-style: solid;
+}
+
+.ulid-unknown {
+  text-decoration: underline dotted var(--g-color-text-hint);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 2px;
+  cursor: default;
+}
+
 .mermaid-diagram {
   display: flex;
   justify-content: center;

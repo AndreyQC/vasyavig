@@ -127,5 +127,11 @@
     "rootAlreadyAdded": "Папка «{{name}}» уже добавлена в workspace",
     "rootNested": "Папка «{{name}}» входит в корень «{{parent}}» и показана отдельной секцией",
     "rootContains": "Корень «{{name}}» содержит уже добавленный корень «{{child}}»"
+  },
+  "harness": {
+    "ulidUnknown": "ULID не найден в реестре документов",
+    "ulidAmbiguous": "Префикс ULID неоднозначен — уточните идентификатор",
+    "ulidUnknownTooltip": "ULID не найден в реестре документов",
+    "linkBasedOn": "осн."
   }
 }

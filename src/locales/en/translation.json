@@ -127,5 +127,11 @@
     "rootAlreadyAdded": "Folder «{{name}}» is already in the workspace",
     "rootNested": "Folder «{{name}}» is inside the «{{parent}}» root and shown as a separate section",
     "rootContains": "Root «{{name}}» contains the already added root «{{child}}»"
+  },
+  "harness": {
+    "ulidUnknown": "ULID not found in the document registry",
+    "ulidAmbiguous": "ULID prefix is ambiguous — specify the full identifier",
+    "ulidUnknownTooltip": "ULID not found in the document registry",
+    "linkBasedOn": "based on"
   }
 }

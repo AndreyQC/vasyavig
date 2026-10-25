@@ -1,6 +1,7 @@
 import {useEffect} from "react";
 import {listen} from "@tauri-apps/api/event";
 import {useFileStore} from "../store/fileStore";
+import {useHarnessStore} from "../store/harnessStore";
 import {resolveRoot} from "../lib/roots";
 
 const DEBOUNCE_MS = 300;
@@ -23,6 +24,9 @@ export function useFileWatcher() {
       listen<{path: string}>("fs-change", (event) => {
         const path = event.payload?.path;
         if (!path) return;
+        // реестр harness (documents.jsonl) изменился — сбросить кэш ULID (D4);
+        // до резолва корня: индекс может лежать и вне корней дерева
+        useHarnessStore.getState().invalidatePath(path);
         const root = resolveRoot(path, useFileStore.getState().roots);
         if (!root) return; // изменения вне корней не инициируют обновление деревьев
         if (timers.has(root.path)) clearTimeout(timers.get(root.path));

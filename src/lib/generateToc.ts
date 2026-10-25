@@ -159,9 +159,61 @@ export function applyTocReplace(src: string): string {
   return lines.join("\n");
 }
 
-/** Текст после вставки нового блока оглавления в начало документа. */
+/**
+ * Конец harness-шапки файла (строка ПОСЛЕ последней её строки): ведущие
+ * HTML-комментарии (конверт harness-yaml, task-yaml) и видимая закладка
+ * (`> 🔖 …`), разделённые пустыми строками. Конверт обязан оставаться в
+ * первых 5 строках — оглавление вставляется после шапки, не перед ней.
+ * Файл без шапки -> 0.
+ */
+export function harnessHeaderEndLine(src: string): number {
+  const lines = src.split("\n");
+  let end = 0; // позиция после последней содержательной строки шапки
+  let inComment = false;
+  let inFrontmatter = false;
+  let seenComment = false;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (inComment) {
+      if (line.endsWith("-->")) inComment = false;
+      end = i + 1;
+      continue;
+    }
+    // frontmatter (--- … ---) обязан оставаться первым блоком файла
+    if (inFrontmatter) {
+      if (line === "---") inFrontmatter = false;
+      end = i + 1;
+      continue;
+    }
+    if (line.startsWith("<!--")) {
+      inComment = !line.endsWith("-->");
+      seenComment = true;
+      end = i + 1;
+      continue;
+    }
+    if (line === "---" && i === 0) {
+      inFrontmatter = true;
+      end = i + 1;
+      continue;
+    }
+    // закладка-цитата считается шапкой только после конверта
+    if (seenComment && line.startsWith(">")) {
+      end = i + 1;
+      continue;
+    }
+    if (line === "") continue; // пустые строки шапку не заканчивают
+    break; // первый содержательный контент — шапка закончена на end
+  }
+  return end;
+}
+
+/** Текст после вставки нового блока оглавления: после harness-шапки (или в начало). */
 export function applyTocInsert(src: string): string {
   const plan = buildTocPlan(src);
   if (!plan.list) return src;
-  return `## Оглавление\n\n${plan.list}\n\n${src}`;
+  const lines = src.split("\n");
+  const at = harnessHeaderEndLine(src);
+  const block = at === 0 ? ["## Оглавление", "", ...plan.list.split("\n"), ""] : ["", "## Оглавление", "", ...plan.list.split("\n"), ""];
+  lines.splice(at, 0, ...block);
+  return lines.join("\n");
 }
