@@ -267,7 +267,7 @@ describe("fileStore.newWorkspaceFile", () => {
   });
 });
 
-describe("fileStore.openFile (image/email)", () => {
+describe("fileStore.openFile (image/email/html)", () => {
   it("изображение открывается без чтения файла (контент пуст)", async () => {
     await useFileStore.getState().openFile("C:/docs/logo.png");
     expect(readFile).not.toHaveBeenCalled();
@@ -297,5 +297,22 @@ describe("fileStore.openFile (image/email)", () => {
     await useFileStore.getState().openFile("C:/mail/broken.eml");
     expect(useFileStore.getState().error).toContain("cannot read");
     expect(useEditorStore.getState().tabs).toHaveLength(0);
+  });
+
+  it("html-файл читается штатным readFile и открывается read-only вкладкой", async () => {
+    const html = "<!DOCTYPE html><html><body><p>письмо</p></body></html>";
+    (readFile as ReturnType<typeof vi.fn>).mockResolvedValue(html);
+    await useFileStore.getState().openFile("C:/docs/letter.html");
+    expect(readFile).toHaveBeenCalledWith("C:/docs/letter.html");
+    expect(readFileLatin1).not.toHaveBeenCalled();
+    const tab = useEditorStore.getState().tabs.find((t) => t.path === "C:/docs/letter.html");
+    expect(tab).toMatchObject({kind: "html", content: html, dirty: false});
+  });
+
+  it("одиночный клик по html — preview-вкладка", async () => {
+    (readFile as ReturnType<typeof vi.fn>).mockResolvedValue("<p>x</p>");
+    await useFileStore.getState().openFile("C:/docs/letter.htm", {preview: true});
+    const tab = useEditorStore.getState().tabs.find((t) => t.path === "C:/docs/letter.htm");
+    expect(tab).toMatchObject({kind: "html", preview: true});
   });
 });

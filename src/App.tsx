@@ -9,6 +9,7 @@ import {MarkdownEditor} from "./components/EditorArea/MarkdownEditor";
 import {MonacoViewer} from "./components/EditorArea/MonacoViewer";
 import {ImageViewer} from "./components/EditorArea/ImageViewer";
 import {EmlViewer} from "./components/EditorArea/EmlViewer";
+import {HtmlViewer} from "./components/EditorArea/HtmlViewer";
 import {SplitView} from "./components/EditorArea/SplitView";
 import {MainToolbar} from "./components/Toolbar/MainToolbar";
 import {StatusBar} from "./components/StatusBar/StatusBar";
@@ -91,6 +92,13 @@ function App() {
                 <ImageViewer key={activeTab.path} path={activeTab.path} name={activeTab.name} />
               ) : activeTab.kind === "email" ? (
                 <EmlViewer key={activeTab.path} content={activeTab.content} />
+              ) : activeTab.kind === "html" ? (
+                <HtmlViewer
+                  key={activeTab.path}
+                  content={activeTab.content}
+                  path={activeTab.path}
+                  name={activeTab.name}
+                />
               ) : (
                 <MonacoViewer
                   content={activeTab.content}

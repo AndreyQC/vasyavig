@@ -51,7 +51,13 @@ export function SplitView({tab}: Props) {
       </div>
       <div className="split-view__divider" onMouseDown={onDividerMouseDown} />
       <div className="split-view__preview" style={{width: previewWidth}}>
-        <SplitPreview content={content} basePath={getParentDir(tab.path)} rootPath={rootPath} />
+        <SplitPreview
+          content={content}
+          basePath={getParentDir(tab.path)}
+          rootPath={rootPath}
+          fileName={tab.name}
+          fallbackKind={tab.kind}
+        />
       </div>
     </div>
   );

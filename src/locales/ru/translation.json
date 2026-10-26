@@ -56,6 +56,10 @@
     "viewParsed": "Разбор",
     "viewRaw": "Исходник"
   },
+  "html": {
+    "viewRendered": "Просмотр",
+    "viewSource": "Исходник"
+  },
   "mermaid": {
     "editTitle": "Редактирование диаграммы",
     "previewPending": "Рендер диаграммы…",
@@ -123,5 +127,14 @@
     "rootAlreadyAdded": "Папка «{{name}}» уже добавлена в workspace",
     "rootNested": "Папка «{{name}}» входит в корень «{{parent}}» и показана отдельной секцией",
     "rootContains": "Корень «{{name}}» содержит уже добавленный корень «{{child}}»"
+  },
+  "harness": {
+    "ulidUnknown": "ULID не найден в реестре документов",
+    "ulidAmbiguous": "Префикс ULID неоднозначен — уточните идентификатор",
+    "ulidUnknownTooltip": "ULID не найден в реестре документов",
+    "linkBasedOn": "осн.",
+    "links": "Связи",
+    "linksTooltip": "Связи документа из конверта harness-yaml (related/based_on)",
+    "linksTitle": "Связи документа"
   }
 }

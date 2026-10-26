@@ -1,6 +1,13 @@
-import {EML_EXTENSIONS, IMAGE_EXTENSIONS, MARKDOWN_EXTENSIONS, OFFICE_EXTENSIONS, TEXT_EXTENSIONS} from "./constants";
+import {
+  EML_EXTENSIONS,
+  HTML_EXTENSIONS,
+  IMAGE_EXTENSIONS,
+  MARKDOWN_EXTENSIONS,
+  OFFICE_EXTENSIONS,
+  TEXT_EXTENSIONS,
+} from "./constants";
 
-export type FileKind = "markdown" | "text" | "office" | "image" | "email" | "unsupported";
+export type FileKind = "markdown" | "text" | "office" | "image" | "email" | "html" | "unsupported";
 
 /** Извлекает расширение файла из пути (без точки, в нижнем регистре). */
 export function getExtension(path: string): string {
@@ -61,6 +68,7 @@ export function getFileKind(path: string): FileKind {
   if ((OFFICE_EXTENSIONS as readonly string[]).includes(ext)) return "office";
   if ((IMAGE_EXTENSIONS as readonly string[]).includes(ext)) return "image";
   if ((EML_EXTENSIONS as readonly string[]).includes(ext)) return "email";
+  if ((HTML_EXTENSIONS as readonly string[]).includes(ext)) return "html";
   return "unsupported";
 }
 
@@ -95,6 +103,8 @@ const MONACO_LANG_MAP: Record<string, string> = {
   yaml: "yaml",
   yml: "yaml",
   xml: "xml",
+  html: "html",
+  htm: "html",
   rs: "rust",
   go: "go",
   java: "java",

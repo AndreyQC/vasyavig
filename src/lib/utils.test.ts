@@ -3,6 +3,7 @@ import {
   getExtension,
   getFileKind,
   getFileName,
+  getMonacoLanguage,
   getParentDir,
   isMdYfmSwap,
   joinPath,
@@ -60,10 +61,26 @@ describe("getFileKind", () => {
     expect(getFileKind("C:/mail/Note.EML")).toBe("email");
   });
 
+  it("html-документы -> html", () => {
+    expect(getFileKind("letter.html")).toBe("html");
+    expect(getFileKind("C:/docs/page.HTM")).toBe("html");
+  });
+
   it("прочие -> unsupported", () => {
     expect(getFileKind("a.exe")).toBe("unsupported");
     expect(getFileKind("scan.tiff")).toBe("unsupported");
     expect(getFileKind("README")).toBe("unsupported");
+  });
+});
+
+describe("getMonacoLanguage", () => {
+  it("html-расширения -> html", () => {
+    expect(getMonacoLanguage("letter.html")).toBe("html");
+    expect(getMonacoLanguage("page.htm")).toBe("html");
+  });
+
+  it("неизвестное расширение -> plaintext", () => {
+    expect(getMonacoLanguage("file.unknownext")).toBe("plaintext");
   });
 });
 

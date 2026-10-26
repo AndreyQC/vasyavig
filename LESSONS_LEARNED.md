@@ -20,6 +20,14 @@ pnpm 10/11.x блокирует ВСЕ build-скрипты, esbuild не уст
 После `pnpm install` проверить, что платформенный бинарь esbuild на месте
 (`node_modules/.pnpm/@esbuild/*/esbuild.exe` или аналог).
 
+**Дополнение (pnpm 12, 2026-09-22).** В pnpm 12 `allowBuilds` — валидный ключ
+(карта «пакет → bool»), плейсхолдер скаффолда `set this to true or false` —
+просьба вписать значение, а не мусор. Канонический путь: `pnpm approve-builds
+<pkg>` — одобряет скрипт и сам перезаписывает `pnpm-workspace.yaml` (удалив
+`onlyBuiltDependencies`). Заблокированный esbuild НЕ фатален: бинарь приезжает
+через optional-пакет `@esbuild/win32-x64`, `ERR_PNPM_IGNORED_BUILDS` лечится
+approve-builds. Под pnpm 10/11 актуально прежнее правило (onlyBuiltDependencies).
+
 ## 2. Vite `host: false` — белое окно на Windows
 
 **Что произошло.** WebView2 иногда резолвит `localhost` в IPv6 (`::1`), а Vite с
@@ -256,3 +264,49 @@ ignoreMutation = (m: ViewMutationRecord) => !this.contentDOM.contains(m.target);
 только тестом на реальной схеме). Для markup — `append()` (штатно отделяет
 блоки переводами строк), не insert(). PM-view пробрасывается из своего
 плагина (`view(view) { register(path, view); return {destroy} }`).
+
+## 14. pnpm: битые джанкшены node_modules после переноса каталога репозитория
+
+**Что произошло.** `pnpm tauri dev` падал с `Cannot find module
+'@tauri-apps/cli-win32-x64-msvc'` (MODULE_NOT_FOUND), хотя пакет был в
+`.pnpm`-store и в lockfile. Диагноз: junction
+`.pnpm/@tauri-apps+cli@*/node_modules/@tauri-apps/cli-win32-x64-msvc`
+существовал, но обход через него давал ПУСТОЙ каталог — абсолютный target
+побился (репозиторий переносили/копировали в другой путь). `pnpm install`
+при этом молча отвечал «Already up to date» и ничего не чинил.
+
+**Правило.** Джанкшены pnpm хранят абсолютные пути — после переноса репо
+`node_modules` надо перелинковать принудительно: `pnpm install --force`.
+Диагностика: `ls` через подозрительный junction — пустой вывод при
+существующем entry; `fs.readlinkSync` на джанкшн даёт EINVAL (это не
+symlink). Симптом-подсказка: MODULE_NOT_FOUND на optional-зависимость
+нативного бинаря при целых store и lockfile.
+
+## 15. Рантайм-тесты Gravity-редактора: bundler-only ESM и сабпути пакета
+
+**Что произошло.** Задаче 20261025_001 (harness round-trip) нужен был
+реальный парсер/сериализатор WYSIWYG в vitest. Импорт полного бандла
+`@gravity-ui/markdown-editor` (useMarkdownEditor) тянет `@gravity-ui/icons`,
+чей ESM-билд использует БЕЗРАСШИРЁННЫЕ импорты (`./AbbrApi` вместо
+`./AbbrApi.js`) — Node-ESM такое не грузит («Cannot find module …/AbbrApi»).
+Ни `server.deps.inline` (строки И регексы), ни `deps.optimizer`, ни alias на
+стаб не перехватили подгрузку: на Windows часть цепочки уходит в native
+import в обход Vite-резолвера (в т.ч. с сырыми `c:\…`-путями вместо
+`file://`-URL).
+
+**Правило.**
+1. Для тестов парсера/сериализатора НЕ поднимать весь бандл: у пакета есть
+   чистые сабпути `@gravity-ui/markdown-editor/core` (`WysiwygEditor`,
+   только tslib) и `extensions/markdown/specs.js` / `extensions/base/specs.js`
+   (все `*Specs`, включая `Html`). Сборка «BaseSchemaSpecs + commonmark-спеки»
+   повторяет слой `CommonMarkSpecsPreset` пресета `full` без uikit/icons.
+2. Сабпут-шаблон exports (`./extensions/*`) НЕ добавляет `/index.js` —
+   импортировать с явным суффиксом: `…/extensions/markdown/specs.js`
+   (каталог без суффикса Vite не резолвит).
+3. Полные расширения (не `*Specs`) требуют опций (`Breaks` —
+   `preferredBreak`, `CodeBlock` — `lineWrapping`): `builder.use(X)` без
+   второго аргумента падает «Cannot read properties of undefined». Пресет
+   всегда передаёт `{}` — в тестах делать так же.
+4. Парity с полным пресетом (YFM-спеки и т.п.) такими тестами не
+   покрывается — закрывать ручной GUI-приёмкой. Прецедент:
+   `src/lib/harnessRoundTrip.test.ts`.

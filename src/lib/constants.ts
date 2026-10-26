@@ -32,6 +32,9 @@ export const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "webp", "bmp", "sv
 /** Расширения писем (MIME), открываемых в вкладке-просмотрщике. */
 export const EML_EXTENSIONS = ["eml"] as const;
 
+/** Расширения HTML-документов (письма-черновики), открываемых в вкладке-просмотрщике. */
+export const HTML_EXTENSIONS = ["html", "htm"] as const;
+
 /** Расширения, открываемые в текстовом viewer (read-only, Monaco на этапе 5). */
 export const TEXT_EXTENSIONS = [
   "txt",

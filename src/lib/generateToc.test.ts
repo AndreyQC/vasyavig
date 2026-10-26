@@ -1,6 +1,6 @@
 import {describe, expect, it} from "vitest";
 import transform from "@diplodoc/transform";
-import {applyTocInsert, applyTocReplace, buildTocList, buildTocPlan, collectHeadings} from "./generateToc";
+import {applyTocInsert, applyTocReplace, buildTocList, buildTocPlan, collectHeadings, harnessHeaderEndLine} from "./generateToc";
 
 const DOC = [
   "# 1. Введение",
@@ -105,5 +105,53 @@ describe("buildTocPlan / apply", () => {
 
   it("без «Оглавление» tocHeadingLine = null", () => {
     expect(buildTocPlan(DOC).tocHeadingLine).toBeNull();
+  });
+});
+
+describe("insert после harness-шапки (task 20261025_001, D10)", () => {
+  const HARNESS_DOC = [
+    "<!-- [<[harness-yaml]]",
+    "id: 01M43R3ZGSNXQ0KSMZ9JSZEZ5W",
+    'title: "План А"',
+    "type: plan",
+    "[[harness-yaml]>] -->",
+    "",
+    "> 🔖 **harness-yaml** · id `01M43R3ZGSNXQ0KSMZ9JSZEZ5W`",
+    "",
+    "<!-- [<[task-yaml]]",
+    "kind: daily-task",
+    "[[task-yaml]>] -->",
+    "",
+    "# 1. Введение",
+    "",
+    "Текст.",
+    "",
+    "# 2. Раздел",
+    "",
+    "Ещё текст.",
+  ].join("\n");
+
+  it("harnessHeaderEndLine: после конверта, закладки и task-yaml", () => {
+    expect(harnessHeaderEndLine(HARNESS_DOC)).toBe(11); // строка 12 (0-based 11) — пустая после закрытия task-yaml… шапка до index 10
+    expect(harnessHeaderEndLine(DOC)).toBe(0);
+  });
+
+  it("insert: конверт остаётся в первых строках, оглавление после шапки", () => {
+    const out = applyTocInsert(HARNESS_DOC);
+    const lines = out.split("\n");
+    expect(lines[0]).toBe("<!-- [<[harness-yaml]]");
+    expect(lines[6]).toBe("> 🔖 **harness-yaml** · id `01M43R3ZGSNXQ0KSMZ9JSZEZ5W`");
+    expect(lines[8]).toBe("<!-- [<[task-yaml]]");
+    const tocIdx = lines.indexOf("## Оглавление");
+    expect(tocIdx).toBe(12);
+    expect(lines[tocIdx + 2]).toContain("- [1. Введение](#1-введение)");
+    // исходный контент после оглавления
+    expect(out.endsWith("# 2. Раздел\n\nЕщё текст.")).toBe(true);
+  });
+
+  it("insert: frontmatter остаётся первым блоком", () => {
+    const doc = "---\ntitle: Дока\n---\n\n# Раз\n\nТекст.\n\n# Два\n";
+    const out = applyTocInsert(doc);
+    expect(out.startsWith("---\ntitle: Дока\n---\n\n## Оглавление")).toBe(true);
   });
 });

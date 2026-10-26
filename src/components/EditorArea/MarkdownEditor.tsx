@@ -9,6 +9,8 @@ import {preserveUrlsExtension} from "../../lib/preserveUrlsExtension";
 import {anchorNavigationExtension} from "../../lib/anchorNavigationExtension";
 import {imageSrcExtension} from "../../lib/imageSrcExtension";
 import {mermaidWysiwygExtension} from "../../lib/mermaidWysiwygExtension";
+import {harnessUlidExtension} from "../../lib/harnessUlidExtension";
+import {useHarnessStore} from "../../store/harnessStore";
 import {setMermaidTheme} from "../../lib/mermaidRenderer";
 import {combineExtensions} from "../../lib/combineExtensions";
 import {registerEditor, unregisterEditor} from "../../lib/editorRegistry";
@@ -44,6 +46,8 @@ export function MarkdownEditor({path, initialContent}: Props) {
           }),
           // mermaid-диаграммы (design D2); ownerPath — для закрытия модалки с вкладкой
           mermaidWysiwygExtension(path),
+          // harness-yaml: ULID-ссылки в WYSIWYG (task 20261025_001, D7)
+          harnessUlidExtension(path),
         ),
       },
     },
@@ -55,6 +59,11 @@ export function MarkdownEditor({path, initialContent}: Props) {
     registerEditor(path, editor);
     return () => unregisterEditor(path);
   }, [editor, path]);
+
+  // harness-репозиторий: лениво загрузить реестр ULID для каталога файла (D4)
+  useEffect(() => {
+    void useHarnessStore.getState().ensureIndex(getParentDir(path));
+  }, [path]);
 
   // закрытие вкладки закрывает модалку правки её диаграммы (design D3)
   useEffect(() => {
