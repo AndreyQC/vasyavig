@@ -7,7 +7,7 @@
 > - `_docs_/_tasks_/2026-10-27/20261027_003_ulid_scheme_harness_ulid.md` — схема `harness-ulid:`
 
 **Дата:** 2026-10-27
-**Статус:** план утверждён (Q1–Q4 закрыты пользователем), реализация в работе
+**Статус:** реализовано (`07a8d6f`), ждёт GUI-приёмки на `lm_hrdo_2`
 **Фаза:** Phase 7 — Harness, задача 6; + пользовательское дополнение: значок harness-корня
 
 ## 1. Цель и границы
@@ -82,10 +82,14 @@ interface TaskSource {
 harness_yaml.py, окно 5 строк) — регресс round-trip тестов. Маркер закрытия
 именно `[[task-yaml]>]` (не `[[task-yaml]]>`) — как в `HIDDEN_ENVELOPE_RE`.
 
-## 3. Манифест проекта (предложение — черновик на согласование)
+## 3. Манифест проекта («визитная карточка», создан)
 
-Будущий «визитной карточкой» harness-репозитория будет файл манифеста
-(решение пользователя). Предложение по форме — `_docs_/manifest.json`:
+Манифест лежит **в корне** harness-репозитория: `harness_manifest.json`
+(решение пользователя: корень вместо `_docs_`, snake_case по конвенции
+репозиториев). Файл создан и закоммичен в `lm_hrdo_2` (`cd34e2d5`, ветка
+`dev`). Vasyavig читает словарь из манифеста уже в этой задаче (расширение
+скоупа по просьбе пользователя); при отсутствии/повреждении манифеста —
+встроенный дефолт. Форма:
 
 ```jsonc
 {
@@ -110,11 +114,11 @@ harness_yaml.py, окно 5 строк) — регресс round-trip тесто
 }
 ```
 
-- Манифест станет первым, что проверяет предикат harness-репо (D8); до его
-  появления в harness-репо — распознавание по реестру, словарь — встроенный
-  дефолт в Vasyavig (значения выше, по факту скана).
-- Чтение манифеста Vasyavig'ом — отдельная задача после того, как манифест
-  появится в harness-репо и тулинге.
+- Предикат harness-репо (D8): манифест (валидный JSON-объект) ИЛИ реестр;
+  битый манифест не считается визитной карточкой. Словарь задач (§ ниже) —
+  из манифеста, дефолт — значения выше, по факту скана реестра.
+- Генерация/валидация манифеста тулингом harness-репо (`make ...`) — вне
+  скоупа Vasyavig, отдельная работа в harness-репо.
 
 ## 4. Кэш и обновление
 
@@ -151,21 +155,23 @@ harness_yaml.py, окно 5 строк) — регресс round-trip тесто
 
 | Файл | Изменение |
 |---|---|
-| `src/lib/harnessTasks.ts` (новый) | `TaskSource`, `IndexTaskSource`, `TaskDocRef`, `TaskDetails`, `TASK_TYPES`, словарь статусов + нормализация, join с реестром |
-| `src/lib/harnessEnvelope.ts` | выделить общий разбор плоских полей; новый `parseTaskEnvelope` (окно 30 строк); harness-парсер без изменений |
-| `src/store/harnessTasksStore.ts` (новый) | кэш подробностей по корню, инвалидация по watcher-путям, `version` |
-| `src/hooks/useFileWatcher.ts` | прокинуть события в `harnessTasksStore.invalidatePath` (рядом с harnessStore) |
-| `src/store/uiStore.ts` | режим сайдбара `sidebarMode: "tree" \| "tasks"` |
-| `src/components/Sidebar/SidebarHeader.tsx` | кнопка «Задачи» + переключение режима |
-| `src/components/Sidebar/TaskDashboard.tsx` (новый) | список, фильтры, переход, пустое состояние |
-| `src/components/Sidebar/Sidebar.css` | стили панели дашборда и значка |
+| `src/lib/harnessTasks.ts` (новый) | `TaskSource` (D3), `createIndexTaskSource`, `TaskDocRef`/`TaskDetails`/`TaskRow`, словарь (`DEFAULT_TASK_VOCABULARY`), `parseTaskVocabulary` (манифест), нормализация значений, `canonicalStatus` |
+| `src/lib/harnessEnvelope.ts` | выделен общий разбор плоских полей; новый `parseTaskEnvelope` (окно 30 строк); harness-парсер без изменений |
+| `src/store/harnessTasksStore.ts` (новый) | кэш строк по корню (vocab+rows+byPath), ленивый `ensureTasks` (параллель по 8), инвалидация: `.md` — точечный патч, реестр — сброс и немедленная перезагрузка |
+| `src/hooks/useFileWatcher.ts` | события прокинуты в `harnessTasksStore.invalidatePath` |
+| `src/store/uiStore.ts` | `sidebarMode: "tree" \| "tasks"` (сессионное, в persist не попадает) |
+| `src/components/Sidebar/SidebarHeader.tsx` | кнопка «Задачи» (видна при наличии harness-корня) |
+| `src/components/Sidebar/TaskDashboard.tsx` (новый) | селектор корня, фильтры status/kind/assignee + поиск, бейджи статусов, переход к документу, пустые состояния |
+| `src/components/Sidebar/Sidebar.css`, `EditorArea.css` | стили дашборда и значка |
+| `src/components/harnessIcon.ts` (новый) | `HARNESS_ICON` — одна константа на оба места (смена — одна строка) |
 | `src/components/Sidebar/RootSection.tsx` | значок harness-репо в заголовке секции |
 | `src/components/EditorArea/EditorTabs.tsx` | мини-значок на вкладках файлов harness-репо |
-| `src/lib/rootColors.ts` | `RootInfo.harness?: boolean` — производный флаг |
-| `src/store/fileStore.ts` | проба репо при addRoot/restore/openWorkspace/refresh + вывод из дерева; флаг не сериализуется |
-| `src/lib/harnessIndex.ts` | единый предикат `isHarnessRepoDir` (D8) |
-| `src/locales/{ru,en}/translation.json` | `harness.tasks.*`, `sidebar.harnessRepo` |
-| тесты | `harnessTasks.test.ts`, `harnessTasksStore.test.ts`: парсер (фикстуры task-yaml), нормализация статусов, фильтр типов, инвалидация, флаг/сериализация |
+| `src/App.tsx` | содержимое сайдбара: дерево ↔ дашборд |
+| `src/lib/rootColors.ts` | `RootInfo.harness?: boolean` — флаг «только true», не сериализуется |
+| `src/store/fileStore.ts` | `refreshHarnessFlag` (D9: проба корня + поиск в поддереве) при addRoot/openWorkspace/restore/refreshRoot |
+| `src/lib/harnessIndex.ts` | `HARNESS_MANIFEST_REL` (`harness_manifest.json` в корне), предикат `isHarnessRepoDir` (D8), `treeContainsHarnessRepo` (D9b) |
+| `src/locales/{ru,en}/translation.json` | `harness.tasks.*`, `sidebar.harnessRepo/showTasks/showTree` |
+| тесты | `harnessTasks.test.ts` (новый), `harnessTasksStore.test.ts` (новый), `harnessEnvelope.test.ts` (+5), адресные моки в `fileStore.test.ts` |
 
 ## 7. Значок harness-корня
 
@@ -193,7 +199,13 @@ harness_yaml.py, окно 5 строк) — регресс round-trip тесто
 
 ## 8. Проверки
 
-Автотесты: `pnpm test`, `npx tsc --noEmit`, `npx vite build`.
+Автотесты (2026-10-27, коммит `07a8d6f`):
+
+- `pnpm test` — **292 passed / 27 файлов** (было 270/25): +6 тестов парсера
+  task-yaml, +17 тестов словаря/источника/стора; моки `fileStore.test.ts`
+  переведены на адресные (проба манифеста не должна видеть workspace-контент).
+- `npx tsc --noEmit` — чисто.
+- `npx vite build` — ок (прежние предупреждения о размерах чанков).
 
 GUI-чек-лист (пример: `C:\repos\reksoft\locomoko\lm_hrdo_2` — Q4 закрыт,
 реестр на месте, 1788 записей):
@@ -224,16 +236,16 @@ GUI-чек-лист (пример: `C:\repos\reksoft\locomoko\lm_hrdo_2` — Q4 
 ## 10. Открытые вопросы
 
 Закрыты пользователем 2026-10-27: Q1 — значок в секции корня и на вкладках,
-иконка сменная; Q2 — базовый фильтр `task` принят (уточнён фактом реестра до
-`tracker`+`backlog`, см. D4); Q3 — форма манифеста предложена (§3, черновик —
-ждёт согласования); Q4 — пример-репозиторий:
-`C:\repos\reksoft\locomoko\lm_hrdo_2`.
+иконка сменная (`src/components/harnessIcon.ts`, сейчас `Boxes3`); Q2 — базовый
+фильтр `task` принят (уточнён фактом реестра до `tracker`+`backlog`, см. D4);
+Q3 — форма манифеста согласована, файл создан в корне `lm_hrdo_2` (§3);
+Q4 — пример-репозиторий: `C:\repos\reksoft\locomoko\lm_hrdo_2`.
 
 ## 11. Этапы
 
-1. Парсер task-yaml + `TaskSource`/`IndexTaskSource` + словарь статусов + тесты.
-2. `harnessTasksStore` + инвалидация + тесты.
-3. UI дашборда + локали ru/en.
-4. Значок: предикат, флаг корня, `RootSection`/`EditorTabs`, локали.
+1. Парсер task-yaml + `TaskSource`/`IndexTaskSource` + словарь статусов + тесты — готово.
+2. `harnessTasksStore` + инвалидация + тесты — готово.
+3. UI дашборда + локали ru/en — готово.
+4. Значок: предикат, флаг корня, `RootSection`/`EditorTabs`, локали — готово.
 5. GUI-приёмка на `lm_hrdo_2` → result-документ; roadmap и чекпоинт — после
    приёмки. Коммиты: код и документы раздельно (регламент §6).
