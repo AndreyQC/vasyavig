@@ -1,11 +1,19 @@
 /**
- * ULID-ссылки в теле документа (task 20261027_001, формат C):
- * `[<имя файла>](ulid:<ULID>)`, ссылка на место — `ulid:<docULID>#<anchorULID>`.
+ * ULID-ссылки в теле документа (task 20261027_001, формат C; схема —
+ * `harness_ulid:` с 20261027_003):
+ * `[<имя файла>](harness_ulid:<ULID>)`,
+ * якорь — `harness_ulid:<docULID>#<anchorULID>`.
+ * Legacy `ulid:` читается, но не пишется.
  * Единая точка разбора/сборки href для превью и WYSIWYG.
  */
 import {isPlausibleUlid} from "./harnessEnvelope";
 
-export const ULID_SCHEME = "ulid:";
+export const ULID_SCHEME = "harness_ulid:";
+
+/** Исторический формат (до 2026-10-27): читаем, но не пишем. */
+export const LEGACY_ULID_SCHEME = "ulid:";
+
+const ULID_SCHEMES = [ULID_SCHEME, LEGACY_ULID_SCHEME];
 
 export interface UlidHref {
   /** ULID документа-цели. */
@@ -18,18 +26,27 @@ function normalizeUlid(value: string): string {
   return value.trim().toUpperCase();
 }
 
-/** href начинается со схемы `ulid:` (без разбора остального). */
+/** href начинается с одной из схем ULID-ссылки (новая или legacy). */
 export function isUlidHref(href: string | null | undefined): boolean {
-  return typeof href === "string" && href.trim().toLowerCase().startsWith(ULID_SCHEME);
+  if (typeof href !== "string") return false;
+  const value = href.trim().toLowerCase();
+  return ULID_SCHEMES.some((scheme) => value.startsWith(scheme));
+}
+
+function stripUlidScheme(href: string): string {
+  const value = href.trim();
+  const lower = value.toLowerCase();
+  const scheme = ULID_SCHEMES.find((s) => lower.startsWith(s)) ?? "";
+  return value.slice(scheme.length);
 }
 
 /**
- * Разбор `ulid:<ULID>[#<ULID>]`. Некорректная схема/ULID/таймстемп -> null.
+ * Разбор `<scheme><ULID>[#<ULID>]`. Некорректная схема/ULID/таймстемп -> null.
  * Регистр приводится к верхнему (Crockford base32).
  */
 export function parseUlidHref(href: string | null | undefined): UlidHref | null {
   if (!isUlidHref(href)) return null;
-  const raw = (href as string).trim().slice(ULID_SCHEME.length);
+  const raw = stripUlidScheme(href as string);
   const hash = raw.indexOf("#");
   const docPart = normalizeUlid(hash === -1 ? raw : raw.slice(0, hash));
   if (!docPart || !isPlausibleUlid(docPart)) return null;

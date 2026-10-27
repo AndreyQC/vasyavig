@@ -1,15 +1,17 @@
 /**
  * Превью: схемы URI и линкификация ULID-ссылок (task 20261027_001, формат C).
  *
- * Прототип показал: `ulid:` вырезается дважды — `sanitize-html` внутри
+ * Прототип показал: `harness_ulid:` вырезается дважды — `sanitize-html` внутри
  * `@diplodoc/transform` (`allowedSchemes`) и DOMPurify (`ALLOWED_URI_REGEXP`).
- * Здесь обе конфигурации и DOM-проход `a[href^="ulid:"]` -> `data-ulid`.
+ * Здесь обе конфигурации и DOM-проход `a[href^="harness_ulid:"]` -> `data-ulid`.
+ * Legacy `ulid:` читается наравне.
  */
 import type transform from "@diplodoc/transform";
 import type {UlidLinkMeta} from "./harnessIndex";
 import {parseUlidHref} from "./harnessUlidLink";
 
-/** Дефолтные схемы sanitize-html + `asset` (изображения) + `ulid` (ссылки). */
+/** Дефолтные схемы sanitize-html + `asset` (изображения) + `harness_ulid`
+ *  (ссылки) + legacy `ulid`. */
 export const PREVIEW_ALLOWED_SCHEMES = [
   "http",
   "https",
@@ -18,6 +20,7 @@ export const PREVIEW_ALLOWED_SCHEMES = [
   "tel",
   "sms",
   "asset",
+  "harness_ulid",
   "ulid",
 ];
 
@@ -32,12 +35,13 @@ export const PREVIEW_TRANSFORM_OPTIONS = {
 
 /** Дефолтный URI-регексп DOMPurify + схемы `asset` и `ulid`. */
 export const PREVIEW_SAFE_URI_RE =
-  /^(?:(?:(?:f|ht)tps?|asset|ulid|mailto|tel|callto|sms|cid|xmpp):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i;
+  /^(?:(?:(?:f|ht)tps?|asset|harness_ulid|ulid|mailto|tel|callto|sms|cid|xmpp):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i;
 
 /**
- * DOM-проход по ссылкам `ulid:`: href снимается (WebView не должен пытаться
- * открыть неизвестную схему), ULID/якорь переезжают в data-атрибуты, класс —
- * `ulid-link` (есть в реестре) или `ulid-unknown`. Обычные ссылки не трогаем.
+ * DOM-проход по ссылкам `harness_ulid:` (и legacy `ulid:`): href снимается
+ * (WebView не должен пытаться открыть неизвестную схему), ULID/якорь переезжают
+ * в data-атрибуты, класс — `ulid-link` (есть в реестре) или `ulid-unknown`.
+ * Обычные ссылки не трогаем.
  */
 export function linkifyUlidLinksInElement(
   root: ParentNode,

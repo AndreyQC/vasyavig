@@ -23,8 +23,8 @@ function render(html: string): HTMLElement {
 }
 
 describe("linkifyUlidLinksInElement", () => {
-  it("ссылка ulid: -> data-ulid, href снят, класс ссылки", () => {
-    const root = render(`<p><a href="ulid:${ULID}">файл.md</a></p>`);
+  it("ссылка harness_ulid: -> data-ulid, href снят, класс ссылки", () => {
+    const root = render(`<p><a href="harness_ulid:${ULID}">файл.md</a></p>`);
     const link = root.querySelector("a[data-ulid]");
     expect(link?.getAttribute("data-ulid")).toBe(ULID);
     expect(link?.getAttribute("href")).toBeNull();
@@ -34,8 +34,13 @@ describe("linkifyUlidLinksInElement", () => {
     expect(link?.textContent).toBe("файл.md");
   });
 
+  it("legacy `ulid:` тоже разбирается", () => {
+    const root = render(`<p><a href="ulid:${ULID}">файл.md</a></p>`);
+    expect(root.querySelector("a[data-ulid]")?.getAttribute("data-ulid")).toBe(ULID);
+  });
+
   it("неизвестный ULID -> data-ulid-unknown без перехода", () => {
-    const href = `ulid:${ULID.slice(0, -1)}9`;
+    const href = `harness_ulid:${ULID.slice(0, -1)}9`;
     const root = render(`<p><a href="${href}">файл.md</a></p>`);
     const link = root.querySelector("a[data-ulid-unknown]");
     expect(link?.getAttribute("data-ulid-unknown")).toBe(ULID.slice(0, -1) + "9");
@@ -45,7 +50,7 @@ describe("linkifyUlidLinksInElement", () => {
   });
 
   it("якорь переезжает в data-anchor", () => {
-    const root = render(`<p><a href="ulid:${ULID}#${ANCHOR}">раздел</a></p>`);
+    const root = render(`<p><a href="harness_ulid:${ULID}#${ANCHOR}">раздел</a></p>`);
     const link = root.querySelector("a[data-ulid]");
     expect(link?.getAttribute("data-ulid")).toBe(ULID);
     expect(link?.getAttribute("data-anchor")).toBe(ANCHOR);
@@ -58,31 +63,43 @@ describe("linkifyUlidLinksInElement", () => {
     expect(link?.hasAttribute("data-ulid")).toBe(false);
   });
 
-  it("битый ulid: остаётся обычной ссылкой", () => {
-    const root = render(`<p><a href="ulid:bad">x</a></p>`);
+  it("битый ULID остаётся обычной ссылкой", () => {
+    const root = render(`<p><a href="harness_ulid:bad">x</a></p>`);
     const link = root.querySelector("a");
-    expect(link?.getAttribute("href")).toBe("ulid:bad");
+    expect(link?.getAttribute("href")).toBe("harness_ulid:bad");
     expect(link?.hasAttribute("data-ulid-unknown")).toBe(false);
   });
 });
 
 describe("превью: схемы URI", () => {
-  it("transform сохраняет href `ulid:` при allowedSchemes", () => {
+  it("transform сохраняет href `harness_ulid:` при allowedSchemes", () => {
+    const {result} = transform(`[файл](harness_ulid:${ULID})`, PREVIEW_TRANSFORM_OPTIONS);
+    expect(result.html).toContain(`href="harness_ulid:${ULID}"`);
+  });
+
+  it("transform сохраняет и legacy `ulid:`", () => {
     const {result} = transform(`[файл](ulid:${ULID})`, PREVIEW_TRANSFORM_OPTIONS);
     expect(result.html).toContain(`href="ulid:${ULID}"`);
   });
 
-  it("transform по умолчанию вырезает href `ulid:`", () => {
+  it("legacy `ulid:` по умолчанию вырезается (нужен allowedSchemes)", () => {
     const {result} = transform(`[файл](ulid:${ULID})`);
     expect(result.html).not.toContain("href=");
   });
 
-  it("DOMPurify пропускает `ulid:` и режет `javascript:`", () => {
+  it("`harness_ulid:` переживает transform и без allowedSchemes", () => {
+    // подчёркивание не входит в RFC-схему: sanitize-html видит относительный
+    // путь и пропускает; в приложении href всё равно снимается после разбора
+    const {result} = transform(`[файл](harness_ulid:${ULID})`);
+    expect(result.html).toContain(`href="harness_ulid:${ULID}"`);
+  });
+
+  it("DOMPurify пропускает `harness_ulid:` и режет `javascript:`", () => {
     const sanitized = DOMPurify.sanitize(
-      `<a href="ulid:${ULID}">ok</a><a href="javascript:alert(1)">bad</a>`,
+      `<a href="harness_ulid:${ULID}">ok</a><a href="javascript:alert(1)">bad</a>`,
       {ALLOWED_URI_REGEXP: PREVIEW_SAFE_URI_RE},
     );
-    expect(sanitized).toContain(`href="ulid:${ULID}"`);
+    expect(sanitized).toContain(`href="harness_ulid:${ULID}"`);
     expect(sanitized).not.toContain("javascript:");
   });
 });

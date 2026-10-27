@@ -60,8 +60,8 @@ export function SplitPreview({content, basePath, rootPath, fileName, fallbackKin
       // supportGithubAnchors: заголовки получают кириллические якоря github-стиля
       // (id="1-введение") в дополнение к транслит-id — оглавления кликабельны;
       // скрытые конверты harness (harness-yaml/task-yaml) из рендера убираем (D13).
-      // allowedSchemes: `ulid:` иначе вырезает sanitize-html внутри transform
-      // (task 20261027_002).
+      // allowedSchemes: `harness_ulid:` иначе вырезает sanitize-html внутри
+      // transform (task 20261027_002, схема — 20261027_003).
       const {result} = transform(stripHiddenEnvelopes(deferred), PREVIEW_TRANSFORM_OPTIONS);
       const withImages = rewriteImageSrcs(result.html, basePath, rootPath);
       const doc = new DOMParser().parseFromString(withImages, "text/html");
@@ -70,7 +70,7 @@ export function SplitPreview({content, basePath, rootPath, fileName, fallbackKin
         if (res.status !== "found") return null;
         return {title: res.entry.title ?? res.entry.path, type: res.entry.type ?? ""};
       };
-      // ссылки `[имя](ulid:…)` — до линкификации сырых ULID (те не лезут в <a>)
+      // ссылки `[имя](harness_ulid:…)` — до линкификации сырых ULID (те не лезут в <a>)
       linkifyUlidLinksInElement(
         doc.body,
         lookup,

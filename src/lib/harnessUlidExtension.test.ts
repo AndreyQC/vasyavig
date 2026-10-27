@@ -119,7 +119,7 @@ describe("buildUlidDecorations", () => {
 
   it("ссылка `[имя](ulid:…)` -> одна декорация на весь текст ссылки", () => {
     const text = "20261027_001_ulid_body_links_plan.md";
-    const [deco] = decoInfos(buildUlidDecorations(docWithLink(text, `ulid:${ULID_A}`), "C:/repo"));
+    const [deco] = decoInfos(buildUlidDecorations(docWithLink(text, `harness_ulid:${ULID_A}`), "C:/repo"));
     expect(deco.attrs.class).toBe("ulid-link");
     expect(deco.attrs["data-ulid"]).toBe(ULID_A);
     expect(deco.from).toBe(1);
@@ -128,7 +128,7 @@ describe("buildUlidDecorations", () => {
 
   it("ссылка с якорем -> data-anchor", () => {
     const [deco] = decoInfos(
-      buildUlidDecorations(docWithLink("раздел", `ulid:${ULID_A}#${ANCHOR}`), "C:/repo"),
+      buildUlidDecorations(docWithLink("раздел", `harness_ulid:${ULID_A}#${ANCHOR}`), "C:/repo"),
     );
     expect(deco.attrs["data-ulid"]).toBe(ULID_A);
     expect(deco.attrs["data-anchor"]).toBe(ANCHOR);
