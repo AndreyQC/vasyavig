@@ -8,6 +8,12 @@ importers:
 
   .:
     dependencies:
+      '@codemirror/state':
+        specifier: ^6.7.1
+        version: 6.7.1
+      '@codemirror/view':
+        specifier: ^6.43.6
+        version: 6.43.6
       '@diplodoc/transform':
         specifier: ^4.77.5
         version: 4.77.5(@types/markdown-it@13.0.9)(react@19.2.8)

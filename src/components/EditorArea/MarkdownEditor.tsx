@@ -10,6 +10,7 @@ import {anchorNavigationExtension} from "../../lib/anchorNavigationExtension";
 import {imageSrcExtension} from "../../lib/imageSrcExtension";
 import {mermaidWysiwygExtension} from "../../lib/mermaidWysiwygExtension";
 import {harnessUlidExtension} from "../../lib/harnessUlidExtension";
+import {harnessUlidMarkupExtension} from "../../lib/harnessUlidMarkupExtension";
 import {useHarnessStore} from "../../store/harnessStore";
 import {setMermaidTheme} from "../../lib/mermaidRenderer";
 import {combineExtensions} from "../../lib/combineExtensions";
@@ -34,6 +35,10 @@ export function MarkdownEditor({path, initialContent}: Props) {
       md: {html: true, breaks: true, linkify: true},
       initial: {markup: initialContent, mode: "wysiwyg"},
       experimental: {preserveEmptyRows: true},
+      // Markup-режим: подсветка/клики по harness-ulid:-ссылкам (task 20261027_004)
+      markupConfig: {
+        extensions: harnessUlidMarkupExtension(path),
+      },
       wysiwygConfig: {
         extensions: combineExtensions(
           spellcheckExtension(),

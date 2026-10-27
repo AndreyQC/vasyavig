@@ -11,6 +11,8 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@codemirror/state": "^6.7.1",
+    "@codemirror/view": "^6.43.6",
     "@diplodoc/transform": "^4.77.5",
     "@gravity-ui/icons": "^2.21.0",
     "@gravity-ui/markdown-editor": "^15.44.0",
