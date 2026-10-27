@@ -276,3 +276,29 @@ A/B/… потому что …».
 | Результат | `_docs_/_tasks_/2026-10-27/20261027_001_ulid_body_links_result.md` | `docs(tasks): 20261027_001 ULID-ссылки в теле — результат` |
 | Roadmap | `_docs_/roadmap.md` | `docs(roadmap): Phase 7 — решение по формату ULID-ссылок` |
 | План задачи 4 | `_docs_/_tasks_/YYYY-MM-DD/YYYYMMDD_NNN_ulid_markup_plan.md` | `docs(tasks): ... — план` |
+
+## 11. Протокол прототипа (2026-10-27)
+
+Временный тест `src/lib/zz_proto_ulid_link.test.ts` (после прогона удалён).
+Фикстура: `[имя](ulid:<doc>)` и `[якорь](ulid:<doc>#<anchor>)` в параграфе,
+YFM-note и YFM-таблице; редактор собран по образцу `YfmSpecsPreset` +
+`FullSpecsPreset` (как в `harnessRoundTripYfm.test.ts`).
+
+| Проверка | Результат |
+|---|---|
+| WYSIWYG/YFM parse -> serialize (`getValue`) | ссылки сохраняются дословно, включая `#<anchor>`; второй проход идемпотентен |
+| Ссылки внутри YFM note и таблицы | сохраняются; таблица по-прежнему сериализуется блоками (известное ограничение) |
+| `@diplodoc/transform` (превью), по умолчанию | **href вырезается**: `<a>файл</a>` (sanitize-html, `allowedSchemes`) |
+| transform + `sanitizeOptions.allowedSchemes` с `ulid` | `href="ulid:…"` сохраняется |
+| DOMPurify с текущим `ASSET_SAFE_URI_RE` | href вырезается |
+| DOMPurify с `ulid` в `ALLOWED_URI_REGEXP` | href сохраняется |
+
+**Вывод.** Формат C (`[<имя файла>](ulid:<ULID>)`) подтверждён на уровне
+редактора. Для превью нужны две правки конфигурации в `SplitPreview.tsx`:
+`sanitizeOptions.allowedSchemes` в `transform` (строка 70) и `ulid` в
+`ALLOWED_URI_REGEXP` для DOMPurify (строка 33). Без них ссылка рендерится
+текстом. Это единственный блокер формата, найденный прототипом.
+
+**Не проверено прототипом (GUI/отдельные задачи):** hover-плашечка, клик в
+WYSIWYG по `link`-марке, поведение при вводе/удалении ссылки, автодополнение,
+якоря (Q9), Markup-режим.
