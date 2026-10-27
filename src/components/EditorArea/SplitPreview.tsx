@@ -6,6 +6,7 @@ import {useThemeValue} from "@gravity-ui/uikit";
 import {resolveImageDisplayUrl} from "../../lib/resolveImageSrc";
 import {parseHarnessEnvelope, stripHiddenEnvelopes} from "../../lib/harnessEnvelope";
 import {linkifyUlidsInElement, type UlidLinkMeta} from "../../lib/harnessIndex";
+import {linkifyUlidLinksInElement, PREVIEW_SAFE_URI_RE, PREVIEW_TRANSFORM_OPTIONS} from "../../lib/previewLinks";
 import {buildEnvelopeLinkChips} from "../../lib/harnessLinks";
 import {HarnessLinkChips} from "../HarnessLinkChips";
 import {openUlidTarget, useHarnessStore} from "../../store/harnessStore";
@@ -23,14 +24,6 @@ interface Props {
   /** Kind файла — fallback бейджа типа. */
   fallbackKind?: string;
 }
-
-/**
- * Дефолтный URI-регексп DOMPurify + схема `asset:` — иначе на macOS/Linux
- * sanitize вырежет asset-URL у картинок (на Windows форма http://asset.localhost
- * проходит и без этого).
- */
-const ASSET_SAFE_URI_RE =
-  /^(?:(?:(?:f|ht)tps?|asset|mailto|tel|callto|sms|cid|xmpp):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i;
 
 /** Переписывает src локальных картинок на asset-URL. Только для показа —
  *  markdown и файл не меняются (идея src/renderSrc из gramax, phase 5). */
@@ -66,22 +59,28 @@ export function SplitPreview({content, basePath, rootPath, fileName, fallbackKin
     try {
       // supportGithubAnchors: заголовки получают кириллические якоря github-стиля
       // (id="1-введение") в дополнение к транслит-id — оглавления кликабельны;
-      // скрытые конверты harness (harness-yaml/task-yaml) из рендера убираем (D13)
-      const {result} = transform(stripHiddenEnvelopes(deferred), {supportGithubAnchors: true});
+      // скрытые конверты harness (harness-yaml/task-yaml) из рендера убираем (D13).
+      // allowedSchemes: `ulid:` иначе вырезает sanitize-html внутри transform
+      // (task 20261027_002).
+      const {result} = transform(stripHiddenEnvelopes(deferred), PREVIEW_TRANSFORM_OPTIONS);
       const withImages = rewriteImageSrcs(result.html, basePath, rootPath);
-      // ULID-линкификация (D3): один DOM-проход до sanitize, data-атрибуты DOMPurify пропускает
       const doc = new DOMParser().parseFromString(withImages, "text/html");
-      linkifyUlidsInElement(
+      const lookup = (ulid: string): UlidLinkMeta | null => {
+        const res = useHarnessStore.getState().resolveFor(basePath, ulid);
+        if (res.status !== "found") return null;
+        return {title: res.entry.title ?? res.entry.path, type: res.entry.type ?? ""};
+      };
+      // ссылки `[имя](ulid:…)` — до линкификации сырых ULID (те не лезут в <a>)
+      linkifyUlidLinksInElement(
         doc.body,
-        (ulid): UlidLinkMeta | null => {
-          const res = useHarnessStore.getState().resolveFor(basePath, ulid);
-          if (res.status !== "found") return null;
-          return {title: res.entry.title ?? res.entry.path, type: res.entry.type ?? ""};
-        },
+        lookup,
         i18n.t("harness.ulidUnknownTooltip"),
+        basePath,
       );
+      // ULID-линкификация (D3): один DOM-проход до sanitize, data-атрибуты DOMPurify пропускает
+      linkifyUlidsInElement(doc.body, lookup, i18n.t("harness.ulidUnknownTooltip"), basePath);
       return DOMPurify.sanitize(doc.body.innerHTML, {
-        ALLOWED_URI_REGEXP: ASSET_SAFE_URI_RE,
+        ALLOWED_URI_REGEXP: PREVIEW_SAFE_URI_RE,
       });
     } catch (e) {
       return `<pre class="split-preview__error">Ошибка рендера превью: ${String(e)}</pre>`;
@@ -113,14 +112,17 @@ export function SplitPreview({content, basePath, rootPath, fileName, fallbackKin
     });
   }, [html]);
 
-  // Клик по ULID-ссылке (D5): контент в dangerouslySetInnerHTML — делегирование
+  // Клик по ULID-ссылке (D5, формат C): контент в dangerouslySetInnerHTML —
+  // делегирование; известные открывают документ, неизвестные — уведомление.
   const onBodyClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
-    const link = target.closest?.("a[data-ulid]") as HTMLElement | null;
+    const link = target.closest?.("a[data-ulid], [data-ulid-unknown]") as HTMLElement | null;
     if (!link) return;
     e.preventDefault();
-    const ulid = link.getAttribute("data-ulid");
-    if (ulid) void openUlidTarget(basePath, ulid);
+    const ulid = link.getAttribute("data-ulid") ?? link.getAttribute("data-ulid-unknown");
+    if (!ulid) return;
+    const anchor = link.getAttribute("data-anchor") ?? undefined;
+    void openUlidTarget(basePath, ulid, anchor);
   };
 
   /** Связи конверта (D9): скрытые ULID из related/based_on — кликабельные чипы. */

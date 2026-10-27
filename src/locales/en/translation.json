@@ -135,6 +135,19 @@
     "linkBasedOn": "based on",
     "links": "Links",
     "linksTooltip": "Document links from the harness-yaml envelope (related/based_on)",
-    "linksTitle": "Document links"
+    "linksTitle": "Document links",
+    "link": {
+      "open": "Open",
+      "project": "Project",
+      "path": "Path",
+      "created": "Created",
+      "updated": "Updated",
+      "related": "Related",
+      "basedOn": "Based on",
+      "anchor": "Anchor",
+      "anchorSoon": "Jump to anchors will come later",
+      "unknown": "ULID not found in the document registry",
+      "unknownHint": "Refresh the registry: make doc-index"
+    }
   }
 }

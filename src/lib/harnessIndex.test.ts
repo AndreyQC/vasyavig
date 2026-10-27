@@ -97,11 +97,12 @@ describe("linkifyUlidsInElement", () => {
     return root;
   }
 
-  it("известный ULID -> <a data-ulid> с title «title · type»", () => {
+  it("известный ULID -> <a data-ulid> с aria-label «title · type»", () => {
     const root = render(`<p>см. ${ULID_A} далее</p>`);
     const link = root.querySelector("a[data-ulid]");
     expect(link?.getAttribute("data-ulid")).toBe(ULID_A);
-    expect(link?.getAttribute("title")).toBe("План А · plan");
+    expect(link?.getAttribute("aria-label")).toBe("План А · plan");
+    expect(link?.getAttribute("title")).toBeNull();
     expect(link?.textContent).toBe(ULID_A);
     expect(root.textContent).toBe(`см. ${ULID_A} далее`);
   });
@@ -109,7 +110,7 @@ describe("linkifyUlidsInElement", () => {
   it("неизвестный -> <span data-ulid-unknown> с подсказкой", () => {
     const root = render(`<p>${ULID_B}</p>`);
     const span = root.querySelector("span[data-ulid-unknown]");
-    expect(span?.getAttribute("title")).toBe("нет в реестре");
+    expect(span?.getAttribute("aria-label")).toBe("нет в реестре");
     expect(root.querySelector("a")).toBeNull();
   });
 

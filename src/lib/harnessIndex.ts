@@ -155,6 +155,7 @@ export function linkifyUlidsInElement(
   root: ParentNode,
   lookup: (ulid: string) => UlidLinkMeta | null,
   unknownTitle: string,
+  dir?: string,
 ): void {
   const doc = root.ownerDocument;
   if (!doc) return;
@@ -180,12 +181,13 @@ export function linkifyUlidsInElement(
       if (hit) {
         el.className = "ulid-link";
         el.setAttribute("data-ulid", match.ulid);
-        el.setAttribute("title", `${hit.title} · ${hit.type}`);
+        el.setAttribute("aria-label", `${hit.title} · ${hit.type}`);
       } else {
         el.className = "ulid-unknown";
         el.setAttribute("data-ulid-unknown", match.ulid);
-        el.setAttribute("title", unknownTitle);
+        el.setAttribute("aria-label", unknownTitle);
       }
+      if (dir) el.setAttribute("data-ulid-dir", dir);
       el.textContent = match.ulid;
       frag.append(el);
       last = match.end;

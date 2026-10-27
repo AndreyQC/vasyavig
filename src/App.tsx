@@ -25,6 +25,7 @@ import {TocModal} from "./components/Modals/TocModal";
 import {MermaidModal} from "./components/Modals/MermaidModal";
 import {ErrorToasts} from "./components/ErrorToasts";
 import {NoticeToasts} from "./components/NoticeToasts";
+import {HarnessUlidPopover} from "./components/HarnessUlidPopover";
 import {useEditorStore} from "./store/editorStore";
 import {useFileStore} from "./store/fileStore";
 import {useFileWatcher} from "./hooks/useFileWatcher";
@@ -126,6 +127,7 @@ function App() {
         <MermaidModal />
         <ErrorToasts />
         <NoticeToasts />
+        <HarnessUlidPopover />
       </ErrorBoundary>
     </Layout>
   );

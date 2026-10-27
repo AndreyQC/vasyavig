@@ -135,6 +135,19 @@
     "linkBasedOn": "осн.",
     "links": "Связи",
     "linksTooltip": "Связи документа из конверта harness-yaml (related/based_on)",
-    "linksTitle": "Связи документа"
+    "linksTitle": "Связи документа",
+    "link": {
+      "open": "Открыть",
+      "project": "Проект",
+      "path": "Путь",
+      "created": "Создан",
+      "updated": "Обновлён",
+      "related": "Связан",
+      "basedOn": "Основание",
+      "anchor": "Якорь",
+      "anchorSoon": "Переход к якорю появится позже",
+      "unknown": "ULID не найден в реестре документов",
+      "unknownHint": "Обновите реестр: make doc-index"
+    }
   }
 }

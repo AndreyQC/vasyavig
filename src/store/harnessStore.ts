@@ -117,12 +117,14 @@ export const useHarnessStore = create<HarnessState>((set, get) => ({
 /**
  * Переход по ULID (план D5): резолв -> открытие документа вкладкой.
  * Неизвестный/неоднозначный — уведомление, просмотр не прерывается.
+ * `anchor` (Q9) пока только фиксируется: переход к месту — отдельная задача.
  */
-export async function openUlidTarget(dir: string, ulid: string): Promise<void> {
+export async function openUlidTarget(dir: string, ulid: string, anchor?: string): Promise<void> {
   const res = useHarnessStore.getState().resolveFor(dir, ulid);
   const fileStore = useFileStore.getState();
   if (res.status === "found") {
     await fileStore.openFile(normalizeJoin(res.repoRoot, res.entry.path));
+    if (anchor) fileStore.setNotice(i18n.t("harness.link.anchorSoon"));
     return;
   }
   if (res.status === "ambiguous") {

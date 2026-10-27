@@ -135,4 +135,16 @@ describe("round-trip конверта harness-yaml через WYSIWYG-парсе
     expect(output).toContain("- пункт один");
     expect(output).toContain("[ссылкой](plan.md)");
   });
+
+  it("ulid:-ссылка на документ сохраняется дословно (формат C)", () => {
+    const DOC = "01M43R3ZGSNXQ0KSMZ9JSZEZ5W";
+    const ANCHOR = "01M5B8R7MQJZKD1NMQ7M9KZ1F0";
+    const editor = createEditor(
+      `См. [имя файла](ulid:${DOC}) и [раздел](ulid:${DOC}#${ANCHOR}).`,
+    );
+    const out = editor.getValue();
+    editor.destroy();
+    expect(out).toContain(`[имя файла](ulid:${DOC})`);
+    expect(out).toContain(`[раздел](ulid:${DOC}#${ANCHOR})`);
+  });
 });

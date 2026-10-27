@@ -346,6 +346,124 @@
   cursor: default;
 }
 
+/* Плашечка ULID-ссылки (task 20261027_002): метаданные реестра при наведении */
+.ulid-popover {
+  position: fixed;
+  z-index: 1000;
+  width: 340px;
+  max-width: calc(100vw - 16px);
+  padding: var(--g-spacing-3);
+  border-radius: var(--g-border-radius-m);
+  background: var(--g-color-base-float, var(--g-color-base-background));
+  box-shadow: 0 6px 20px rgb(0 0 0 / 18%);
+  color: var(--g-color-text-primary);
+  font-size: var(--g-text-body-2-font-size);
+}
+
+.ulid-popover__head {
+  display: flex;
+  align-items: center;
+  gap: var(--g-spacing-2);
+  margin-bottom: var(--g-spacing-2);
+}
+
+.ulid-popover__title {
+  font-weight: var(--g-text-accent-font-weight);
+}
+
+.ulid-popover__rows {
+  margin: 0;
+}
+
+.ulid-popover__row {
+  display: flex;
+  gap: var(--g-spacing-2);
+  margin-bottom: 2px;
+}
+
+.ulid-popover__row dt {
+  flex: 0 0 88px;
+  color: var(--g-color-text-secondary);
+}
+
+.ulid-popover__row dd {
+  margin: 0;
+  word-break: break-word;
+}
+
+.ulid-popover__path {
+  font-family: var(--g-font-family-monospace, monospace);
+  font-size: var(--g-text-body-1-font-size);
+}
+
+.ulid-popover__unknown {
+  display: flex;
+  flex-direction: column;
+  gap: var(--g-spacing-1);
+  color: var(--g-color-text-secondary);
+}
+
+.ulid-popover__anchor {
+  margin-top: var(--g-spacing-2);
+  padding-top: var(--g-spacing-2);
+  border-top: 1px solid var(--g-color-line-generic);
+}
+
+.ulid-popover__hint {
+  margin-top: 2px;
+  color: var(--g-color-text-secondary);
+  font-size: var(--g-text-body-1-font-size);
+}
+
+.ulid-popover__relations {
+  margin-top: var(--g-spacing-2);
+  padding-top: var(--g-spacing-2);
+  border-top: 1px solid var(--g-color-line-generic);
+}
+
+.ulid-popover__relation-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--g-spacing-1);
+  margin-bottom: 2px;
+}
+
+.ulid-popover__relation-label {
+  color: var(--g-color-text-secondary);
+}
+
+.ulid-popover__chip {
+  padding: 1px 6px;
+  border: 0;
+  border-radius: var(--g-border-radius-s);
+  background: var(--g-color-base-generic);
+  color: var(--g-color-text-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.ulid-popover__chip:hover {
+  background: var(--g-color-base-generic-hover);
+}
+
+.ulid-popover__footer {
+  display: flex;
+  align-items: center;
+  gap: var(--g-spacing-2);
+  margin-top: var(--g-spacing-3);
+}
+
+.ulid-popover__id {
+  overflow: hidden;
+  margin-left: auto;
+  color: var(--g-color-text-secondary);
+  font-family: var(--g-font-family-monospace, monospace);
+  font-size: var(--g-text-body-1-font-size);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .mermaid-diagram {
   display: flex;
   justify-content: center;
