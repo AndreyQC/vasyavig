@@ -16,7 +16,7 @@ const harnessUlidKey = new PluginKey<DecorationSet>("vasyavig-harness-ulid");
 const LINK_MARK_NAME = "link";
 
 /**
- * Одна ULID-декорация: ссылка `[имя](harness_ulid:…)` (task 20261027_002, формат C)
+ * Одна ULID-декорация: ссылка `[имя](harness-ulid:…)` (task 20261027_002, формат C)
  * или голый ULID в тексте (D7). Известные реестру — `ulid-link` с `data-ulid`,
  * неизвестные — `ulid-unknown`. Декорации view-only (урок §12).
  */
@@ -48,7 +48,7 @@ function pushUlidDecoration(
 }
 
 /**
- * Декорации ULID в WYSIWYG (D7 + формат C): ссылки с `href="harness_ulid:…"`
+ * Декорации ULID в WYSIWYG (D7 + формат C): ссылки с `href="harness-ulid:…"`
  * подсвечиваются целиком, сырые ULID в тексте — по совпадению. Внутри
  * обычных ссылок и код-блоков ULID не трогаем; внутри инлайн-кода закладки
  * (`ULID` в бэктиках) — оставляем кликабельным.
@@ -80,11 +80,11 @@ export function buildUlidDecorations(doc: PMNode, dir: string): DecorationSet {
   return decos.length ? DecorationSet.create(doc, decos) : DecorationSet.empty;
 }
 
-/** Элемент ULID-ссылки/штампа под курсором (декорация или `<a href="harness_ulid:…">`). */
+/** Элемент ULID-ссылки/штампа под курсором (декорация или `<a href="harness-ulid:…">`). */
 function ulidElementFromEvent(event: Event): HTMLElement | null {
   const target = event.target as HTMLElement | null;
   return (target?.closest?.(
-    "a[href^='harness_ulid:'], a[href^='ulid:'], [data-ulid], [data-ulid-unknown]",
+    "a[href^='harness-ulid:'], a[href^='harness_ulid:'], a[href^='ulid:'], [data-ulid], [data-ulid-unknown]",
   ) as HTMLElement | null) ?? null;
 }
 
@@ -115,7 +115,7 @@ export function harnessUlidExtension(path: string): Extension {
               return harnessUlidKey.getState(state);
             },
             handleDOMEvents: {
-              // `<a href="harness_ulid:…">` в WYSIWYG иначе уводит WebView на неизвестную схему
+              // `<a href="harness-ulid:…">` в WYSIWYG иначе уводит WebView на неизвестную схему
               click(_view, event) {
                 const el = ulidElementFromEvent(event);
                 if (!el) return false;

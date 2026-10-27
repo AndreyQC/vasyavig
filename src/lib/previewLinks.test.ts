@@ -23,8 +23,8 @@ function render(html: string): HTMLElement {
 }
 
 describe("linkifyUlidLinksInElement", () => {
-  it("ссылка harness_ulid: -> data-ulid, href снят, класс ссылки", () => {
-    const root = render(`<p><a href="harness_ulid:${ULID}">файл.md</a></p>`);
+  it("ссылка harness-ulid: -> data-ulid, href снят, класс ссылки", () => {
+    const root = render(`<p><a href="harness-ulid:${ULID}">файл.md</a></p>`);
     const link = root.querySelector("a[data-ulid]");
     expect(link?.getAttribute("data-ulid")).toBe(ULID);
     expect(link?.getAttribute("href")).toBeNull();
@@ -34,13 +34,15 @@ describe("linkifyUlidLinksInElement", () => {
     expect(link?.textContent).toBe("файл.md");
   });
 
-  it("legacy `ulid:` тоже разбирается", () => {
-    const root = render(`<p><a href="ulid:${ULID}">файл.md</a></p>`);
-    expect(root.querySelector("a[data-ulid]")?.getAttribute("data-ulid")).toBe(ULID);
+  it("legacy `harness_ulid:` и `ulid:` тоже разбираются", () => {
+    for (const scheme of ["harness_ulid:", "ulid:"]) {
+      const root = render(`<p><a href="${scheme}${ULID}">файл.md</a></p>`);
+      expect(root.querySelector("a[data-ulid]")?.getAttribute("data-ulid")).toBe(ULID);
+    }
   });
 
   it("неизвестный ULID -> data-ulid-unknown без перехода", () => {
-    const href = `harness_ulid:${ULID.slice(0, -1)}9`;
+    const href = `harness-ulid:${ULID.slice(0, -1)}9`;
     const root = render(`<p><a href="${href}">файл.md</a></p>`);
     const link = root.querySelector("a[data-ulid-unknown]");
     expect(link?.getAttribute("data-ulid-unknown")).toBe(ULID.slice(0, -1) + "9");
@@ -50,7 +52,7 @@ describe("linkifyUlidLinksInElement", () => {
   });
 
   it("якорь переезжает в data-anchor", () => {
-    const root = render(`<p><a href="harness_ulid:${ULID}#${ANCHOR}">раздел</a></p>`);
+    const root = render(`<p><a href="harness-ulid:${ULID}#${ANCHOR}">раздел</a></p>`);
     const link = root.querySelector("a[data-ulid]");
     expect(link?.getAttribute("data-ulid")).toBe(ULID);
     expect(link?.getAttribute("data-anchor")).toBe(ANCHOR);
@@ -64,42 +66,37 @@ describe("linkifyUlidLinksInElement", () => {
   });
 
   it("битый ULID остаётся обычной ссылкой", () => {
-    const root = render(`<p><a href="harness_ulid:bad">x</a></p>`);
+    const root = render(`<p><a href="harness-ulid:bad">x</a></p>`);
     const link = root.querySelector("a");
-    expect(link?.getAttribute("href")).toBe("harness_ulid:bad");
+    expect(link?.getAttribute("href")).toBe("harness-ulid:bad");
     expect(link?.hasAttribute("data-ulid-unknown")).toBe(false);
   });
 });
 
 describe("превью: схемы URI", () => {
-  it("transform сохраняет href `harness_ulid:` при allowedSchemes", () => {
-    const {result} = transform(`[файл](harness_ulid:${ULID})`, PREVIEW_TRANSFORM_OPTIONS);
-    expect(result.html).toContain(`href="harness_ulid:${ULID}"`);
+  it("transform сохраняет href `harness-ulid:` при allowedSchemes", () => {
+    const {result} = transform(`[файл](harness-ulid:${ULID})`, PREVIEW_TRANSFORM_OPTIONS);
+    expect(result.html).toContain(`href="harness-ulid:${ULID}"`);
   });
 
-  it("transform сохраняет и legacy `ulid:`", () => {
-    const {result} = transform(`[файл](ulid:${ULID})`, PREVIEW_TRANSFORM_OPTIONS);
-    expect(result.html).toContain(`href="ulid:${ULID}"`);
-  });
-
-  it("legacy `ulid:` по умолчанию вырезается (нужен allowedSchemes)", () => {
-    const {result} = transform(`[файл](ulid:${ULID})`);
+  it("transform по умолчанию вырезает href `harness-ulid:` (валидная схема)", () => {
+    const {result} = transform(`[файл](harness-ulid:${ULID})`);
     expect(result.html).not.toContain("href=");
   });
 
-  it("`harness_ulid:` переживает transform и без allowedSchemes", () => {
-    // подчёркивание не входит в RFC-схему: sanitize-html видит относительный
-    // путь и пропускает; в приложении href всё равно снимается после разбора
-    const {result} = transform(`[файл](harness_ulid:${ULID})`);
-    expect(result.html).toContain(`href="harness_ulid:${ULID}"`);
+  it("legacy `harness_ulid:` проходит как относительный путь, `ulid:` — нет", () => {
+    const legacyInvalid = transform(`[файл](harness_ulid:${ULID})`);
+    expect(legacyInvalid.result.html).toContain(`href="harness_ulid:${ULID}"`);
+    const legacyUlid = transform(`[файл](ulid:${ULID})`);
+    expect(legacyUlid.result.html).not.toContain("href=");
   });
 
-  it("DOMPurify пропускает `harness_ulid:` и режет `javascript:`", () => {
+  it("DOMPurify пропускает `harness-ulid:` и режет `javascript:`", () => {
     const sanitized = DOMPurify.sanitize(
-      `<a href="harness_ulid:${ULID}">ok</a><a href="javascript:alert(1)">bad</a>`,
+      `<a href="harness-ulid:${ULID}">ok</a><a href="javascript:alert(1)">bad</a>`,
       {ALLOWED_URI_REGEXP: PREVIEW_SAFE_URI_RE},
     );
-    expect(sanitized).toContain(`href="harness_ulid:${ULID}"`);
+    expect(sanitized).toContain(`href="harness-ulid:${ULID}"`);
     expect(sanitized).not.toContain("javascript:");
   });
 });

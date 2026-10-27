@@ -1,17 +1,17 @@
 /**
  * Превью: схемы URI и линкификация ULID-ссылок (task 20261027_001, формат C).
  *
- * Прототип показал: `harness_ulid:` вырезается дважды — `sanitize-html` внутри
+ * Прототип показал: `harness-ulid:` вырезается дважды — `sanitize-html` внутри
  * `@diplodoc/transform` (`allowedSchemes`) и DOMPurify (`ALLOWED_URI_REGEXP`).
- * Здесь обе конфигурации и DOM-проход `a[href^="harness_ulid:"]` -> `data-ulid`.
- * Legacy `ulid:` читается наравне.
+ * Здесь обе конфигурации и DOM-проход `a[href^="harness-ulid:"]` -> `data-ulid`.
+ * Legacy `harness_ulid:`/`ulid:` читаются наравне.
  */
 import type transform from "@diplodoc/transform";
 import type {UlidLinkMeta} from "./harnessIndex";
 import {parseUlidHref} from "./harnessUlidLink";
 
-/** Дефолтные схемы sanitize-html + `asset` (изображения) + `harness_ulid`
- *  (ссылки) + legacy `ulid`. */
+/** Дефолтные схемы sanitize-html + `asset` (изображения) + `harness-ulid`
+ *  (ссылки) + legacy `harness_ulid`/`ulid`. */
 export const PREVIEW_ALLOWED_SCHEMES = [
   "http",
   "https",
@@ -20,6 +20,7 @@ export const PREVIEW_ALLOWED_SCHEMES = [
   "tel",
   "sms",
   "asset",
+  "harness-ulid",
   "harness_ulid",
   "ulid",
 ];
@@ -35,7 +36,7 @@ export const PREVIEW_TRANSFORM_OPTIONS = {
 
 /** Дефолтный URI-регексп DOMPurify + схемы `asset` и `ulid`. */
 export const PREVIEW_SAFE_URI_RE =
-  /^(?:(?:(?:f|ht)tps?|asset|harness_ulid|ulid|mailto|tel|callto|sms|cid|xmpp):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i;
+  /^(?:(?:(?:f|ht)tps?|asset|harness-ulid|harness_ulid|ulid|mailto|tel|callto|sms|cid|xmpp):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i;
 
 /**
  * DOM-проход по ссылкам `harness_ulid:` (и legacy `ulid:`): href снимается

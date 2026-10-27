@@ -1,19 +1,19 @@
 /**
  * ULID-ссылки в теле документа (task 20261027_001, формат C; схема —
- * `harness_ulid:` с 20261027_003):
- * `[<имя файла>](harness_ulid:<ULID>)`,
- * якорь — `harness_ulid:<docULID>#<anchorULID>`.
- * Legacy `ulid:` читается, но не пишется.
+ * `harness-ulid:` с 20261027_004):
+ * `[<имя файла>](harness-ulid:<ULID>)`,
+ * якорь — `harness-ulid:<docULID>#<anchorULID>`.
+ * Legacy `harness_ulid:` и `ulid:` читаются, но не пишутся.
  * Единая точка разбора/сборки href для превью и WYSIWYG.
  */
 import {isPlausibleUlid} from "./harnessEnvelope";
 
-export const ULID_SCHEME = "harness_ulid:";
+export const ULID_SCHEME = "harness-ulid:";
 
-/** Исторический формат (до 2026-10-27): читаем, но не пишем. */
-export const LEGACY_ULID_SCHEME = "ulid:";
+/** Читаем, но не пишем: промежуточный и исторический форматы. */
+export const LEGACY_ULID_SCHEMES = ["harness_ulid:", "ulid:"] as const;
 
-const ULID_SCHEMES = [ULID_SCHEME, LEGACY_ULID_SCHEME];
+const ULID_SCHEMES = [ULID_SCHEME, ...LEGACY_ULID_SCHEMES];
 
 export interface UlidHref {
   /** ULID документа-цели. */
