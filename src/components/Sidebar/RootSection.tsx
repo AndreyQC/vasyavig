@@ -7,6 +7,7 @@ import {useFileStore} from "../../store/fileStore";
 import {useFileActions} from "../../hooks/useFileActions";
 import {getFileName} from "../../lib/utils";
 import {ROOT_PALETTE, type RootInfo} from "../../lib/rootColors";
+import {HARNESS_ICON} from "../harnessIcon";
 import {FileTreeNode} from "./FileTreeNode";
 
 interface Props {
@@ -66,6 +67,13 @@ export function RootSection({root}: Props) {
         }}
       >
         <span className="root-section__chip" />
+        {root.harness && (
+          <Tooltip content={t("sidebar.harnessRepo")}>
+            <span className="root-section__harness">
+              <Icon data={HARNESS_ICON} size={14} />
+            </span>
+          </Tooltip>
+        )}
         <Text variant="subheader-3" ellipsis className="root-section__name">
           {getFileName(root.path)}
         </Text>

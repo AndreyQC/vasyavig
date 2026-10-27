@@ -5,6 +5,7 @@ import {
   isValidUlidShape,
   parseBookmarkUlid,
   parseHarnessEnvelope,
+  parseTaskEnvelope,
   stripHiddenEnvelopes,
 } from "./harnessEnvelope";
 
@@ -158,5 +159,49 @@ describe("ULID-валидация", () => {
   it("findUlidMatches: ULID внутри более длинного токена не матчится", () => {
     expect(findUlidMatches("x01M43R3ZGSNXQ0KSMZ9JSZEZ5W")).toHaveLength(0);
     expect(findUlidMatches("01M43R3ZGSNXQ0KSMZ9JSZEZ5Wx")).toHaveLength(0);
+  });
+});
+
+describe("parseTaskEnvelope", () => {
+  it("эталонный файл: task-yaml после harness-конверта и закладки", () => {
+    expect(parseTaskEnvelope(TASK_FILE)).toEqual({
+      kind: "daily-task",
+      status: "done",
+      task: "20260921_622",
+      tracker: "",
+      priority: "",
+      assignee: "",
+    });
+  });
+
+  it("маркер не в первых 30 строках — конверта нет", () => {
+    const text = `${Array.from({length: 30}, () => "текст").join("\n")}\n<!-- [<[task-yaml]]\nkind: daily-task\n[[task-yaml]>] -->`;
+    expect(parseTaskEnvelope(text)).toBeNull();
+  });
+
+  it("статус без значения — null, пустые кавычки — пустая строка", () => {
+    const env = parseTaskEnvelope(
+      "<!-- [<[task-yaml]]\nkind: daily-task\nstatus:\nassignee: \"\"\n[[task-yaml]>] -->",
+    );
+    expect(env).toEqual({
+      kind: "daily-task",
+      status: null,
+      task: null,
+      tracker: null,
+      priority: null,
+      assignee: "",
+    });
+  });
+
+  it("без закрывающего маркера — null (повреждён)", () => {
+    expect(parseTaskEnvelope("<!-- [<[task-yaml]]\nkind: daily-task\n")).toBeNull();
+  });
+
+  it("инлайн-список в значении не ломает разбор соседних полей", () => {
+    const env = parseTaskEnvelope(
+      "<!-- [<[task-yaml]]\nkind: daily-task\nstatus: done\nrelated: [a, b]\nassignee: Иванов\n[[task-yaml]>] -->",
+    );
+    expect(env?.status).toBe("done");
+    expect(env?.assignee).toBe("Иванов");
   });
 });

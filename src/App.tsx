@@ -3,6 +3,7 @@ import {invoke} from "@tauri-apps/api/core";
 import {Layout} from "./components/Layout";
 import {SidebarHeader} from "./components/Sidebar/SidebarHeader";
 import {FileTree} from "./components/Sidebar/FileTree";
+import {TaskDashboard} from "./components/Sidebar/TaskDashboard";
 import {EmptyState} from "./components/EditorArea/EmptyState";
 import {EditorTabs} from "./components/EditorArea/EditorTabs";
 import {MarkdownEditor} from "./components/EditorArea/MarkdownEditor";
@@ -28,6 +29,7 @@ import {NoticeToasts} from "./components/NoticeToasts";
 import {HarnessUlidPopover} from "./components/HarnessUlidPopover";
 import {useEditorStore} from "./store/editorStore";
 import {useFileStore} from "./store/fileStore";
+import {useUiStore} from "./store/uiStore";
 import {useFileWatcher} from "./hooks/useFileWatcher";
 import {useHotkeys} from "./hooks/useHotkeys";
 import {useDragDrop} from "./hooks/useDragDrop";
@@ -59,12 +61,14 @@ function App() {
     document.title = activeName ? `${activeName} — Vasyavig` : "Vasyavig";
   }, [activeName]);
 
-  // шапка сайдбара закреплена; скроллится только дерево (flex-колонка)
+  // шапка сайдбара закреплена; скроллится только содержимое (flex-колонка);
+  // содержимое — дерево файлов или дашборд задач (план 20261027_005 §5)
+  const sidebarMode = useUiStore((s) => s.sidebarMode);
   const sidebar = (
     <div className="sidebar">
       <SidebarHeader />
       <div className="sidebar__content">
-        <FileTree />
+        {sidebarMode === "tasks" ? <TaskDashboard /> : <FileTree />}
       </div>
     </div>
   );

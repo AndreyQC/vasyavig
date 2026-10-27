@@ -4,6 +4,9 @@ import {persist} from "zustand/middleware";
 export type ThemeMode = "light" | "dark" | "system";
 export type UiLang = "ru" | "en";
 
+/** Содержимое сайдбара: дерево файлов или дашборд задач (план 20261027_005 §5). */
+export type SidebarMode = "tree" | "tasks";
+
 /** Запрос на правку mermaid-диаграммы в модалке (nodeView → модалка, design D3). */
 export interface MermaidEditRequest {
   source: string;
@@ -40,8 +43,11 @@ interface UiState {
   pendingTocPath: string | null;
   /** Диаграмма mermaid, ожидающая правки в модалке. */
   pendingMermaidEdit: MermaidEditRequest | null;
+  /** Содержимое сайдбара; сессионное — в persist не попадает (partialize). */
+  sidebarMode: SidebarMode;
 
   setTheme: (theme: ThemeMode) => void;
+  setSidebarMode: (mode: SidebarMode) => void;
   setLang: (lang: UiLang) => void;
   setLastWorkspacePath: (path: string | null) => void;
   setPendingSaveAsPath: (path: string | null) => void;
@@ -75,8 +81,10 @@ export const useUiStore = create<UiState>()(
       pendingRenamePath: null,
       pendingTocPath: null,
       pendingMermaidEdit: null,
+      sidebarMode: "tree",
 
       setTheme: (theme) => set({theme}),
+      setSidebarMode: (mode) => set({sidebarMode: mode}),
       setLang: (lang) => set({lang}),
       setLastWorkspacePath: (path) => set({lastWorkspacePath: path}),
       setPendingSaveAsPath: (path) => set({pendingSaveAsPath: path}),

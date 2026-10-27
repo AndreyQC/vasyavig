@@ -20,6 +20,7 @@ import {getFileKind, getFileName, getParentDir, joinPath, remapPath, replaceExte
 import i18n from "../lib/i18n";
 import {pickNextColor, type PaletteColor, type RootInfo} from "../lib/rootColors";
 import {normalizePath, pathsLosingRoot, resolveRoot} from "../lib/roots";
+import {isHarnessRepoDir, treeContainsHarnessRepo} from "../lib/harnessIndex";
 import {
   parseWorkspace,
   resolveFolderPath,
@@ -128,6 +129,30 @@ async function loadRootTree(root: RootInfo, set: SetPartial, get: () => FileStat
   }
 }
 
+/**
+ * Флаг harness-репо у корня (план 20261027_005, D9): (a) манифест/реестр
+ * прямо в корне — проба чтения; (b) они в поддереве уже загруженного дерева
+ * (корень-родитель, содержащий репо). Флаг производный: в workspace-файл не
+ * попадает (serializeWorkspace пишет path/color).
+ */
+async function refreshHarnessFlag(rootPath: string, set: SetPartial, get: () => FileState) {
+  const direct = await isHarnessRepoDir(rootPath);
+  const inTree = !direct && treeContainsHarnessRepo(get().trees[rootPath] ?? []);
+  const flag = direct || inTree;
+  const current = get().roots.find((r) => r.path === rootPath);
+  if (!current || current.harness === flag || (!flag && current.harness === undefined)) return;
+  set({
+    roots: get().roots.map((r) => {
+      if (r.path !== rootPath) return r;
+      if (flag) return {...r, harness: true};
+      // флаг «только true»: отсутствие свойства = не-harness (глубокие
+      // сравнения корней в тестах и потребители не видят лишнего поля)
+      const {harness: _harness, ...rest} = r;
+      return rest;
+    }),
+  });
+}
+
 export const useFileStore = create<FileState>((set, get) => ({
   roots: [],
   trees: {},
@@ -196,6 +221,7 @@ export const useFileStore = create<FileState>((set, get) => ({
     // watcher идемпотентен: повторный watch того же пути — no-op
     watchFolder(path).catch((e) => console.warn("watch_folder failed:", e));
     await loadRootTree(root, set, get);
+    await refreshHarnessFlag(root.path, set, get);
     await persistWorkspace(get().roots, get().workspaceFilePath, set);
   },
 
@@ -237,6 +263,8 @@ export const useFileStore = create<FileState>((set, get) => ({
       const tree = await listDirectory(path);
       if (get().roots.some((r) => r.path === path)) {
         set((s) => ({trees: {...s.trees, [path]: tree}}));
+        // репо могло появиться/исчезнуть в корне или поддереве (D9)
+        await refreshHarnessFlag(path, set, get);
       }
     } catch (e) {
       set({error: String(e)});
@@ -461,4 +489,5 @@ async function replaceRoots(roots: RootInfo[], wsPath: string, set: SetPartial, 
     watchFolder(root.path).catch((e) => console.warn("watch_folder failed:", e));
   }
   await Promise.all(roots.map((root) => loadRootTree(root, set, get)));
+  await Promise.all(roots.map((root) => refreshHarnessFlag(root.path, set, get)));
 }

@@ -14,7 +14,10 @@
     "hideHidden": "Скрыть скрытые файлы",
     "createFile": "Создать файл",
     "rename": "Переименовать",
-    "delete": "Удалить"
+    "delete": "Удалить",
+    "harnessRepo": "harness-репозиторий (есть манифест или реестр документов)",
+    "showTasks": "Задачи (task-yaml)",
+    "showTree": "Дерево файлов"
   },
   "empty": {
     "hint": "Добавьте папку в workspace и выберите Markdown/YFM файл"
@@ -148,6 +151,17 @@
       "anchorSoon": "Переход к якорю появится позже",
       "unknown": "ULID не найден в реестре документов",
       "unknownHint": "Обновите реестр: make doc-index"
+    },
+    "tasks": {
+      "noRepo": "Откройте каталог harness-репозитория (файл harness_manifest.json или реестр _docs_/_index/documents.jsonl)",
+      "statusAll": "Все статусы",
+      "statusNone": "Без статуса",
+      "kindAll": "Все типы",
+      "assigneeAll": "Все исполнители",
+      "search": "Поиск: название, задача, путь",
+      "refresh": "Перечитать статусы",
+      "empty": "Задачи (task-yaml) не найдены",
+      "emptyHint": "Проверьте реестр: make doc-index, и задачи: make doc-id — в harness-репозитории"
     }
   }
 }

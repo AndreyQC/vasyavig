@@ -14,7 +14,10 @@
     "hideHidden": "Hide hidden files",
     "createFile": "Create file",
     "rename": "Rename",
-    "delete": "Delete"
+    "delete": "Delete",
+    "harnessRepo": "Harness repository (has manifest or document registry)",
+    "showTasks": "Tasks (task-yaml)",
+    "showTree": "File tree"
   },
   "empty": {
     "hint": "Add a folder to the workspace and pick a Markdown/YFM file"
@@ -148,6 +151,17 @@
       "anchorSoon": "Jump to anchors will come later",
       "unknown": "ULID not found in the document registry",
       "unknownHint": "Refresh the registry: make doc-index"
+    },
+    "tasks": {
+      "noRepo": "Open a harness repository directory (harness_manifest.json or _docs_/_index/documents.jsonl registry)",
+      "statusAll": "All statuses",
+      "statusNone": "No status",
+      "kindAll": "All kinds",
+      "assigneeAll": "All assignees",
+      "search": "Search: title, task, path",
+      "refresh": "Reload statuses",
+      "empty": "No task-yaml documents found",
+      "emptyHint": "Check the registry: make doc-index, and tasks: make doc-id in the harness repository"
     }
   }
 }

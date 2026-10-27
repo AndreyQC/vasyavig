@@ -58,36 +58,29 @@ function asList(fields: Map<string, string | string[]>, key: string): string[] {
   return [];
 }
 
-/**
- * Разобрать конверт из текста файла; null — конверта нет или он повреждён
- * (нет закрывающего маркера). Упоминания маркеров ниже 5-й строки конвертом
- * не считаются (как в harness_yaml.py).
- */
-export function parseHarnessEnvelope(text: string): HarnessEnvelope | null {
-  const lines = text.split(/\r?\n/);
-  let start = -1;
-  for (let i = 0; i < Math.min(HEADER_WINDOW_LINES, lines.length); i++) {
-    if (unwrapLine(lines[i]) === MARKER_OPEN) {
-      start = i;
-      break;
-    }
+/** Строка с открывающим маркером в первых window строк; -1 — маркера нет. */
+function findMarkerLine(lines: string[], marker: string, window: number): number {
+  for (let i = 0; i < Math.min(window, lines.length); i++) {
+    if (unwrapLine(lines[i]) === marker) return i;
   }
-  if (start === -1) return null;
+  return -1;
+}
 
+/**
+ * Плоское YAML-подмножество между открывающим маркером (со строки start) и
+ * закрывающим: скаляры, строки в двойных кавычках, инлайн-списки и
+ * блочные `- ` продолжения последнего ключа. null — закрывающий маркер не
+ * найден (конверт повреждён).
+ */
+function parseFlatYamlFields(
+  lines: string[],
+  start: number,
+  closeMarker: string,
+): Map<string, string | string[]> | null {
   const fields = new Map<string, string | string[]>();
   let lastListKey: string | null = null;
   for (let i = start + 1; i < lines.length; i++) {
-    if (unwrapLine(lines[i]) === MARKER_CLOSE) {
-      return {
-        id: asScalar(fields, "id"),
-        project: asScalar(fields, "project"),
-        title: asScalar(fields, "title"),
-        type: asScalar(fields, "type"),
-        created: asScalar(fields, "created"),
-        related: asList(fields, "related"),
-        basedOn: asList(fields, "based_on"),
-      };
-    }
+    if (unwrapLine(lines[i]) === closeMarker) return fields;
     const s = unwrapLine(lines[i]);
     if (!s) continue;
     if (s.startsWith("- ") && lastListKey) {
@@ -115,7 +108,71 @@ export function parseHarnessEnvelope(text: string): HarnessEnvelope | null {
       }
     }
   }
-  return null; // закрывающий маркер не найден — конверт повреждён
+  return null;
+}
+
+/**
+ * Разобрать конверт из текста файла; null — конверта нет или он повреждён
+ * (нет закрывающего маркера). Упоминания маркеров ниже 5-й строки конвертом
+ * не считаются (как в harness_yaml.py).
+ */
+export function parseHarnessEnvelope(text: string): HarnessEnvelope | null {
+  const lines = text.split(/\r?\n/);
+  const start = findMarkerLine(lines, MARKER_OPEN, HEADER_WINDOW_LINES);
+  if (start === -1) return null;
+  const fields = parseFlatYamlFields(lines, start, MARKER_CLOSE);
+  if (!fields) return null;
+  return {
+    id: asScalar(fields, "id"),
+    project: asScalar(fields, "project"),
+    title: asScalar(fields, "title"),
+    type: asScalar(fields, "type"),
+    created: asScalar(fields, "created"),
+    related: asList(fields, "related"),
+    basedOn: asList(fields, "based_on"),
+  };
+}
+
+// --- task-yaml: второй скрытый конверт задачных документов ---
+
+const TASK_MARKER_OPEN = "[<[task-yaml]]";
+const TASK_MARKER_CLOSE = "[[task-yaml]>]";
+
+/**
+ * Окно поиска шире, чем у harness-yaml: в эталонных файлах task-yaml стоит
+ * после harness-конверта и закладки (~строка 10).
+ */
+const TASK_HEADER_WINDOW_LINES = 30;
+
+export interface TaskEnvelope {
+  kind: string | null;
+  status: string | null;
+  task: string | null;
+  tracker: string | null;
+  priority: string | null;
+  assignee: string | null;
+}
+
+/**
+ * Разобрать task-yaml конверт (квота задач: kind/status/task/tracker/
+ * priority/assignee, все опциональны); null — конверта нет или он повреждён.
+ * Семантика полей та же, что у harness-yaml; `status:` без значения даёт
+ * null, `status: ""` — пустую строку.
+ */
+export function parseTaskEnvelope(text: string): TaskEnvelope | null {
+  const lines = text.split(/\r?\n/);
+  const start = findMarkerLine(lines, TASK_MARKER_OPEN, TASK_HEADER_WINDOW_LINES);
+  if (start === -1) return null;
+  const fields = parseFlatYamlFields(lines, start, TASK_MARKER_CLOSE);
+  if (!fields) return null;
+  return {
+    kind: asScalar(fields, "kind"),
+    status: asScalar(fields, "status"),
+    task: asScalar(fields, "task"),
+    tracker: asScalar(fields, "tracker"),
+    priority: asScalar(fields, "priority"),
+    assignee: asScalar(fields, "assignee"),
+  };
 }
 
 /** ULID из видимой закладки (`> 🔖 harness-yaml · … id \`01M…\``); null — нет закладки. */

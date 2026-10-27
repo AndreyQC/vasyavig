@@ -8,12 +8,14 @@ import {useFileStore} from "../../store/fileStore";
 import {useFileActions} from "../../hooks/useFileActions";
 import {resolveRoot} from "../../lib/roots";
 import type {RootColor} from "../../lib/rootColors";
+import {HARNESS_ICON} from "../harnessIcon";
 
 /**
  * Горизонтальные табы открытых файлов: точка ● у «грязных», крестик закрытия.
  * Фон вкладки — тинт цвета корня файла (вне корней — нейтральный серый),
  * активная вкладка — широкая рамка насыщенного цвета корня (спека folder-colors).
  * Цвет всегда производен от (путь → корень), в табах не хранится (design D2).
+ * Файлы harness-репозитория помечены значком (план 20261027_005, D10).
  */
 export function EditorTabs() {
   const {t} = useTranslation();
@@ -24,10 +26,11 @@ export function EditorTabs() {
   const {requestCloseTab} = useFileActions();
 
   // производная коллекция — useMemo, не селектор (урок §3)
-  const colors = useMemo(() => {
-    const map = new Map<string, RootColor>();
+  const tabRoots = useMemo(() => {
+    const map = new Map<string, {color: RootColor; harness: boolean}>();
     for (const tab of tabs) {
-      map.set(tab.path, resolveRoot(tab.path, roots)?.color ?? "neutral");
+      const root = resolveRoot(tab.path, roots);
+      map.set(tab.path, {color: root?.color ?? "neutral", harness: root?.harness ?? false});
     }
     return map;
   }, [tabs, roots]);
@@ -37,10 +40,10 @@ export function EditorTabs() {
   return (
     <div className="editor-tabs">
       {tabs.map((tab) => {
-        const color = colors.get(tab.path) ?? "neutral";
+        const info = tabRoots.get(tab.path) ?? {color: "neutral" as RootColor, harness: false};
         const style = {
-          "--tint": `var(--root-tint-${color})`,
-          "--accent": `var(--root-accent-${color})`,
+          "--tint": `var(--root-tint-${info.color})`,
+          "--accent": `var(--root-accent-${info.color})`,
         } as CSSProperties;
         return (
           <div
@@ -54,6 +57,11 @@ export function EditorTabs() {
               className={`editor-tabs__label${tab.preview ? " editor-tabs__label--preview" : ""}`}
               onClick={() => setActiveTab(tab.path)}
             >
+              {info.harness && (
+                <span className="editor-tabs__harness" aria-label={t("sidebar.harnessRepo")}>
+                  <Icon data={HARNESS_ICON} size={12} />
+                </span>
+              )}
               <Text variant="body-1" ellipsis>
                 {tab.name}
               </Text>

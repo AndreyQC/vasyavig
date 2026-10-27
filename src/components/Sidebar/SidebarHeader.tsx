@@ -1,8 +1,9 @@
 import {useEffect, useRef, useState} from "react";
 import {Button, Icon, Text, Tooltip} from "@gravity-ui/uikit";
-import {ArrowRotateRight, Eye, EyeSlash, FilePlus, FolderPlus, Folders, ListUl, TrashBin} from "@gravity-ui/icons";
+import {ArrowRotateRight, Eye, EyeSlash, FilePlus, FolderPlus, Folders, ListCheck, ListUl, TrashBin} from "@gravity-ui/icons";
 import {useTranslation} from "react-i18next";
 import {useFileStore} from "../../store/fileStore";
+import {useUiStore} from "../../store/uiStore";
 import {useFileActions} from "../../hooks/useFileActions";
 
 /**
@@ -19,6 +20,9 @@ export function SidebarHeader() {
   const showHidden = useFileStore((s) => s.showHidden);
   const hasRoots = useFileStore((s) => s.roots.length > 0);
   const firstRootPath = useFileStore((s) => (s.roots.length > 0 ? s.roots[0].path : null));
+  const hasHarness = useFileStore((s) => s.roots.some((r) => r.harness));
+  const sidebarMode = useUiStore((s) => s.sidebarMode);
+  const setSidebarMode = useUiStore((s) => s.setSidebarMode);
   const activeDirPath = useFileStore((s) => s.activeDirPath);
   const activeFilePath = useFileStore((s) => s.activeFilePath);
   const {requestCreate, requestDelete, requestOpenWorkspace, requestNewWorkspace} = useFileActions();
@@ -80,6 +84,17 @@ export function SidebarHeader() {
         </Tooltip>
       </div>
       <div className="sidebar-header__actions">
+        {hasHarness && (
+          <Tooltip content={t(sidebarMode === "tasks" ? "sidebar.showTree" : "sidebar.showTasks")}>
+            <Button
+              view={sidebarMode === "tasks" ? "normal" : "flat"}
+              size="m"
+              onClick={() => setSidebarMode(sidebarMode === "tasks" ? "tree" : "tasks")}
+            >
+              <Icon data={ListCheck} />
+            </Button>
+          </Tooltip>
+        )}
         <Tooltip content={t("sidebar.createFile")}>
           <Button view="flat" size="m" disabled={!hasRoots} onClick={handleCreate}>
             <Icon data={FilePlus} />

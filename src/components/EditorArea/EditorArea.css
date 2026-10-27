@@ -744,3 +744,10 @@
   font-family: var(--g-font-family-monospace);
   font-size: var(--g-text-body-3-font-size);
 }
+
+/* Значок harness-репозитория на вкладке файла (план 20261027_005, D10) */
+.editor-tabs__harness {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--g-color-text-info-heavy);
+}

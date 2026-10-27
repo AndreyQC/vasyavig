@@ -27,6 +27,12 @@ export type RootColor = PaletteColor | "neutral";
 export interface RootInfo {
   path: string;
   color: PaletteColor;
+  /**
+   * Производный флаг «корень является или содержит harness-репо»
+   * (план 20261027_005, D9): проба manifest/реестра + поиск в поддереве.
+   * НЕ сериализуется в workspace-файл (serializeWorkspace пишет path/color).
+   */
+  harness?: boolean;
 }
 
 /**

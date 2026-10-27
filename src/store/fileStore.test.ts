@@ -202,15 +202,17 @@ describe("fileStore.addRootInteractive (первый корень без фай�
 describe("fileStore.openWorkspaceFile / restoreLastWorkspace", () => {
   it("замещает корни из файла, восстанавливает цвета, обновляет lastWorkspacePath", async () => {
     await useFileStore.getState().addRootInteractive("C:/old");
-    (readFile as ReturnType<typeof vi.fn>).mockResolvedValue(
-      JSON.stringify({
+    // мок адресный: проба harness-манифеста по чужим путям должна дать «нет файла»
+    (readFile as ReturnType<typeof vi.fn>).mockImplementation(async (p: string) => {
+      if (p !== WS) throw new Error("ENOENT");
+      return JSON.stringify({
         version: 1,
         folders: [
           {path: "./project", color: "blue"},
           {path: "D:/data", color: "pink"},
         ],
-      }),
-    );
+      });
+    });
     await useFileStore.getState().openWorkspaceFile(WS);
     const s = useFileStore.getState();
     expect(s.roots).toEqual([
@@ -243,9 +245,10 @@ describe("fileStore.openWorkspaceFile / restoreLastWorkspace", () => {
 
   it("restoreLastWorkspace восстанавливает корни из последнего файла", async () => {
     useUiStore.getState().setLastWorkspacePath(WS);
-    (readFile as ReturnType<typeof vi.fn>).mockResolvedValue(
-      JSON.stringify({version: 1, folders: [{path: "./project", color: "teal"}]}),
-    );
+    (readFile as ReturnType<typeof vi.fn>).mockImplementation(async (p: string) => {
+      if (p !== WS) throw new Error("ENOENT");
+      return JSON.stringify({version: 1, folders: [{path: "./project", color: "teal"}]});
+    });
     await useFileStore.getState().restoreLastWorkspace();
     expect(useFileStore.getState().roots).toEqual([{path: "C:/work/project", color: "teal"}]);
   });

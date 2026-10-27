@@ -26,6 +26,14 @@ export interface HarnessIndexEntry {
 
 export const HARNESS_INDEX_REL = "_docs_/_index/documents.jsonl";
 
+/**
+ * Манифест harness-репозитория («визитная карточка», план 20261027_005 §3) —
+ * в корне репо. Пока манифест не обязателен: репо распознаётся реестром ИЛИ
+ * манифестом (см. isHarnessRepoDir); словари дашборда задач читаются из
+ * манифеста. snake_case — конвенция имён файлов репозиториев.
+ */
+export const HARNESS_MANIFEST_REL = "harness_manifest.json";
+
 /** Парсинг JSONL: пустые и битые строки пропускаются (реестр не должен ронять просмотр). */
 export function parseDocumentsJsonl(text: string): HarnessIndexEntry[] {
   const entries: HarnessIndexEntry[] = [];
@@ -138,6 +146,52 @@ export async function findHarnessIndex(
 /** Нормализованный путь реестра по корню репо (для инвалидации по watcher-событию). */
 export function harnessIndexPath(repoRoot: string): string {
   return `${repoRoot.replace(/\\/g, "/").replace(/\/+$/, "")}/${HARNESS_INDEX_REL}`;
+}
+
+/**
+ * Единый предикат «каталог является harness-репо» (план 20261027_005, D8):
+ * распознаём по реестру ИЛИ манифесту. Когда манифест станет обязательным
+ * в harness-репо, предикат переносится на него в этой одной точке —
+ * потребители (флаг корня, дашборд) не меняются.
+ */
+export async function isHarnessRepoDir(
+  dir: string,
+  probe: ReadProbe = defaultReadProbe,
+): Promise<boolean> {
+  const root = dir.replace(/\\/g, "/").replace(/\/+$/, "");
+  const manifest = await probe(`${root}/${HARNESS_MANIFEST_REL}`);
+  if (manifest != null && isManifestShape(manifest)) return true;
+  return (await probe(`${root}/${HARNESS_INDEX_REL}`)) != null;
+}
+
+/** Манифест-«визитная карточка» — читаемый JSON-объект; битый манифест не маркер. */
+function isManifestShape(text: string): boolean {
+  try {
+    const raw: unknown = JSON.parse(text);
+    return typeof raw === "object" && raw !== null;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Поддерево содержит harness-репо: узел дерева — реестр или манифест
+ * (файл `_docs_`-системы). Для пометки корня-родителя, содержащего репо
+ * (план 20261027_005, D9b), без новых чтений диска.
+ */
+export function treeContainsHarnessRepo(nodes: readonly FileNodeLike[]): boolean {
+  for (const node of nodes) {
+    const p = node.path.replace(/\\/g, "/").toLowerCase();
+    if (p.endsWith(`/${HARNESS_MANIFEST_REL}`) || p.endsWith(`/${HARNESS_INDEX_REL}`)) return true;
+    if (node.children && treeContainsHarnessRepo(node.children)) return true;
+  }
+  return false;
+}
+
+/** Минимальный набор полей FileNode, нужный для обхода дерева (избегаем импорта типов Tauri). */
+export interface FileNodeLike {
+  path: string;
+  children: readonly FileNodeLike[] | null;
 }
 
 export interface UlidLinkMeta {
