@@ -1,0 +1,98 @@
+# Дашборд задач task-yaml и значок harness-корня — результат (Phase 7, задача 6)
+
+> Контекст:
+> - план: `_tasks_/2026-10-27/20261027_005_task_dashboard_plan.md` — решения D1–D11
+> - `_docs_/roadmap.md` — Phase 7, задача 6
+> - `_docs_/_checkpoints_/20261027_006_checkpoint.md` — состояние на старте задачи
+
+**Дата:** 2026-10-27
+**Статус:** реализовано (`07a8d6f`); GUI-приёмка назначена на 2026-10-28
+**Фаза:** Phase 7 — Harness, задача 6 + пользовательское дополнение: значок harness-корня
+
+## Что сделано
+
+### Данные (D1–D5)
+
+| Файл | Что сделано |
+|---|---|
+| `src/lib/harnessEnvelope.ts` | выделен общий разбор плоских полей (`findMarkerLine`, `parseFlatYamlFields`); новый `parseTaskEnvelope` — маркеры `<!-- [<[task-yaml]] … [[task-yaml]>] -->`, окно 30 строк; harness-парсер (окно 5 строк) не изменён — регресс round-trip тестов |
+| `src/lib/harnessTasks.ts` (новый) | интерфейс `TaskSource` (D3) + `createIndexTaskSource`: кандидаты — фильтр реестра по `vocab.types` (D1/D4), подробности — task-yaml из шапки файла (D2); `DEFAULT_TASK_VOCABULARY` (= манифест lm_hrdo_2); `parseTaskVocabulary`/`loadTaskVocabulary` — манифест, битые поля замещаются дефолтом по отдельности; `normalizeTaskValue` (срез кавычек и инлайн-комментария ` # …`); `canonicalStatus` (канон + алиасы без регистра, неизвестное — как есть); `TaskRow` |
+| `src/lib/harnessIndex.ts` | `HARNESS_MANIFEST_REL = "harness_manifest.json"` (корень репо); предикат `isHarnessRepoDir` (D8) — манифест (валидный JSON-объект) ИЛИ реестр; `treeContainsHarnessRepo` (D9b) — поиск манифеста/реестра в загруженном поддереве |
+| `src/store/harnessTasksStore.ts` (новый) | кэш `{vocab, rows, byPath}` на нормализованный корень; `ensureTasks` лениво, чтение шапок параллельно по 8, кандидат без task-yaml исключается; `invalidatePath`: `.md` — точечный патч строки, `documents.jsonl` — сброс корня и немедленная перезагрузка (урок harnessStore); `refreshRoot` для кнопки «Обновить» |
+| `src/hooks/useFileWatcher.ts` | события прокинуты в `harnessTasksStore.invalidatePath` (рядом с harnessStore) |
+
+### UI (§5 плана)
+
+| Файл | Что сделано |
+|---|---|
+| `src/components/Sidebar/TaskDashboard.tsx` (новый) | панель дашборда: селектор harness-корня (>1), фильтры статус/kind/исполнитель + текстовый поиск; бейджи статусов цветами словаря (неизвестное/пустое — нейтральные), label по языку UI; сортировка updated↓ затем title; клик — `openFile(normalizeJoin(repoRoot, path))`; пустые состояния с подсказкой `make doc-index`/`make doc-id` |
+| `src/store/uiStore.ts` | `sidebarMode: "tree" \| "tasks"` — сессионное, в persist не попадает (partialize) |
+| `src/components/Sidebar/SidebarHeader.tsx` | кнопка «Задачи» (ListCheck), видна при наличии harness-корня, переключает режим сайдбара |
+| `src/App.tsx` | содержимое сайдбара: дерево ↔ дашборд |
+| `Sidebar.css`, `EditorArea.css` | стили панели, бейджей (`--blue/--orange/--green/--gray/neutral`), значка |
+
+### Значок harness-репозитория (D8–D11)
+
+| Файл | Что сделано |
+|---|---|
+| `src/components/harnessIcon.ts` (новый) | `HARNESS_ICON = Boxes3` — одна константа на все места, замена в одной точке (D10, Q1 принят: и секция корня, и вкладки) |
+| `src/lib/rootColors.ts` | `RootInfo.harness?: boolean` — флаг «только true» (отсутствие свойства = не-harness); в workspace-файл не попадает — `serializeWorkspace` пишет path/color (D11) |
+| `src/store/fileStore.ts` | `refreshHarnessFlag` (D9): проба манифеста/реестра прямо в корне + поиск в поддереве загруженного дерева; вызывается при `addRoot`, `openWorkspaceFile`/`restoreLastWorkspace` (через `replaceRoots`), `refreshRoot` |
+| `src/components/Sidebar/RootSection.tsx` | значок с tooltip «harness-репозиторий» в заголовке секции |
+| `src/components/EditorArea/EditorTabs.tsx` | мини-значок на вкладках файлов harness-репо (резолв через `resolveRoot`) |
+
+### Манифест (§3 плана)
+
+- `harness_manifest.json` в **корне** `lm_hrdo_2` — коммит `cd34e2d5` в его
+  `dev`: `types: [tracker, backlog]`, kinds, статусы с алиасами — по факту
+  скана реестра (1788 записей, 861 task-yaml файл; типа `task` в реестре нет).
+- Vasyavig читает словарь из манифеста в этой же задаче (расширение скоупа
+  по просьбе пользователя); дефолт — то же содержимое.
+
+## Проверки
+
+- `pnpm test` — **292 passed / 27 файлов** (было 270/25): +5 тестов
+  `parseTaskEnvelope`, +17 тестов словаря/источника/стора (кандидаты,
+  нормализация алиасов, точечный патч `.md`, сброс по реестру,
+  перезагрузка). Моки `fileStore.test.ts` переведены на адресные — проба
+  манифеста не должна видеть workspace-контент.
+- `npx tsc --noEmit` — чисто.
+- `npx vite build` — ок (прежние предупреждения о размерах чанков).
+- Коммиты: план `f905cee` → `631dc2f` → `8a76660`; манифест `cd34e2d5`
+  (репо `lm_hrdo_2`); код `07a8d6f`.
+
+## GUI-чек-лист приёмки (2026-10-28, `C:\repos\reksoft\locomoko\lm_hrdo_2`)
+
+- [ ] Корень = harness-репо: значок в секции; не-harness корень — значка нет.
+- [ ] Корень-родитель, содержащий репо: значок появляется; после удаления репо — исчезает.
+- [ ] Перезапуск/восстановление workspace: значки восстановились; workspace-файл не изменился.
+- [ ] Вкладки файлов harness-репо помечены; прочих — нет.
+- [ ] Дашборд: `tracker`/`backlog` документы видны; файл без task-yaml — не в списке.
+- [ ] Фильтры status/kind/assignee/поиск работают; пустой результат читаем.
+- [ ] Клик по строке открывает документ; вкладка активируется.
+- [ ] Правка `status` в файле → после watcher-события строка обновилась.
+- [ ] `make doc-index` (внешне) → список пересчитался без перезапуска.
+- [ ] Статус `Выполнена` показан каноном `done` (нормализация алиасов).
+- [ ] Темы светлая/тёмная; ru/en.
+
+## Известные ограничения / NOT done
+
+- Файлы читаются целиком средствами Tauri (`read_file`), парсится шапка
+  4 КБ; Rust-команда чтения head — вне скоупа (`src-tauri` заморожен).
+- Корень-родитель, содержащий репо: значок есть, но список задач пуст —
+  кандидаты берутся из реестра, загружаемого по корню-репо (подъём вверх);
+  спуск в поддерево за `repoRoot` — кандидат доработки после приёмки.
+- Daily-task в `plan`/`result` в дашборде не показываются (D4, осознанно —
+  762 процессных документа заглушили бы список).
+- Статусы вне словаря показываются «как есть» нейтральным бейджем; алиасы
+  покрывают наблюдённые варианты (Выполнена/В работе/Открыта/active/finalized).
+- Задача 5 (граф/дерево документов), задача 7 (write-path), якоря — не начаты.
+- Генерация/валидация манифеста тулингом harness-репо (`make ...`) — вне
+  скоупа Vasyavig.
+
+## Где читать дальше
+
+1. `_tasks_/2026-10-27/20261027_005_task_dashboard_plan.md` — решения D1–D11,
+   факты реестра, форма манифеста.
+2. `_docs_/roadmap.md` — Phase 7, задачи 5 и 7.
+3. `_checkpoints_/20261027_001_checkpoint.md` — архитектурная карта (harness-слой).
