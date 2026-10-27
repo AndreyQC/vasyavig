@@ -52,11 +52,11 @@ export function linkifyUlidLinksInElement(
     link.removeAttribute("href");
     const hit = lookup(parsed.ulid);
     if (hit) {
-      link.className = "ulid-link";
+      link.classList.add("ulid-link");
       link.setAttribute("data-ulid", parsed.ulid);
       link.setAttribute("aria-label", `${hit.title} · ${hit.type}`);
     } else {
-      link.className = "ulid-unknown";
+      link.classList.add("ulid-unknown");
       link.setAttribute("data-ulid-unknown", parsed.ulid);
       link.setAttribute("aria-label", unknownTitle);
     }
