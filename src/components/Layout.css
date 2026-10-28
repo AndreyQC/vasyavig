@@ -58,6 +58,12 @@
   height: 100%;
 }
 
+.empty-state__actions {
+  display: flex;
+  gap: var(--g-spacing-2);
+  margin-top: var(--g-spacing-4);
+}
+
 .file-viewer {
   margin: 0;
   font-family: var(--g-font-family-monospace, monospace);

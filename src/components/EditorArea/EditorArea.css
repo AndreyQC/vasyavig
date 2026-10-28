@@ -148,6 +148,12 @@
   border-radius: var(--g-border-radius-s);
 }
 
+/* Позиция курсора активной вкладки (план 20261028_004, D5) */
+.status-bar__cursor {
+  font-variant-numeric: tabular-nums;
+  min-width: 48px;
+}
+
 .save-confirm-modal {
   padding: var(--g-spacing-6);
   max-width: 480px;

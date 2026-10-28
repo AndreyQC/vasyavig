@@ -11,6 +11,7 @@ import {imageSrcExtension} from "../../lib/imageSrcExtension";
 import {mermaidWysiwygExtension} from "../../lib/mermaidWysiwygExtension";
 import {harnessUlidExtension} from "../../lib/harnessUlidExtension";
 import {harnessUlidMarkupExtension} from "../../lib/harnessUlidMarkupExtension";
+import {cursorPosExtension, cursorPosMarkupExtension} from "../../lib/cursorPosExtension";
 import {useHarnessStore} from "../../store/harnessStore";
 import {setMermaidTheme} from "../../lib/mermaidRenderer";
 import {combineExtensions} from "../../lib/combineExtensions";
@@ -36,8 +37,9 @@ export function MarkdownEditor({path, initialContent}: Props) {
       initial: {markup: initialContent, mode: "wysiwyg"},
       experimental: {preserveEmptyRows: true},
       // Markup-режим: подсветка/клики по harness-ulid:-ссылкам (task 20261027_004)
+      // + позиция курсора для статус-бара (план 20261028_004, D5)
       markupConfig: {
-        extensions: harnessUlidMarkupExtension(path),
+        extensions: [harnessUlidMarkupExtension(path), cursorPosMarkupExtension()],
       },
       wysiwygConfig: {
         extensions: combineExtensions(
@@ -53,6 +55,8 @@ export function MarkdownEditor({path, initialContent}: Props) {
           mermaidWysiwygExtension(path),
           // harness-yaml: ULID-ссылки в WYSIWYG (task 20261025_001, D7)
           harnessUlidExtension(path),
+          // позиция курсора для статус-бара (план 20261028_004, D5)
+          cursorPosExtension(),
         ),
       },
     },

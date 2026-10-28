@@ -21,16 +21,23 @@
     "harnessRepo": "harness-репозиторий (есть манифест или реестр документов)",
     "showTasks": "Задачи (task-yaml)",
     "showTree": "Дерево файлов",
-    "showGraph": "Граф документов"
+    "showGraph": "Граф документов",
+    "createFolder": "Новая папка",
+    "copyPath": "Копировать путь",
+    "recentWorkspaces": "Недавние"
   },
   "empty": {
-    "hint": "Добавьте папку в workspace и выберите Markdown/YFM файл"
+    "hint": "Добавьте папку в workspace и выберите Markdown/YFM файл",
+    "openFile": "Открыть файл",
+    "openFolder": "Открыть папку"
   },
   "toolbar": {
     "save": "Сохранить",
     "saveAs": "Сохранить как…",
     "saveTooltip": "Сохранить (Ctrl+S)",
-    "saveAsTooltip": "Сохранить как… (Ctrl+Shift+S)"
+    "saveAsTooltip": "Сохранить как… (Ctrl+Shift+S)",
+    "saveAll": "Сохранить всё",
+    "saveAllTooltip": "Сохранить все изменённые вкладки"
   },
   "tools": {
     "restoreUrls": "Восстановить ссылки",
@@ -43,7 +50,10 @@
     "mermaidTooltip": "Вставить mermaid-диаграмму в позицию курсора (редактирование — двойной клик по диаграмме)"
   },
   "tabs": {
-    "close": "Закрыть"
+    "close": "Закрыть",
+    "closeOthers": "Закрыть другие",
+    "closeRight": "Закрыть справа",
+    "closeAll": "Закрыть все"
   },
   "imageViewer": {
     "zoomIn": "Увеличить",
@@ -108,7 +118,8 @@
     "tocTitle": "Оглавление",
     "tocText": "В документе уже есть блок оглавления. Заменить его новым списком заголовков или вставить ещё один блок в начало документа?",
     "tocReplace": "Заменить блок",
-    "tocInsert": "Вставить новый"
+    "tocInsert": "Вставить новый",
+    "createDirTitle": "Новая папка"
   },
   "spell": {
     "on": "ON",
@@ -137,7 +148,8 @@
     "toastTitle": "Workspace",
     "rootAlreadyAdded": "Папка «{{name}}» уже добавлена в workspace",
     "rootNested": "Папка «{{name}}» входит в корень «{{parent}}» и показана отдельной секцией",
-    "rootContains": "Корень «{{name}}» содержит уже добавленный корень «{{child}}»"
+    "rootContains": "Корень «{{name}}» содержит уже добавленный корень «{{child}}»",
+    "pathCopied": "Путь скопирован в буфер обмена"
   },
   "harness": {
     "ulidUnknown": "ULID не найден в реестре документов",
@@ -198,5 +210,9 @@
       "emptyOverview": "Документы не найдены",
       "emptyOverviewHint": "Проверьте фильтры или пересоберите реестр: make doc-index"
     }
+  },
+  "quickOpen": {
+    "placeholder": "Имя файла…",
+    "empty": "Ничего не найдено"
   }
 }

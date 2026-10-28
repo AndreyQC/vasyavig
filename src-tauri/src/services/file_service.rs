@@ -95,6 +95,11 @@ pub fn create_file(path: &Path) -> Result<(), String> {
         .map_err(|e| format!("cannot create {}: {e}", path.display()))
 }
 
+/// Создаёт каталог по указанному пути. Ошибка, если каталог уже существует.
+pub fn create_dir(path: &Path) -> Result<(), String> {
+    fs::create_dir(path).map_err(|e| format!("cannot create dir {}: {e}", path.display()))
+}
+
 /// Удаляет файл или папку (папки — рекурсивно, безвозвратно).
 pub fn delete_path(path: &Path) -> Result<(), String> {
     let meta = fs::metadata(path).map_err(|e| format!("cannot stat {}: {e}", path.display()))?;
@@ -136,6 +141,15 @@ mod tests {
         assert_eq!(fs::read(&p).unwrap().len(), 0);
         assert!(create_file(&p).is_err());
         let _ = fs::remove_file(&p);
+    }
+
+    #[test]
+    fn create_dir_makes_dir_and_rejects_existing() {
+        let p = temp_path("create-dir");
+        create_dir(&p).unwrap();
+        assert!(p.is_dir());
+        assert!(create_dir(&p).is_err());
+        let _ = fs::remove_dir(&p);
     }
 
     #[test]

@@ -63,6 +63,12 @@ pub async fn create_file(path: String) -> Result<(), String> {
     crate::services::file_service::create_file(Path::new(&path))
 }
 
+/// Создаёт каталог по указанному пути (ошибка, если существует).
+#[tauri::command]
+pub async fn create_dir(path: String) -> Result<(), String> {
+    crate::services::file_service::create_dir(Path::new(&path))
+}
+
 /// Удаляет файл или папку (папки — рекурсивно, безвозвратно).
 #[tauri::command]
 pub async fn delete_path(path: String) -> Result<(), String> {

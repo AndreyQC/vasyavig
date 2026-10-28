@@ -1,6 +1,7 @@
 import {create} from "zustand";
 import {getExtension, getFileName, isMdYfmSwap, remapPath, type FileKind} from "../lib/utils";
 import {saveFileDialog, writeFile} from "../hooks/useTauriFS";
+import {useUiStore} from "./uiStore";
 
 export type EditorMode = "wysiwyg" | "markup" | "split";
 
@@ -130,7 +131,12 @@ export const useEditorStore = create<EditorState>((set, get) => {
       });
     },
 
-    setActiveTab: (path) => set({activePath: path}),
+    setActiveTab: (path) => {
+      // курсор прошлой вкладки больше не актуален; новый редактор пришлёт
+      // свою позицию при монтировании (план 20261028_004, D5)
+      useUiStore.getState().setCursorPos(null);
+      set({activePath: path});
+    },
 
     updateContent: (path, content) => {
       set((s) => ({

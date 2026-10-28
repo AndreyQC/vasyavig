@@ -1,4 +1,4 @@
-import {useMemo} from "react";
+import {useEffect, useMemo, useState} from "react";
 import type {CSSProperties} from "react";
 import {Button, Icon, Text} from "@gravity-ui/uikit";
 import {GraphNode, Xmark} from "@gravity-ui/icons";
@@ -10,6 +10,12 @@ import {useFileActions} from "../../hooks/useFileActions";
 import {resolveRoot} from "../../lib/roots";
 import type {RootColor} from "../../lib/rootColors";
 import {HARNESS_ICON} from "../harnessIcon";
+
+interface TabMenuState {
+  x: number;
+  y: number;
+  path: string;
+}
 
 /**
  * Горизонтальные табы открытых файлов: точка ● у «грязных», крестик закрытия.
@@ -32,6 +38,42 @@ export function EditorTabs() {
   const openGraphTab = useUiStore((s) => s.openGraphTab);
   const closeGraphTab = useUiStore((s) => s.closeGraphTab);
   const {requestCloseTab} = useFileActions();
+  const [menu, setMenu] = useState<TabMenuState | null>(null);
+
+  // Закрытие контекстного меню вкладки по клику вне и по Escape.
+  useEffect(() => {
+    if (!menu) return;
+    const close = () => setMenu(null);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") close();
+    };
+    window.addEventListener("mousedown", close);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("mousedown", close);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [menu]);
+
+  /**
+   * Закрыть набор вкладок (план 20261028_004, D2): чистые закрываются сразу,
+   * первая dirty — через промпт; остальные dirty после подтверждения
+   * (повторный вызов команды). Несколько промптов подряд не наслаиваем.
+   */
+  const closeMany = (targets: string[]) => {
+    const editor = useEditorStore.getState();
+    let firstDirtyAsked = false;
+    for (const path of targets) {
+      const tab = editor.tabs.find((t) => t.path === path);
+      if (!tab) continue;
+      if (tab.dirty && !firstDirtyAsked) {
+        firstDirtyAsked = true;
+        requestCloseTab(path);
+      } else if (!tab.dirty) {
+        editor.closeTab(path);
+      }
+    }
+  };
 
   // производная коллекция — useMemo, не селектор (урок §3)
   const tabRoots = useMemo(() => {
@@ -60,6 +102,16 @@ export function EditorTabs() {
             className={`editor-tabs__tab${isActive ? " editor-tabs__tab--active" : ""}`}
             style={style}
             title={tab.path}
+            onAuxClick={(e) => {
+              if (e.button === 1) {
+                e.preventDefault();
+                requestCloseTab(tab.path);
+              }
+            }}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              setMenu({x: e.clientX, y: e.clientY, path: tab.path});
+            }}
           >
             <button
               type="button"
@@ -116,6 +168,57 @@ export function EditorTabs() {
           >
             <Icon data={Xmark} size={12} />
           </Button>
+        </div>
+      )}
+      {menu && (
+        <div
+          className="file-tree-context-menu"
+          style={{left: menu.x, top: menu.y}}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <button
+            type="button"
+            className="file-tree-context-menu__item"
+            onClick={() => {
+              setMenu(null);
+              requestCloseTab(menu.path);
+            }}
+          >
+            {t("tabs.close")}
+          </button>
+          <button
+            type="button"
+            className="file-tree-context-menu__item"
+            disabled={tabs.length <= 1}
+            onClick={() => {
+              setMenu(null);
+              closeMany(tabs.filter((t2) => t2.path !== menu.path).map((t2) => t2.path));
+            }}
+          >
+            {t("tabs.closeOthers")}
+          </button>
+          <button
+            type="button"
+            className="file-tree-context-menu__item"
+            disabled={tabs.findIndex((t2) => t2.path === menu.path) >= tabs.length - 1}
+            onClick={() => {
+              setMenu(null);
+              const index = tabs.findIndex((t2) => t2.path === menu.path);
+              closeMany(tabs.slice(index + 1).map((t2) => t2.path));
+            }}
+          >
+            {t("tabs.closeRight")}
+          </button>
+          <button
+            type="button"
+            className="file-tree-context-menu__item"
+            onClick={() => {
+              setMenu(null);
+              closeMany(tabs.map((t2) => t2.path));
+            }}
+          >
+            {t("tabs.closeAll")}
+          </button>
         </div>
       )}
     </div>

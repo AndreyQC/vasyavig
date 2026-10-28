@@ -2,6 +2,7 @@ import {create} from "zustand";
 import type {FileNode} from "../types";
 import {
   convertToMarkdown,
+  createDir as createDirFs,
   createFile as createFileFs,
   deletePath as deletePathFs,
   grantAssetScope,
@@ -88,6 +89,8 @@ interface FileState {
   setActiveFilePath: (path: string | null) => void;
   selectDir: (path: string) => void;
   createFile: (path: string) => Promise<void>;
+  /** Создание каталога в дереве (план 20261028_004, D3). */
+  createDir: (path: string) => Promise<void>;
   deleteEntry: (path: string) => Promise<void>;
   renameEntry: (oldPath: string, newName: string) => Promise<void>;
   convertOfficeToMarkdown: (path: string) => Promise<void>;
@@ -455,6 +458,16 @@ export const useFileStore = create<FileState>((set, get) => ({
     if (kind === "markdown" || kind === "text") {
       useEditorStore.getState().openTab({path, kind, content: ""});
     }
+  },
+
+  createDir: async (path) => {
+    try {
+      await createDirFs(path);
+    } catch (e) {
+      set({error: String(e)});
+      return;
+    }
+    await get().refreshTree();
   },
 
   deleteEntry: async (path) => {

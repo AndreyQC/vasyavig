@@ -15,6 +15,7 @@ vi.mock("../lib/i18n", () => ({
 
 vi.mock("../hooks/useTauriFS", () => ({
   convertToMarkdown: vi.fn(),
+  createDir: vi.fn(async () => {}),
   createFile: vi.fn(),
   deletePath: vi.fn(),
   grantAssetScope: vi.fn(async () => {}),
@@ -34,6 +35,7 @@ vi.mock("../hooks/useTauriFS", () => ({
 
 const {listDirectory, readFile, readFileLatin1, renamePath, saveWorkspaceFileDialog, unwatchFolder, watchFolder, writeFile} =
   await import("../hooks/useTauriFS");
+const {createDir: createDirFs} = await import("../hooks/useTauriFS");
 
 const initialFile = useFileStore.getState();
 const initialEditor = useEditorStore.getState();
@@ -403,8 +405,7 @@ describe("fileStore.moveRoot (план 20261028_002)", () => {
   });
 });
 
-describe("fileStore.collapsedRoots (план 20261028_002)", () => {
-  it("toggle сворачивает/разворачивает секцию; в файл workspace не пишется", async () => {
+describe("fileStore.collapsedRoots (план 20261028_002)", () => {  it("toggle сворачивает/разворачивает секцию; в файл workspace не пишется", async () => {
     setWorkspace();
     await useFileStore.getState().addRoot("C:/docs");
     (writeFile as ReturnType<typeof vi.fn>).mockClear();
@@ -431,5 +432,25 @@ describe("fileStore.collapsedRoots (план 20261028_002)", () => {
     (renamePath as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
     await useFileStore.getState().renameEntry("C:/docs", "guides");
     expect(useFileStore.getState().collapsedRoots["C:/guides"]).toBe(true);
+  });
+});
+
+describe("fileStore.createDir (план 20261028_004, D3)", () => {
+  it("создаёт каталог и обновляет дерево", async () => {
+    setWorkspace();
+    await useFileStore.getState().addRoot("C:/docs");
+    (createDirFs as ReturnType<typeof vi.fn>).mockClear();
+    await useFileStore.getState().createDir("C:/docs/guides");
+    expect(createDirFs).toHaveBeenCalledWith("C:/docs/guides");
+    // refreshTree перечитал список после создания
+    expect(useFileStore.getState().error).toBeNull();
+  });
+
+  it("ошибка создания попадает в store", async () => {
+    setWorkspace();
+    await useFileStore.getState().addRoot("C:/docs");
+    (createDirFs as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error("EEXIST"));
+    await useFileStore.getState().createDir("C:/docs/guides");
+    expect(useFileStore.getState().error).toContain("EEXIST");
   });
 });

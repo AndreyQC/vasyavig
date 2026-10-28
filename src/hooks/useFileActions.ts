@@ -82,11 +82,21 @@ export function useFileActions() {
   const requestOpenWorkspace = async () => {
     const path = await openWorkspaceDialog();
     if (!path) return;
+    await openWorkspaceAt(path);
+  };
+
+  /** Общее для диалога и недавних: dirty-вкладки → промпт, иначе — сразу (D8). */
+  const openWorkspaceAt = async (path: string) => {
     if (useEditorStore.getState().tabs.some((t) => t.dirty)) {
       useUiStore.getState().setPendingOpenWorkspacePath(path);
       return;
     }
     await applyOpenWorkspace(path);
+  };
+
+  /** Открытие недавнего workspace-файла по известному пути (план 20261028_004, D8). */
+  const requestRecentWorkspace = (path: string) => {
+    void openWorkspaceAt(path);
   };
 
   /** Сохранить все dirty (опционально), закрыть вкладки, заменить состав корней. */
@@ -145,14 +155,24 @@ export function useFileActions() {
   }
 
   /** Запрос на создание файла в каталоге dir (открывает модалку с именем). */
-  const requestCreate = (dir: string) => useUiStore.getState().setPendingCreateDir(dir);
+  const requestCreate = (dir: string) => useUiStore.getState().setPendingCreateDir(dir, "file");
+
+  /** Запрос на создание папки в каталоге dir (план 20261028_004, D3). */
+  const requestCreateDir = (dir: string) => useUiStore.getState().setPendingCreateDir(dir, "dir");
 
   const confirmCreate = async (name: string) => {
-    const dir = useUiStore.getState().pendingCreateDir;
+    const ui = useUiStore.getState();
+    const dir = ui.pendingCreateDir;
+    const kind = ui.pendingCreateKind;
     const trimmed = name.trim();
     if (!dir || !trimmed) return;
-    useUiStore.getState().setPendingCreateDir(null);
-    await useFileStore.getState().createFile(joinPath(dir, trimmed));
+    ui.setPendingCreateDir(null);
+    const fs = useFileStore.getState();
+    if (kind === "dir") {
+      await fs.createDir(joinPath(dir, trimmed));
+    } else {
+      await fs.createFile(joinPath(dir, trimmed));
+    }
   };
 
   const cancelCreate = () => useUiStore.getState().setPendingCreateDir(null);
@@ -198,12 +218,14 @@ export function useFileActions() {
     confirmRemoveRoot,
     cancelRemoveRoot,
     requestOpenWorkspace,
+    requestRecentWorkspace,
     confirmOpenWorkspace,
     cancelOpenWorkspace,
     requestNewWorkspace,
     confirmNewWorkspace,
     cancelNewWorkspace,
     requestCreate,
+    requestCreateDir,
     confirmCreate,
     cancelCreate,
     requestDelete,

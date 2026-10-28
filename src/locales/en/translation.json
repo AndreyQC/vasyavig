@@ -21,16 +21,23 @@
     "harnessRepo": "Harness repository (has manifest or document registry)",
     "showTasks": "Tasks (task-yaml)",
     "showTree": "File tree",
-    "showGraph": "Document graph"
+    "showGraph": "Document graph",
+    "createFolder": "New folder",
+    "copyPath": "Copy path",
+    "recentWorkspaces": "Recent"
   },
   "empty": {
-    "hint": "Add a folder to the workspace and pick a Markdown/YFM file"
+    "hint": "Add a folder to the workspace and pick a Markdown/YFM file",
+    "openFile": "Open file",
+    "openFolder": "Open folder"
   },
   "toolbar": {
     "save": "Save",
     "saveAs": "Save as…",
     "saveTooltip": "Save (Ctrl+S)",
-    "saveAsTooltip": "Save as… (Ctrl+Shift+S)"
+    "saveAsTooltip": "Save as… (Ctrl+Shift+S)",
+    "saveAll": "Save all",
+    "saveAllTooltip": "Save all modified tabs"
   },
   "tools": {
     "restoreUrls": "Restore links",
@@ -43,7 +50,10 @@
     "mermaidTooltip": "Insert a mermaid diagram at the cursor (double-click the diagram to edit)"
   },
   "tabs": {
-    "close": "Close"
+    "close": "Close",
+    "closeOthers": "Close others",
+    "closeRight": "Close to the right",
+    "closeAll": "Close all"
   },
   "imageViewer": {
     "zoomIn": "Zoom in",
@@ -108,7 +118,8 @@
     "tocTitle": "Table of contents",
     "tocText": "The document already has a table of contents block. Replace it with a fresh heading list, or insert another block at the top of the document?",
     "tocReplace": "Replace block",
-    "tocInsert": "Insert new"
+    "tocInsert": "Insert new",
+    "createDirTitle": "New folder"
   },
   "spell": {
     "on": "ON",
@@ -137,7 +148,8 @@
     "toastTitle": "Workspace",
     "rootAlreadyAdded": "Folder «{{name}}» is already in the workspace",
     "rootNested": "Folder «{{name}}» is inside the «{{parent}}» root and shown as a separate section",
-    "rootContains": "Root «{{name}}» contains the already added root «{{child}}»"
+    "rootContains": "Root «{{name}}» contains the already added root «{{child}}»",
+    "pathCopied": "Path copied to clipboard"
   },
   "harness": {
     "ulidUnknown": "ULID not found in the document registry",
@@ -198,5 +210,9 @@
       "emptyOverview": "No documents found",
       "emptyOverviewHint": "Check the filters or rebuild the registry: make doc-index"
     }
+  },
+  "quickOpen": {
+    "placeholder": "File name…",
+    "empty": "No matches"
   }
 }

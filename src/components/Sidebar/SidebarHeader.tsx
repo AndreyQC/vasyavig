@@ -5,6 +5,7 @@ import {useTranslation} from "react-i18next";
 import {useFileStore} from "../../store/fileStore";
 import {useUiStore} from "../../store/uiStore";
 import {useFileActions} from "../../hooks/useFileActions";
+import {getFileName} from "../../lib/utils";
 
 /**
  * Шапка сайдбара — уровень workspace (design D8), закреплена над скроллом
@@ -27,7 +28,8 @@ export function SidebarHeader() {
   const openGraphTab = useUiStore((s) => s.openGraphTab);
   const activeDirPath = useFileStore((s) => s.activeDirPath);
   const activeFilePath = useFileStore((s) => s.activeFilePath);
-  const {requestCreate, requestDelete, requestOpenWorkspace, requestNewWorkspace} = useFileActions();
+  const recentWorkspaces = useUiStore((s) => s.recentWorkspaces);
+  const {requestCreate, requestDelete, requestOpenWorkspace, requestNewWorkspace, requestRecentWorkspace} = useFileActions();
 
   const [wsMenu, setWsMenu] = useState<{x: number; y: number} | null>(null);
   const wsMenuBtnRef = useRef<HTMLButtonElement>(null);
@@ -145,6 +147,24 @@ export function SidebarHeader() {
           style={{left: wsMenu.x, top: wsMenu.y}}
           onMouseDown={(e) => e.stopPropagation()}
         >
+          {recentWorkspaces.length > 0 && (
+            <div className="file-tree-context-menu__caption">{t("sidebar.recentWorkspaces")}</div>
+          )}
+          {recentWorkspaces.map((wsPath) => (
+            <button
+              key={wsPath}
+              type="button"
+              className="file-tree-context-menu__item"
+              title={wsPath}
+              onClick={() => {
+                setWsMenu(null);
+                requestRecentWorkspace(wsPath);
+              }}
+            >
+              {getFileName(wsPath)}
+            </button>
+          ))}
+          {recentWorkspaces.length > 0 && <div className="file-tree-context-menu__separator" />}
           <button
             type="button"
             className="file-tree-context-menu__item"

@@ -16,6 +16,7 @@ pub fn run() {
             commands::fs::write_file,
             commands::fs::get_file_metadata,
             commands::fs::create_file,
+            commands::fs::create_dir,
             commands::fs::delete_path,
             commands::fs::rename_path,
             commands::fs::grant_asset_scope,

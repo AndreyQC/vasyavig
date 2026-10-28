@@ -16,7 +16,8 @@ export function MainToolbar({path}: Props) {
   const {t} = useTranslation();
   const dirty = useEditorStore((s) => s.tabs.find((tab) => tab.path === path)?.dirty ?? false);
   const kind = useEditorStore((s) => s.tabs.find((tab) => tab.path === path)?.kind);
-  const {saveActive, saveActiveAs} = useSaveActions();
+  const hasDirty = useEditorStore((s) => s.tabs.some((tab) => tab.dirty));
+  const {saveActive, saveActiveAs, saveAll} = useSaveActions();
   const {restoreUrls, startToc, insertMermaid} = useMarkdownTools(path);
 
   const isMarkdown = kind === "markdown";
@@ -58,6 +59,13 @@ export function MainToolbar({path}: Props) {
       </div>
       <div className="main-toolbar__center">{isMarkdown && <ModeSwitcher path={path} />}</div>
       <div className="main-toolbar__right">
+        <Tooltip content={t("toolbar.saveAllTooltip")}>
+          <span>
+            <Button view="flat" disabled={!hasDirty} onClick={() => void saveAll()}>
+              {t("toolbar.saveAll")}
+            </Button>
+          </span>
+        </Tooltip>
         <Tooltip content={t("toolbar.saveTooltip")}>
           <span>
             <Button view="outlined" disabled={!savable || !dirty} onClick={saveActive}>

@@ -23,11 +23,22 @@ export interface MermaidEditRequest {
   apply: (next: string) => void;
 }
 
+/** Режим модалки создания: файл или папка (план 20261028_004, D3). */
+export type CreateKind = "file" | "dir";
+
+/** Позиция курсора для статус-бара (план 20261028_004, D5), 1-базная. */
+export interface CursorPos {
+  line: number;
+  col: number;
+}
+
 interface UiState {
   theme: ThemeMode;
   lang: UiLang;
   /** Путь последнего открытого workspace-файла — восстановление на старте (спека workspace-file). */
   lastWorkspacePath: string | null;
+  /** Недавние workspace-файлы, максимум 5 (план 20261028_004, D8). */
+  recentWorkspaces: string[];
   /** Путь из Save As, ожидающий подтверждения смены формата md↔yfm. */
   pendingSaveAsPath: string | null;
   /** Вкладка (путь), ожидающая подтверждения закрытия. */
@@ -42,6 +53,8 @@ interface UiState {
   pendingDeletePath: string | null;
   /** Каталог, в котором создаётся новый файл (модалка «Создать файл»). */
   pendingCreateDir: string | null;
+  /** Что создаётся в pendingCreateDir (план 20261028_004, D3). */
+  pendingCreateKind: CreateKind;
   /** Офисный документ, ожидающий подтверждения конвертации в Markdown. */
   pendingConvertPath: string | null;
   /** Файл/папка, ожидающие переименования. */
@@ -58,6 +71,10 @@ interface UiState {
   graphTabOpen: boolean;
   /** Какая вкладка главной панели активна. */
   mainPane: MainPane;
+  /** Открыта палитра быстрого открытия Ctrl+P (план 20261028_004, D7). */
+  quickOpenOpen: boolean;
+  /** Позиция курсора активной вкладки; null — неизвестна (D5). */
+  cursorPos: CursorPos | null;
 
   setTheme: (theme: ThemeMode) => void;
   setSidebarMode: (mode: SidebarMode) => void;
@@ -68,13 +85,15 @@ interface UiState {
   setMainPane: (pane: MainPane) => void;
   setLang: (lang: UiLang) => void;
   setLastWorkspacePath: (path: string | null) => void;
+  setQuickOpenOpen: (open: boolean) => void;
+  setCursorPos: (pos: CursorPos | null) => void;
   setPendingSaveAsPath: (path: string | null) => void;
   setPendingClosePath: (path: string | null) => void;
   setPendingRemoveRootPath: (path: string | null) => void;
   setPendingOpenWorkspacePath: (path: string | null) => void;
   setPendingNewWorkspacePath: (path: string | null) => void;
   setPendingDeletePath: (path: string | null) => void;
-  setPendingCreateDir: (dir: string | null) => void;
+  setPendingCreateDir: (dir: string | null, kind?: CreateKind) => void;
   setPendingConvertPath: (path: string | null) => void;
   setPendingRenamePath: (path: string | null) => void;
   setPendingAliasPath: (path: string | null) => void;
@@ -89,6 +108,7 @@ export const useUiStore = create<UiState>()(
       theme: "system",
       lang: "ru",
       lastWorkspacePath: null,
+      recentWorkspaces: [],
       pendingSaveAsPath: null,
       pendingClosePath: null,
       pendingRemoveRootPath: null,
@@ -96,6 +116,7 @@ export const useUiStore = create<UiState>()(
       pendingNewWorkspacePath: null,
       pendingDeletePath: null,
       pendingCreateDir: null,
+      pendingCreateKind: "file",
       pendingConvertPath: null,
       pendingRenamePath: null,
       pendingAliasPath: null,
@@ -104,6 +125,8 @@ export const useUiStore = create<UiState>()(
       sidebarMode: "tree",
       graphTabOpen: false,
       mainPane: "doc",
+      quickOpenOpen: false,
+      cursorPos: null,
 
       setTheme: (theme) => set({theme}),
       setSidebarMode: (mode) => set({sidebarMode: mode}),
@@ -111,14 +134,29 @@ export const useUiStore = create<UiState>()(
       closeGraphTab: () => set({graphTabOpen: false, mainPane: "doc"}),
       setMainPane: (pane) => set({mainPane: pane}),
       setLang: (lang) => set({lang}),
-      setLastWorkspacePath: (path) => set({lastWorkspacePath: path}),
+      // недавние workspace: вперёд, без дубликатов, максимум 5 (D8)
+      setLastWorkspacePath: (path) =>
+        set((s) => {
+          if (!path) return {lastWorkspacePath: null};
+          return {
+            lastWorkspacePath: path,
+            recentWorkspaces: [path, ...s.recentWorkspaces.filter((p) => p !== path)].slice(0, 5),
+          };
+        }),
+      setQuickOpenOpen: (open) => set({quickOpenOpen: open}),
+      setCursorPos: (pos) => set({cursorPos: pos}),
       setPendingSaveAsPath: (path) => set({pendingSaveAsPath: path}),
       setPendingClosePath: (path) => set({pendingClosePath: path}),
       setPendingRemoveRootPath: (path) => set({pendingRemoveRootPath: path}),
       setPendingOpenWorkspacePath: (path) => set({pendingOpenWorkspacePath: path}),
       setPendingNewWorkspacePath: (path) => set({pendingNewWorkspacePath: path}),
       setPendingDeletePath: (path) => set({pendingDeletePath: path}),
-      setPendingCreateDir: (dir) => set({pendingCreateDir: dir}),
+      // null (закрытие модалки) не сбрасывает kind — confirmCreate читает его до сброса
+      setPendingCreateDir: (dir, kind) =>
+        set((s) => ({
+          pendingCreateDir: dir,
+          pendingCreateKind: dir === null ? s.pendingCreateKind : (kind ?? "file"),
+        })),
       setPendingConvertPath: (path) => set({pendingConvertPath: path}),
       setPendingRenamePath: (path) => set({pendingRenamePath: path}),
       setPendingAliasPath: (path) => set({pendingAliasPath: path}),
@@ -131,6 +169,7 @@ export const useUiStore = create<UiState>()(
         theme: s.theme,
         lang: s.lang,
         lastWorkspacePath: s.lastWorkspacePath,
+        recentWorkspaces: s.recentWorkspaces,
       }),
     },
   ),

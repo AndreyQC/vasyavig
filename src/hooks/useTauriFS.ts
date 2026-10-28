@@ -65,6 +65,11 @@ export function createFile(path: string): Promise<void> {
   return invoke("create_file", {path});
 }
 
+/** Создаёт каталог (ошибка, если уже существует). */
+export function createDir(path: string): Promise<void> {
+  return invoke("create_dir", {path});
+}
+
 /** Удаляет файл или папку (папки — рекурсивно). */
 export function deletePath(path: string): Promise<void> {
   return invoke("delete_path", {path});

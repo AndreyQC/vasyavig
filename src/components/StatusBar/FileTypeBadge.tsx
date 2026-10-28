@@ -19,7 +19,7 @@ export function FileTypeBadge({path}: Props) {
   const color = EXT_COLORS[ext] ?? DEFAULT_COLOR;
 
   return (
-    <span className="file-type-badge" style={{background: color}}>
+    <span className="file-type-badge" style={{background: color}} title={path}>
       <Text variant="caption-2" color="inverted-primary">
         .{ext || "?"}
       </Text>

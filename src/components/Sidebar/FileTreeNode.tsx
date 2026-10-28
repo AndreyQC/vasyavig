@@ -30,7 +30,8 @@ export function FileTreeNode({node, depth}: Props) {
   const toggleDir = useFileStore((s) => s.toggleDir);
   const openFile = useFileStore((s) => s.openFile);
   const selectDir = useFileStore((s) => s.selectDir);
-  const {requestCreate, requestDelete, requestRename} = useFileActions();
+  const {requestCreate, requestCreateDir, requestDelete, requestRename} = useFileActions();
+  const setNotice = useFileStore((s) => s.setNotice);
   const [menu, setMenu] = useState<MenuState | null>(null);
 
   const children = node.children;
@@ -122,6 +123,28 @@ export function FileTreeNode({node, depth}: Props) {
             }}
           >
             {t("sidebar.createFile")}
+          </button>
+          <button
+            type="button"
+            className="file-tree-context-menu__item"
+            onClick={() => {
+              setMenu(null);
+              requestCreateDir(menu.node.isDir ? menu.node.path : getParentDir(menu.node.path));
+            }}
+          >
+            {t("sidebar.createFolder")}
+          </button>
+          <button
+            type="button"
+            className="file-tree-context-menu__item"
+            onClick={() => {
+              setMenu(null);
+              void navigator.clipboard.writeText(menu.node.path).then(() => {
+                setNotice(t("notices.pathCopied"));
+              });
+            }}
+          >
+            {t("sidebar.copyPath")}
           </button>
           <button
             type="button"

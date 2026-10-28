@@ -209,6 +209,21 @@
   color: var(--g-color-text-danger);
 }
 
+/* Заголовок секции «Недавние» и разделитель в меню workspace (план 20261028_004, D8) */
+.file-tree-context-menu__caption {
+  padding: var(--g-spacing-1) var(--g-spacing-2) 0;
+  color: var(--g-color-text-secondary);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.file-tree-context-menu__separator {
+  height: 1px;
+  margin: var(--g-spacing-1) 0;
+  background: var(--g-color-line-generic);
+}
+
 /* Значок harness-репозитория в заголовке секции корня (план 20261027_005, D10) */
 .root-section__harness {
   display: flex;

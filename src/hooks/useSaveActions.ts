@@ -54,5 +54,11 @@ export function useSaveActions() {
     useUiStore.getState().setPendingSaveAsPath(null);
   };
 
-  return {saveActive, saveActiveAs, confirmSaveAs, cancelSaveAs};
+  /** Сохранить все dirty-вкладки (план 20261028_004, D6). */
+  const saveAll = async () => {
+    const error = await useEditorStore.getState().saveAllDirty();
+    if (error) useFileStore.getState().setError(error);
+  };
+
+  return {saveActive, saveActiveAs, confirmSaveAs, cancelSaveAs, saveAll};
 }

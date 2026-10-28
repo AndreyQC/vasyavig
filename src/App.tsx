@@ -22,6 +22,7 @@ import {RemoveRootModal} from "./components/Modals/RemoveRootModal";
 import {DeleteConfirmModal} from "./components/Modals/DeleteConfirmModal";
 import {CreateFileModal} from "./components/Modals/CreateFileModal";
 import {ConvertModal} from "./components/Modals/ConvertModal";
+import {QuickOpen} from "./components/QuickOpen";
 import {RenameModal} from "./components/Modals/RenameModal";
 import {AliasModal} from "./components/Modals/AliasModal";
 import {TocModal} from "./components/Modals/TocModal";
@@ -57,11 +58,14 @@ function App() {
     void useFileStore.getState().restoreLastWorkspace();
   }, []);
 
-  // Заголовок окна: {filename} — Vasyavig (идея §4.1.2)
+  // Заголовок окна: [● ]{filename} — Vasyavig (идея §4.1.2; маркер dirty —
+  // план 20261028_004, D6)
   const activeName = activeTab?.name ?? null;
+  const hasDirty = useEditorStore((s) => s.tabs.some((t) => t.dirty));
   useEffect(() => {
-    document.title = activeName ? `${activeName} — Vasyavig` : "Vasyavig";
-  }, [activeName]);
+    const base = activeName ? `${activeName} — Vasyavig` : "Vasyavig";
+    document.title = hasDirty ? `● ${base}` : base;
+  }, [activeName, hasDirty]);
 
   // шапка сайдбара закреплена; скроллится только содержимое (flex-колонка);
   // содержимое — дерево файлов или дашборд задач (план 20261027_005 §5)
@@ -138,6 +142,7 @@ function App() {
         <ConvertModal />
         <RenameModal />
         <AliasModal />
+        <QuickOpen />
         <TocModal />
         <MermaidModal />
         <ErrorToasts />
