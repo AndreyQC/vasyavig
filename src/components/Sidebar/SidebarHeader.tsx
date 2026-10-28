@@ -1,6 +1,6 @@
 import {useEffect, useRef, useState} from "react";
 import {Button, Icon, Text, Tooltip} from "@gravity-ui/uikit";
-import {ArrowRotateRight, Eye, EyeSlash, FilePlus, FolderPlus, Folders, ListCheck, ListUl, TrashBin} from "@gravity-ui/icons";
+import {ArrowRotateRight, Eye, EyeSlash, FilePlus, FolderPlus, Folders, GraphNode, ListCheck, ListUl, TrashBin} from "@gravity-ui/icons";
 import {useTranslation} from "react-i18next";
 import {useFileStore} from "../../store/fileStore";
 import {useUiStore} from "../../store/uiStore";
@@ -23,6 +23,8 @@ export function SidebarHeader() {
   const hasHarness = useFileStore((s) => s.roots.some((r) => r.harness));
   const sidebarMode = useUiStore((s) => s.sidebarMode);
   const setSidebarMode = useUiStore((s) => s.setSidebarMode);
+  const mainPane = useUiStore((s) => s.mainPane);
+  const openGraphTab = useUiStore((s) => s.openGraphTab);
   const activeDirPath = useFileStore((s) => s.activeDirPath);
   const activeFilePath = useFileStore((s) => s.activeFilePath);
   const {requestCreate, requestDelete, requestOpenWorkspace, requestNewWorkspace} = useFileActions();
@@ -92,6 +94,17 @@ export function SidebarHeader() {
               onClick={() => setSidebarMode(sidebarMode === "tasks" ? "tree" : "tasks")}
             >
               <Icon data={ListCheck} />
+            </Button>
+          </Tooltip>
+        )}
+        {hasHarness && (
+          <Tooltip content={t("sidebar.showGraph")}>
+            <Button
+              view={mainPane === "graph" ? "normal" : "flat"}
+              size="m"
+              onClick={openGraphTab}
+            >
+              <Icon data={GraphNode} />
             </Button>
           </Tooltip>
         )}

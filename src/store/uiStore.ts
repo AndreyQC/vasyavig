@@ -7,6 +7,13 @@ export type UiLang = "ru" | "en";
 /** Содержимое сайдбара: дерево файлов или дашборд задач (план 20261027_005 §5). */
 export type SidebarMode = "tree" | "tasks";
 
+/**
+ * Что показано в главной панели: документ активной вкладки или панель графа
+ * (план 20261028_001, Q1). Граф — вкладка в верхней полосе главной панели,
+ * закрывается крестиком, как обычная вкладка.
+ */
+export type MainPane = "doc" | "graph";
+
 /** Запрос на правку mermaid-диаграммы в модалке (nodeView → модалка, design D3). */
 export interface MermaidEditRequest {
   source: string;
@@ -45,9 +52,18 @@ interface UiState {
   pendingMermaidEdit: MermaidEditRequest | null;
   /** Содержимое сайдбара; сессионное — в persist не попадает (partialize). */
   sidebarMode: SidebarMode;
+  /** Открыта ли вкладка «Граф» в главной панели. */
+  graphTabOpen: boolean;
+  /** Какая вкладка главной панели активна. */
+  mainPane: MainPane;
 
   setTheme: (theme: ThemeMode) => void;
   setSidebarMode: (mode: SidebarMode) => void;
+  /** Открыть вкладку «Граф» и показать её. */
+  openGraphTab: () => void;
+  /** Закрыть вкладку «Граф» (главная панель возвращается к документу). */
+  closeGraphTab: () => void;
+  setMainPane: (pane: MainPane) => void;
   setLang: (lang: UiLang) => void;
   setLastWorkspacePath: (path: string | null) => void;
   setPendingSaveAsPath: (path: string | null) => void;
@@ -82,9 +98,14 @@ export const useUiStore = create<UiState>()(
       pendingTocPath: null,
       pendingMermaidEdit: null,
       sidebarMode: "tree",
+      graphTabOpen: false,
+      mainPane: "doc",
 
       setTheme: (theme) => set({theme}),
       setSidebarMode: (mode) => set({sidebarMode: mode}),
+      openGraphTab: () => set({graphTabOpen: true, mainPane: "graph"}),
+      closeGraphTab: () => set({graphTabOpen: false, mainPane: "doc"}),
+      setMainPane: (pane) => set({mainPane: pane}),
       setLang: (lang) => set({lang}),
       setLastWorkspacePath: (path) => set({lastWorkspacePath: path}),
       setPendingSaveAsPath: (path) => set({pendingSaveAsPath: path}),

@@ -4,6 +4,7 @@ import {Layout} from "./components/Layout";
 import {SidebarHeader} from "./components/Sidebar/SidebarHeader";
 import {FileTree} from "./components/Sidebar/FileTree";
 import {TaskDashboard} from "./components/Sidebar/TaskDashboard";
+import {DocumentGraphPanel} from "./components/Graph/DocumentGraphPanel";
 import {EmptyState} from "./components/EditorArea/EmptyState";
 import {EditorTabs} from "./components/EditorArea/EditorTabs";
 import {MarkdownEditor} from "./components/EditorArea/MarkdownEditor";
@@ -73,52 +74,60 @@ function App() {
     </div>
   );
 
+  // главная панель: вкладка документа или вкладка «Граф» (план 20261028_001)
+  const mainPane = useUiStore((s) => s.mainPane);
   return (
     <Layout sidebar={sidebar} statusbar={<StatusBar />}>
       <ErrorBoundary>
-        {activeTab ? (
-          <div className="editor-area">
-            <MainToolbar path={activeTab.path} />
-            <div className="editor-area__header">
-              <EditorTabs />
-            </div>
-            <div className="editor-area__content">
-              {activeTab.kind === "markdown" ? (
-                activeTab.mode === "split" ? (
-                  <SplitView key={activeTab.path} tab={activeTab} />
-                ) : (
-                  <MarkdownEditor
-                    key={activeTab.path}
-                    path={activeTab.path}
-                    initialContent={activeTab.content}
-                  />
-                )
-              ) : activeTab.kind === "image" ? (
-                <ImageViewer key={activeTab.path} path={activeTab.path} name={activeTab.name} />
-              ) : activeTab.kind === "email" ? (
-                <EmlViewer key={activeTab.path} content={activeTab.content} />
-              ) : activeTab.kind === "html" ? (
-                <HtmlViewer
-                  key={activeTab.path}
-                  content={activeTab.content}
-                  path={activeTab.path}
-                  name={activeTab.name}
-                />
-              ) : (
-                <MonacoViewer
-                  content={activeTab.content}
-                  path={activeTab.path}
-                  editable
-                  onChange={(value) =>
-                    useEditorStore.getState().updateContent(activeTab.path, value)
-                  }
-                />
-              )}
-            </div>
+        <div className="editor-area">
+          <div className="editor-area__header">
+            <EditorTabs />
           </div>
-        ) : (
-          <EmptyState />
-        )}
+          {mainPane === "graph" ? (
+            <div className="editor-area__content">
+              <DocumentGraphPanel />
+            </div>
+          ) : activeTab ? (
+            <>
+              <MainToolbar path={activeTab.path} />
+              <div className="editor-area__content">
+                {activeTab.kind === "markdown" ? (
+                  activeTab.mode === "split" ? (
+                    <SplitView key={activeTab.path} tab={activeTab} />
+                  ) : (
+                    <MarkdownEditor
+                      key={activeTab.path}
+                      path={activeTab.path}
+                      initialContent={activeTab.content}
+                    />
+                  )
+                ) : activeTab.kind === "image" ? (
+                  <ImageViewer key={activeTab.path} path={activeTab.path} name={activeTab.name} />
+                ) : activeTab.kind === "email" ? (
+                  <EmlViewer key={activeTab.path} content={activeTab.content} />
+                ) : activeTab.kind === "html" ? (
+                  <HtmlViewer
+                    key={activeTab.path}
+                    content={activeTab.content}
+                    path={activeTab.path}
+                    name={activeTab.name}
+                  />
+                ) : (
+                  <MonacoViewer
+                    content={activeTab.content}
+                    path={activeTab.path}
+                    editable
+                    onChange={(value) =>
+                      useEditorStore.getState().updateContent(activeTab.path, value)
+                    }
+                  />
+                )}
+              </div>
+            </>
+          ) : (
+            <EmptyState />
+          )}
+        </div>
         <SaveConfirmModal />
         <CloseTabModal />
         <WorkspaceSwitchModal />

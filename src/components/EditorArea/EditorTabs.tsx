@@ -1,10 +1,11 @@
 import {useMemo} from "react";
 import type {CSSProperties} from "react";
 import {Button, Icon, Text} from "@gravity-ui/uikit";
-import {Xmark} from "@gravity-ui/icons";
+import {GraphNode, Xmark} from "@gravity-ui/icons";
 import {useTranslation} from "react-i18next";
 import {useEditorStore} from "../../store/editorStore";
 import {useFileStore} from "../../store/fileStore";
+import {useUiStore} from "../../store/uiStore";
 import {useFileActions} from "../../hooks/useFileActions";
 import {resolveRoot} from "../../lib/roots";
 import type {RootColor} from "../../lib/rootColors";
@@ -16,6 +17,9 @@ import {HARNESS_ICON} from "../harnessIcon";
  * активная вкладка — широкая рамка насыщенного цвета корня (спека folder-colors).
  * Цвет всегда производен от (путь → корень), в табах не хранится (design D2).
  * Файлы harness-репозитория помечены значком (план 20261027_005, D10).
+ *
+ * Вкладка «Граф» (план 20261028_001, Q1) — не файл, а панель в главной
+ * области: своя вкладка в той же полосе, закрывается крестиком.
  */
 export function EditorTabs() {
   const {t} = useTranslation();
@@ -23,6 +27,10 @@ export function EditorTabs() {
   const activePath = useEditorStore((s) => s.activePath);
   const setActiveTab = useEditorStore((s) => s.setActiveTab);
   const roots = useFileStore((s) => s.roots);
+  const graphTabOpen = useUiStore((s) => s.graphTabOpen);
+  const mainPane = useUiStore((s) => s.mainPane);
+  const openGraphTab = useUiStore((s) => s.openGraphTab);
+  const closeGraphTab = useUiStore((s) => s.closeGraphTab);
   const {requestCloseTab} = useFileActions();
 
   // производная коллекция — useMemo, не селектор (урок §3)
@@ -35,7 +43,7 @@ export function EditorTabs() {
     return map;
   }, [tabs, roots]);
 
-  if (tabs.length === 0) return null;
+  if (tabs.length === 0 && !graphTabOpen) return null;
 
   return (
     <div className="editor-tabs">
@@ -45,17 +53,21 @@ export function EditorTabs() {
           "--tint": `var(--root-tint-${info.color})`,
           "--accent": `var(--root-accent-${info.color})`,
         } as CSSProperties;
+        const isActive = mainPane === "doc" && tab.path === activePath;
         return (
           <div
             key={tab.path}
-            className={`editor-tabs__tab${tab.path === activePath ? " editor-tabs__tab--active" : ""}`}
+            className={`editor-tabs__tab${isActive ? " editor-tabs__tab--active" : ""}`}
             style={style}
             title={tab.path}
           >
             <button
               type="button"
               className={`editor-tabs__label${tab.preview ? " editor-tabs__label--preview" : ""}`}
-              onClick={() => setActiveTab(tab.path)}
+              onClick={() => {
+                setActiveTab(tab.path);
+                useUiStore.getState().setMainPane("doc");
+              }}
             >
               {info.harness && (
                 <span className="editor-tabs__harness" aria-label={t("sidebar.harnessRepo")}>
@@ -79,6 +91,33 @@ export function EditorTabs() {
           </div>
         );
       })}
+      {graphTabOpen && (
+        <div
+          className={`editor-tabs__tab editor-tabs__tab--graph${
+            mainPane === "graph" ? " editor-tabs__tab--active" : ""
+          }`}
+          style={{"--accent": "var(--g-color-line-brand)"} as CSSProperties}
+          title={t("harness.graph.tabTitle")}
+        >
+          <button type="button" className="editor-tabs__label" onClick={openGraphTab}>
+            <span className="editor-tabs__harness" aria-label={t("harness.graph.tabTitle")}>
+              <Icon data={GraphNode} size={12} />
+            </span>
+            <Text variant="body-1" ellipsis>
+              {t("harness.graph.tab")}
+            </Text>
+          </button>
+          <Button
+            view="flat"
+            size="s"
+            className="editor-tabs__close"
+            onClick={closeGraphTab}
+            title={t("tabs.close")}
+          >
+            <Icon data={Xmark} size={12} />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

@@ -17,7 +17,8 @@
     "delete": "Удалить",
     "harnessRepo": "harness-репозиторий (есть манифест или реестр документов)",
     "showTasks": "Задачи (task-yaml)",
-    "showTree": "Дерево файлов"
+    "showTree": "Дерево файлов",
+    "showGraph": "Граф документов"
   },
   "empty": {
     "hint": "Добавьте папку в workspace и выберите Markdown/YFM файл"
@@ -162,6 +163,33 @@
       "refresh": "Перечитать статусы",
       "empty": "Задачи (task-yaml) не найдены",
       "emptyHint": "Проверьте реестр: make doc-index, и задачи: make doc-id — в harness-репозитории"
+    },
+    "graph": {
+      "tab": "Граф",
+      "tabTitle": "Панель графа документов",
+      "around": "Вокруг документа",
+      "overview": "Обзор",
+      "bases": "Основания",
+      "children": "Порождённые",
+      "related": "Связанные",
+      "dirOut": "прямая",
+      "dirIn": "обратная",
+      "dirBoth": "взаимная",
+      "noRepo": "Откройте каталог harness-репозитория (манифест harness_manifest.json или реестр _docs_/_index/documents.jsonl)",
+      "noRepoHint": "Панель строится по реестру документов — пересоберите его: make doc-index",
+      "allProjects": "Все проекты",
+      "allTypes": "Все типы",
+      "search": "Поиск по названию или пути",
+      "onlyLinked": "Только с связями",
+      "refresh": "Перечитать реестр",
+      "collapseAll": "Свернуть все ветки",
+      "expandNode": "Развернуть",
+      "collapseNode": "Свернуть",
+      "currentDoc": "Текущий документ",
+      "noCurrentDoc": "Откройте документ — здесь будут его связи",
+      "notInRegistry": "Документ не найден в реестре",
+      "emptyOverview": "Документы не найдены",
+      "emptyOverviewHint": "Проверьте фильтры или пересоберите реестр: make doc-index"
     }
   }
 }

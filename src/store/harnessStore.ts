@@ -25,6 +25,11 @@ interface RepoIndex {
   /** Корень репозитория в исходной форме (для склейки путей). */
   repoRoot: string;
   byUlid: Record<string, HarnessIndexEntry>;
+  /**
+   * Записи реестра как есть — для потребителей, которым нужен полный список
+   * (граф документов: порядок реестра и записи с дублями ULID).
+   */
+  entries: HarnessIndexEntry[];
 }
 
 interface HarnessState {
@@ -75,10 +80,11 @@ export const useHarnessStore = create<HarnessState>((set, get) => ({
       content = await defaultReadProbe(harnessIndexPath(root)); // перезагрузка после инвалидации
       if (content === null) return; // реестр исчез — не блокируем просмотр
     }
-    const byUlid = buildUlidIndex(parseDocumentsJsonl(content));
+    const entries = parseDocumentsJsonl(content);
+    const byUlid = buildUlidIndex(entries);
     const repoRoot = root;
     set((s) => ({
-      indexes: {...s.indexes, [rootKey]: {repoRoot, byUlid}},
+      indexes: {...s.indexes, [rootKey]: {repoRoot, byUlid, entries}},
       version: s.version + 1,
     }));
   },

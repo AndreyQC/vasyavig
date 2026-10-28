@@ -194,6 +194,41 @@ export interface FileNodeLike {
   children: readonly FileNodeLike[] | null;
 }
 
+/**
+ * Корни harness-репозиториев внутри уже загруженного дерева: по найденному
+ * реестру `_docs_/_index/documents.jsonl` восстанавливается корень репо
+ * (каталог над `_docs_`). Нужно, когда в workspace добавлен родительский
+ * каталог, а сам репозиторий лежит во вложенной папке.
+ */
+export function collectHarnessRepoRoots(nodes: readonly FileNodeLike[]): string[] {
+  const out: string[] = [];
+  const suffix = `/${HARNESS_INDEX_REL}`;
+  const walk = (list: readonly FileNodeLike[]) => {
+    for (const node of list) {
+      const p = node.path.replace(/\\/g, "/");
+      if (p.toLowerCase().endsWith(suffix)) {
+        const root = p.slice(0, p.length - suffix.length);
+        if (root) out.push(root);
+      }
+      if (node.children) walk(node.children);
+    }
+  };
+  walk(nodes);
+  return [...new Set(out)];
+}
+
+/**
+ * Путь файла относительно корня репозитория (posix) — по нему ищется запись
+ * реестра. null — файл вне репозитория. Регистр результата сохраняется:
+ * пути реестра пишутся как есть.
+ */
+export function repoRelativePath(repoRoot: string, filePath: string): string | null {
+  const root = repoRoot.replace(/\\/g, "/").replace(/\/+$/, "");
+  const file = filePath.replace(/\\/g, "/");
+  if (!file.toLowerCase().startsWith(root.toLowerCase() + "/")) return null;
+  return file.slice(root.length + 1);
+}
+
 export interface UlidLinkMeta {
   title: string;
   type: string;

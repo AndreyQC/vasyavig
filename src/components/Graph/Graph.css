@@ -1,0 +1,263 @@
+/* Панель графа документов (план 20261028_001): колонка управления + демонстрация */
+
+.graph-panel {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  gap: var(--g-spacing-3);
+}
+
+.graph-panel__controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--g-spacing-2);
+  flex: 0 0 280px;
+  min-width: 220px;
+  padding-right: var(--g-spacing-3);
+  border-right: 1px solid var(--g-color-line-generic);
+  overflow-y: auto;
+}
+
+.graph-panel__control {
+  width: 100%;
+}
+
+.graph-panel__switch {
+  display: flex;
+  align-items: center;
+  gap: var(--g-spacing-2);
+  color: var(--g-color-text-secondary);
+}
+
+.graph-panel__actions {
+  display: flex;
+  gap: var(--g-spacing-1);
+  padding-top: var(--g-spacing-1);
+}
+
+.graph-panel__demo {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.graph-panel__demo-head {
+  display: flex;
+  align-items: center;
+  gap: var(--g-spacing-2);
+  flex-shrink: 0;
+  padding-bottom: var(--g-spacing-2);
+  border-bottom: 1px solid var(--g-color-line-generic);
+  margin-bottom: var(--g-spacing-2);
+}
+
+.graph-panel__demo-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.graph-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--g-spacing-2);
+  padding: var(--g-spacing-6) var(--g-spacing-2);
+  text-align: center;
+  color: var(--g-color-text-secondary);
+}
+
+/* «Вокруг документа»: текущий документ + секции оснований/порождённых/связей */
+
+.graph-around {
+  display: flex;
+  flex-direction: column;
+  gap: var(--g-spacing-3);
+}
+
+.graph-around__current {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--g-spacing-2);
+  border-radius: var(--g-border-radius-m);
+  background: var(--g-color-base-generic);
+}
+
+.graph-around__current-type {
+  color: var(--g-color-text-secondary);
+}
+
+.graph-around__path {
+  font-family: var(--g-font-family-monospace, monospace);
+}
+
+.graph-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.graph-section__head {
+  display: flex;
+  align-items: center;
+  gap: var(--g-spacing-2);
+  padding-bottom: var(--g-spacing-1);
+}
+
+.graph-section__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--g-color-base-generic);
+  font-size: var(--g-text-body-3-font-size);
+  color: var(--g-color-text-secondary);
+}
+
+.graph-section__empty {
+  padding-left: var(--g-spacing-2);
+}
+
+/* Строка узла графа (окружение) */
+
+.graph-node {
+  display: flex;
+  align-items: center;
+  gap: var(--g-spacing-2);
+  width: 100%;
+  padding: var(--g-spacing-1) var(--g-spacing-2);
+  border: none;
+  border-radius: var(--g-border-radius-m);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.graph-node:hover {
+  background: var(--g-color-base-simple-hover);
+}
+
+.graph-node__type {
+  flex-shrink: 0;
+  min-width: 62px;
+  padding: 0 6px;
+  border-radius: var(--g-border-radius-s);
+  background: var(--g-color-base-generic);
+  font-size: var(--g-text-body-3-font-size);
+  color: var(--g-color-text-secondary);
+  text-align: center;
+}
+
+.graph-node__title {
+  flex: 1;
+  min-width: 0;
+}
+
+.graph-node__dir {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  font-size: var(--g-text-body-3-font-size);
+  color: var(--g-color-text-secondary);
+}
+
+.graph-node__dir--both {
+  color: var(--g-color-text-info-heavy);
+}
+
+/* Обзор: раскрывающееся дерево */
+
+.graph-tree {
+  display: flex;
+  flex-direction: column;
+}
+
+.graph-tree__row {
+  display: flex;
+  align-items: center;
+  gap: var(--g-spacing-1);
+  padding-right: var(--g-spacing-2);
+  border-radius: var(--g-border-radius-m);
+}
+
+.graph-tree__row:hover {
+  background: var(--g-color-base-simple-hover);
+}
+
+.graph-tree__chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--g-color-text-secondary);
+  cursor: pointer;
+}
+
+.graph-tree__chevron:disabled {
+  cursor: default;
+}
+
+.graph-tree__label {
+  display: flex;
+  align-items: center;
+  gap: var(--g-spacing-2);
+  flex: 1;
+  min-width: 0;
+  padding: 2px 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.graph-tree__type {
+  flex-shrink: 0;
+  min-width: 62px;
+  padding: 0 6px;
+  border-radius: var(--g-border-radius-s);
+  background: var(--g-color-base-generic);
+  font-size: var(--g-text-body-3-font-size);
+  color: var(--g-color-text-secondary);
+  text-align: center;
+}
+
+.graph-tree__title {
+  flex: 1;
+  min-width: 0;
+}
+
+.graph-tree__kids {
+  flex-shrink: 0;
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--g-color-base-generic);
+  font-size: var(--g-text-body-3-font-size);
+  color: var(--g-color-text-secondary);
+  text-align: center;
+}
+
+.graph-tree__related {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  font-size: var(--g-text-body-3-font-size);
+  color: var(--g-color-text-secondary);
+}

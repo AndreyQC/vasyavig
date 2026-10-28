@@ -17,7 +17,8 @@
     "delete": "Delete",
     "harnessRepo": "Harness repository (has manifest or document registry)",
     "showTasks": "Tasks (task-yaml)",
-    "showTree": "File tree"
+    "showTree": "File tree",
+    "showGraph": "Document graph"
   },
   "empty": {
     "hint": "Add a folder to the workspace and pick a Markdown/YFM file"
@@ -162,6 +163,33 @@
       "refresh": "Reload statuses",
       "empty": "No task-yaml documents found",
       "emptyHint": "Check the registry: make doc-index, and tasks: make doc-id in the harness repository"
+    },
+    "graph": {
+      "tab": "Graph",
+      "tabTitle": "Document graph panel",
+      "around": "Around document",
+      "overview": "Overview",
+      "bases": "Based on",
+      "children": "Derived",
+      "related": "Related",
+      "dirOut": "direct",
+      "dirIn": "reverse",
+      "dirBoth": "mutual",
+      "noRepo": "Open a harness repository directory (harness_manifest.json or _docs_/_index/documents.jsonl registry)",
+      "noRepoHint": "The panel is built from the document registry — rebuild it: make doc-index",
+      "allProjects": "All projects",
+      "allTypes": "All types",
+      "search": "Search by title or path",
+      "onlyLinked": "Only linked documents",
+      "refresh": "Reload registry",
+      "collapseAll": "Collapse all branches",
+      "expandNode": "Expand",
+      "collapseNode": "Collapse",
+      "currentDoc": "Current document",
+      "noCurrentDoc": "Open a document — its links will show up here",
+      "notInRegistry": "Document not found in the registry",
+      "emptyOverview": "No documents found",
+      "emptyOverviewHint": "Check the filters or rebuild the registry: make doc-index"
     }
   }
 }

@@ -751,3 +751,9 @@
   flex-shrink: 0;
   color: var(--g-color-text-info-heavy);
 }
+
+/* Вкладка «Граф» в полосе вкладок главной панели (план 20261028_001, Q1):
+   не файл — панель, поэтому свой фон вместо тинта цвета корня */
+.editor-tabs__tab--graph {
+  background: var(--g-color-base-selection);
+}

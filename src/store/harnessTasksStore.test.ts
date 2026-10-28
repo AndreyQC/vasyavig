@@ -49,15 +49,17 @@ function mockFiles(files: Record<string, string>) {
 }
 
 function seedRegistry() {
+  const byUlid = {
+    "01M43R3ZGSNXQ0KSMZ9JSZEZ5W": {ulid: "01M43R3ZGSNXQ0KSMZ9JSZEZ5W", path: "docs/11_tracker/T-1.md", title: "Т-1", type: "tracker", updated: "2026-10-20", related: [], basedOn: []},
+    "01M43R3ZGSNXQ0KSMZ9JSZEZ5X": {ulid: "01M43R3ZGSNXQ0KSMZ9JSZEZ5X", path: "docs/11_tracker/T-2.md", title: "Т-2", type: "tracker", updated: "2026-10-21", related: [], basedOn: []},
+    "01M43R3ZGSNXQ0KSMZ9JSZEZ5Y": {ulid: "01M43R3ZGSNXQ0KSMZ9JSZEZ5Y", path: "_docs_/_plans_/plan_a.md", title: "План", type: "plan", related: [], basedOn: []},
+  };
   useHarnessStore.setState({
     indexes: {
       [ROOT_KEY]: {
         repoRoot: REPO,
-        byUlid: {
-          "01M43R3ZGSNXQ0KSMZ9JSZEZ5W": {ulid: "01M43R3ZGSNXQ0KSMZ9JSZEZ5W", path: "docs/11_tracker/T-1.md", title: "Т-1", type: "tracker", updated: "2026-10-20", related: [], basedOn: []},
-          "01M43R3ZGSNXQ0KSMZ9JSZEZ5X": {ulid: "01M43R3ZGSNXQ0KSMZ9JSZEZ5X", path: "docs/11_tracker/T-2.md", title: "Т-2", type: "tracker", updated: "2026-10-21", related: [], basedOn: []},
-          "01M43R3ZGSNXQ0KSMZ9JSZEZ5Y": {ulid: "01M43R3ZGSNXQ0KSMZ9JSZEZ5Y", path: "_docs_/_plans_/plan_a.md", title: "План", type: "plan", related: [], basedOn: []},
-        },
+        byUlid,
+        entries: Object.values(byUlid),
       },
     },
     version: 1,
