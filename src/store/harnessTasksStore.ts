@@ -84,6 +84,10 @@ export const useHarnessTasksStore = create<HarnessTasksState>((set, get) => {
       if (get().roots[rootKey] || get().loading[rootKey]) return;
       set((s) => ({loading: {...s.loading, [rootKey]: true}}));
       try {
+        // реестр сам по себе грузится только при открытии markdown-файла
+        // (MarkdownEditor -> ensureIndex); дашборд обязан быть самостоятельным,
+        // иначе список пуст до первого открытого файла репозитория
+        await useHarnessStore.getState().ensureIndex(repoRoot);
         const vocab = await source.loadVocabulary(repoRoot);
         const rows = await loadRows(repoRoot, vocab);
         const byPath = new Map<string, TaskRow>();

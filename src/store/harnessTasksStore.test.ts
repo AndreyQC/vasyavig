@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import {useHarnessTasksStore} from "./harnessTasksStore";
-import {useHarnessStore} from "./harnessStore";
+import {resetHarnessCaches, useHarnessStore} from "./harnessStore";
 import {HARNESS_INDEX_REL} from "../lib/harnessIndex";
 
 vi.mock("../lib/i18n", () => ({
@@ -67,6 +67,9 @@ function seedRegistry() {
 describe("harnessTasksStore", () => {
   beforeEach(() => {
     useHarnessTasksStore.getState().reset();
+    // кэш «каталог -> корень репо» в harnessStore модульный: сбрасываем,
+    // иначе отрицательный ответ из прошлого теста блокирует загрузку реестра
+    resetHarnessCaches();
     seedRegistry();
   });
 
@@ -91,16 +94,34 @@ describe("harnessTasksStore", () => {
 
   it("ensureTasks: манифеста нет — встроенный дефолт", async () => {
     mockFiles({
-      [INDEX_PATH]: JSONL, // реестр не нужен стору задач, но пусть будет
+      [INDEX_PATH]: JSONL,
       [T1]: envelope("done"),
     });
-    // манифеста нет, реестр в harnessStore не загружен — кандидатов нет
+    // манифеста нет — словарь дефолтный (types: tracker+backlog), но задачи
+    // из реестра видны: дашборд сам тянет реестр
     useHarnessStore.setState({indexes: {}, version: 0});
     await useHarnessTasksStore.getState().ensureTasks(REPO);
     const root = useHarnessTasksStore.getState().roots[ROOT_KEY];
-    expect(root?.rows).toHaveLength(0);
     expect(root?.vocab).toBeDefined();
     expect(root?.vocab.statuses.length).toBeGreaterThan(1);
+    expect(root?.rows.map((r) => r.ref.path)).toEqual(["docs/11_tracker/T-1.md"]);
+  });
+
+  it("ensureTasks: дашборд сам подтягивает реестр (без открытого markdown-файла)", async () => {
+    // реестра в harnessStore нет — раньше кандидаты были бы пустыми
+    useHarnessStore.setState({indexes: {}, version: 0});
+    mockFiles({
+      [INDEX_PATH]: JSONL,
+      [MANIFEST_PATH]: MANIFEST,
+      [T1]: envelope("done"),
+      [T2]: envelope("open"),
+    });
+    await useHarnessTasksStore.getState().ensureTasks(REPO);
+    const rows = useHarnessTasksStore.getState().roots[ROOT_KEY]?.rows;
+    expect(rows?.map((r) => r.ref.path)).toEqual([
+      "docs/11_tracker/T-1.md",
+      "docs/11_tracker/T-2.md",
+    ]);
   });
 
   it("invalidatePath: правка .md патчит строку точечно", async () => {

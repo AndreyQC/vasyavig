@@ -5,9 +5,11 @@ import {
   buildUlidIndex,
   findHarnessIndex,
   HARNESS_INDEX_REL,
+  isHarnessRepoDir,
   linkifyUlidsInElement,
   parseDocumentsJsonl,
   resolveUlid,
+  treeContainsHarnessRepo,
   type HarnessIndexEntry,
 } from "./harnessIndex";
 
@@ -131,5 +133,47 @@ describe("linkifyUlidsInElement", () => {
   it("мусорные 26-символьные токены не оборачиваются", () => {
     const root = render("<p>ABCDEFGHIJKLMNOPQRSTUVWXYZ</p>");
     expect(root.querySelector("[data-ulid],[data-ulid-unknown]")).toBeNull();
+  });
+});
+
+describe("isHarnessRepoDir", () => {
+  it("манифест в корне — репозиторий", async () => {
+    const probe = async (p: string) => (p === "/repo/harness_manifest.json" ? '{"kind":"harness"}' : null);
+    expect(await isHarnessRepoDir("/repo", probe)).toBe(true);
+  });
+
+  it("реестр в корне — репозиторий", async () => {
+    const probe = async (p: string) => (p === `/repo/${HARNESS_INDEX_REL}` ? "{}" : null);
+    expect(await isHarnessRepoDir("/repo", probe)).toBe(true);
+  });
+
+  it("битый манифест (не JSON) — не репозиторий", async () => {
+    const probe = async (p: string) => (p === "/repo/harness_manifest.json" ? "не json" : null);
+    expect(await isHarnessRepoDir("/repo", probe)).toBe(false);
+  });
+
+  it("ни манифеста, ни реестра — не репозиторий", async () => {
+    expect(await isHarnessRepoDir("/repo", async () => null)).toBe(false);
+  });
+});
+
+describe("treeContainsHarnessRepo", () => {
+  it("реестр или манифест в поддереве — найдено", () => {
+    const tree = [
+      {path: "/repo/docs/a.md", children: null},
+      {path: `/repo/${HARNESS_INDEX_REL}`, children: null},
+    ];
+    expect(treeContainsHarnessRepo(tree)).toBe(true);
+    expect(treeContainsHarnessRepo([{path: "/repo/docs/a.md", children: null}])).toBe(false);
+  });
+
+  it("вложенный уровень тоже считается", () => {
+    const tree = [
+      {
+        path: "/repo/sub",
+        children: [{path: "/repo/sub/harness_manifest.json", children: null}],
+      },
+    ];
+    expect(treeContainsHarnessRepo(tree)).toBe(true);
   });
 });
