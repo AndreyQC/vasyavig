@@ -1,4 +1,5 @@
 import {useEffect} from "react";
+import {invoke} from "@tauri-apps/api/core";
 import {useSaveActions} from "./useSaveActions";
 import {useFileActions} from "./useFileActions";
 import {useEditorStore} from "../store/editorStore";
@@ -11,14 +12,23 @@ import {useUiStore} from "../store/uiStore";
  * Ctrl/Cmd+W — закрыть вкладку, Ctrl/Cmd+Tab (+Shift) — переключить вкладку,
  * Ctrl/Cmd+P — быстрое открытие (план 20261028_004, D1/D7).
  *
- * Риск: WebView2 browser accelerator keys могут перехватить часть сочетаний
- * до страницы (Ctrl+W/Ctrl+P) — поведение проверяется GUI-приёмкой.
+ * Browser accelerator keys WebView2 отключены на стороне Rust
+ * (disable_browser_accelerator_keys в src-tauri) — иначе Ctrl+P открывал бы
+ * печать, а Ctrl+W/Ctrl+P не доходили до страницы. F12 в dev-сборках
+ * открывает DevTools через команду.
  */
 export function useHotkeys() {
   const {saveActive, saveActiveAs} = useSaveActions();
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "F12") {
+        if (import.meta.env.DEV) {
+          e.preventDefault();
+          invoke("open_devtools").catch(() => {});
+        }
+        return;
+      }
       if (!(e.ctrlKey || e.metaKey)) return;
       const key = e.key.toLowerCase();
 

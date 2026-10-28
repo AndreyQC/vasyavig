@@ -4806,6 +4806,8 @@ dependencies = [
  "tauri-build",
  "tauri-plugin-dialog",
  "tauri-plugin-opener",
+ "webview2-com",
+ "windows-core",
  "zspell",
 ]
 

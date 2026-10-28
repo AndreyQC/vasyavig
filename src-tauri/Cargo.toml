@@ -27,3 +27,9 @@ notify = "8.2.0"
 zspell = { version = "0.5.5", features = ["unstable-suggestions"] }
 anydoc = { path = "../vendor/anydoc" }
 
+# Отключение browser accelerator keys WebView2 (Ctrl+P = печать и пр.) —
+# версии повторяют транзитивные зависимости tauri/wry (Cargo.lock унифицирует)
+[target."cfg(windows)".dependencies]
+webview2-com = "0.38"
+windows-core = "0.61"
+
