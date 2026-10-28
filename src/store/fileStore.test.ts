@@ -32,7 +32,7 @@ vi.mock("../hooks/useTauriFS", () => ({
   writeFile: vi.fn(async () => {}),
 }));
 
-const {listDirectory, readFile, readFileLatin1, saveWorkspaceFileDialog, unwatchFolder, watchFolder, writeFile} =
+const {listDirectory, readFile, readFileLatin1, renamePath, saveWorkspaceFileDialog, unwatchFolder, watchFolder, writeFile} =
   await import("../hooks/useTauriFS");
 
 const initialFile = useFileStore.getState();
@@ -226,6 +226,23 @@ describe("fileStore.openWorkspaceFile / restoreLastWorkspace", () => {
     expect(s.trees["D:/data"]).toHaveLength(1);
   });
 
+  it("alias из файла восстанавливается; запись без alias — поле отсутствует", async () => {
+    (readFile as ReturnType<typeof vi.fn>).mockImplementation(async (p: string) => {
+      if (p !== WS) throw new Error("ENOENT");
+      return JSON.stringify({
+        version: 1,
+        folders: [
+          {path: "./project", color: "blue", alias: "Проект"},
+          {path: "D:/data", color: "pink"},
+        ],
+      });
+    });
+    await useFileStore.getState().openWorkspaceFile(WS);
+    const s = useFileStore.getState();
+    expect(s.roots[0].alias).toBe("Проект");
+    expect(s.roots[1]).not.toHaveProperty("alias");
+  });
+
   it("незнакомая версия — ошибка, чистый старт (состав не меняется)", async () => {
     await useFileStore.getState().addRootInteractive("C:/old");
     (readFile as ReturnType<typeof vi.fn>).mockResolvedValue(JSON.stringify({version: 2, folders: []}));
@@ -317,5 +334,102 @@ describe("fileStore.openFile (image/email/html)", () => {
     await useFileStore.getState().openFile("C:/docs/letter.htm", {preview: true});
     const tab = useEditorStore.getState().tabs.find((t) => t.path === "C:/docs/letter.htm");
     expect(tab).toMatchObject({kind: "html", preview: true});
+  });
+});
+
+describe("fileStore.setRootAlias (план 20261028_002)", () => {
+  it("задаёт псевдоним с trim и пишет файл workspace", async () => {
+    setWorkspace();
+    await useFileStore.getState().addRoot("C:/docs");
+    useFileStore.getState().setRootAlias("C:/docs", "  Доки  ");
+    expect(useFileStore.getState().roots[0].alias).toBe("Доки");
+    const saved = JSON.parse((writeFile as ReturnType<typeof vi.fn>).mock.calls.slice(-1)[0][1]);
+    expect(saved.folders[0].alias).toBe("Доки");
+  });
+
+  it("пустое/пробельное значение снимает псевдоним (поле удаляется)", async () => {
+    setWorkspace();
+    await useFileStore.getState().addRoot("C:/docs");
+    useFileStore.getState().setRootAlias("C:/docs", "Доки");
+    useFileStore.getState().setRootAlias("C:/docs", "   ");
+    const s = useFileStore.getState();
+    expect(s.roots[0]).not.toHaveProperty("alias");
+    const saved = JSON.parse((writeFile as ReturnType<typeof vi.fn>).mock.calls.slice(-1)[0][1]);
+    expect(saved.folders[0]).not.toHaveProperty("alias");
+  });
+
+  it("неизвестный корень — no-op без записи", () => {
+    setWorkspace();
+    useFileStore.getState().setRootAlias("C:/nope", "x");
+    expect(writeFile).not.toHaveBeenCalled();
+  });
+});
+
+describe("fileStore.moveRoot (план 20261028_002)", () => {
+  it("переставляет корни вверх/вниз и пишет новый порядок в файл", async () => {
+    setWorkspace();
+    await useFileStore.getState().addRoot("C:/docs");
+    await useFileStore.getState().addRoot("D:/work");
+    await useFileStore.getState().addRoot("E:/notes");
+    useFileStore.getState().moveRoot("E:/notes", "up");
+    expect(useFileStore.getState().roots.map((r) => r.path)).toEqual([
+      "C:/docs",
+      "E:/notes",
+      "D:/work",
+    ]);
+    useFileStore.getState().moveRoot("C:/docs", "down");
+    expect(useFileStore.getState().roots.map((r) => r.path)).toEqual([
+      "E:/notes",
+      "C:/docs",
+      "D:/work",
+    ]);
+    const saved = JSON.parse((writeFile as ReturnType<typeof vi.fn>).mock.calls.slice(-1)[0][1]);
+    expect(saved.folders.map((f: {path: string}) => f.path)).toEqual([
+      "E:/notes", // другой диск — абсолютный путь
+      "../docs", // ws-файл в C:/work, docs — соседний каталог
+      "D:/work",
+    ]);
+  });
+
+  it("края списка — no-op без записи", async () => {
+    setWorkspace();
+    await useFileStore.getState().addRoot("C:/docs");
+    await useFileStore.getState().addRoot("D:/work");
+    (writeFile as ReturnType<typeof vi.fn>).mockClear();
+    useFileStore.getState().moveRoot("C:/docs", "up");
+    useFileStore.getState().moveRoot("D:/work", "down");
+    expect(useFileStore.getState().roots.map((r) => r.path)).toEqual(["C:/docs", "D:/work"]);
+    expect(writeFile).not.toHaveBeenCalled();
+  });
+});
+
+describe("fileStore.collapsedRoots (план 20261028_002)", () => {
+  it("toggle сворачивает/разворачивает секцию; в файл workspace не пишется", async () => {
+    setWorkspace();
+    await useFileStore.getState().addRoot("C:/docs");
+    (writeFile as ReturnType<typeof vi.fn>).mockClear();
+    useFileStore.getState().toggleRootCollapsed("C:/docs");
+    expect(useFileStore.getState().collapsedRoots["C:/docs"]).toBe(true);
+    useFileStore.getState().toggleRootCollapsed("C:/docs");
+    expect(useFileStore.getState().collapsedRoots["C:/docs"]).toBeUndefined();
+    expect(writeFile).not.toHaveBeenCalled();
+  });
+
+  it("removeRoot снимает свёрнутость удалённого корня", async () => {
+    setWorkspace();
+    await useFileStore.getState().addRoot("C:/docs");
+    await useFileStore.getState().addRoot("D:/work");
+    useFileStore.getState().toggleRootCollapsed("C:/docs");
+    await useFileStore.getState().removeRoot("C:/docs");
+    expect(useFileStore.getState().collapsedRoots).toEqual({});
+  });
+
+  it("renameEntry корня переносит свёрнутость на новый путь", async () => {
+    setWorkspace();
+    await useFileStore.getState().addRoot("C:/docs");
+    useFileStore.getState().toggleRootCollapsed("C:/docs");
+    (renamePath as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    await useFileStore.getState().renameEntry("C:/docs", "guides");
+    expect(useFileStore.getState().collapsedRoots["C:/guides"]).toBe(true);
   });
 });

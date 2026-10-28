@@ -52,7 +52,24 @@
   gap: var(--g-spacing-2);
   min-width: 0;
   margin-bottom: var(--g-spacing-1);
-  cursor: default;
+  /* план 20261028_002 (D1): клик по заголовку сворачивает/разворачивает секцию */
+  cursor: pointer;
+  user-select: none;
+}
+
+.root-section--collapsed .root-section__header {
+  margin-bottom: 0;
+}
+
+.root-section__chevron {
+  flex-shrink: 0;
+  color: var(--g-color-text-secondary);
+}
+
+/* Строка полного пути в развёрнутой секции (план 20261028_002, D3) */
+.root-section__path {
+  display: block;
+  margin: 0 0 var(--g-spacing-1) 20px;
 }
 
 .root-section__chip {

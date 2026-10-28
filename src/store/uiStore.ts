@@ -46,6 +46,8 @@ interface UiState {
   pendingConvertPath: string | null;
   /** Файл/папка, ожидающие переименования. */
   pendingRenamePath: string | null;
+  /** Корень, псевдоним которого редактируется (план 20261028_002, D2). */
+  pendingAliasPath: string | null;
   /** Markdown-вкладка, ожидающая выбора «заменить/вставить» оглавление. */
   pendingTocPath: string | null;
   /** Диаграмма mermaid, ожидающая правки в модалке. */
@@ -75,6 +77,7 @@ interface UiState {
   setPendingCreateDir: (dir: string | null) => void;
   setPendingConvertPath: (path: string | null) => void;
   setPendingRenamePath: (path: string | null) => void;
+  setPendingAliasPath: (path: string | null) => void;
   setPendingTocPath: (path: string | null) => void;
   setPendingMermaidEdit: (request: MermaidEditRequest | null) => void;
 }
@@ -95,6 +98,7 @@ export const useUiStore = create<UiState>()(
       pendingCreateDir: null,
       pendingConvertPath: null,
       pendingRenamePath: null,
+      pendingAliasPath: null,
       pendingTocPath: null,
       pendingMermaidEdit: null,
       sidebarMode: "tree",
@@ -117,6 +121,7 @@ export const useUiStore = create<UiState>()(
       setPendingCreateDir: (dir) => set({pendingCreateDir: dir}),
       setPendingConvertPath: (path) => set({pendingConvertPath: path}),
       setPendingRenamePath: (path) => set({pendingRenamePath: path}),
+      setPendingAliasPath: (path) => set({pendingAliasPath: path}),
       setPendingTocPath: (path) => set({pendingTocPath: path}),
       setPendingMermaidEdit: (request) => set({pendingMermaidEdit: request}),
     }),

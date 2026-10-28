@@ -25,6 +25,7 @@ import {
   parseWorkspace,
   resolveFolderPath,
   serializeWorkspace,
+  ALIAS_MAX_LENGTH,
   WORKSPACE_EXTENSION,
   WorkspaceFormatError,
 } from "../lib/workspaceFile";
@@ -42,6 +43,8 @@ interface FileState {
   workspaceFilePath: string | null;
   /** Стабильная ссылка, меняется только при toggle/collapse — см. LESSONS_LEARNED §3. */
   expandedPaths: Record<string, true>;
+  /** Свёрнутые секции корней (план 20261028_002, D1): session-only, в файл не пишется. */
+  collapsedRoots: Record<string, true>;
   showHidden: boolean;
   /** Путь файла, выбранного в дереве (для подсветки). */
   activeFilePath: string | null;
@@ -61,6 +64,12 @@ interface FileState {
   /** Удаление корня: закрывает вкладки потерявших корень файлов (после подтверждения в UI). */
   removeRoot: (path: string) => Promise<void>;
   setRootColor: (path: string, color: PaletteColor) => void;
+  /** Псевдоним корня (план 20261028_002): null/пустая строка — снять. Автозапись. */
+  setRootAlias: (path: string, alias: string | null) => void;
+  /** Перестановка секции корня (план 20261028_002, D4). Автозапись. */
+  moveRoot: (path: string, direction: "up" | "down") => void;
+  /** Сворачивание/разворачивание секции корня (session-only, D1). */
+  toggleRootCollapsed: (path: string) => void;
   refreshRoot: (path: string) => Promise<void>;
   refreshTree: () => Promise<void>;
   /** Замена состава корней из workspace-файла (dirty уже решён в UI). */
@@ -158,6 +167,7 @@ export const useFileStore = create<FileState>((set, get) => ({
   trees: {},
   workspaceFilePath: null,
   expandedPaths: {},
+  collapsedRoots: {},
   showHidden: false,
   activeFilePath: null,
   activeDirPath: null,
@@ -239,10 +249,13 @@ export const useFileStore = create<FileState>((set, get) => ({
     set((s) => {
       const trees = {...s.trees};
       delete trees[path];
+      const collapsedRoots = {...s.collapsedRoots};
+      delete collapsedRoots[path];
       const keep = (p: string | null) => (p && losing.includes(p) ? null : p);
       return {
         roots: s.roots.filter((r) => r.path !== path),
         trees,
+        collapsedRoots,
         activeFilePath: keep(s.activeFilePath),
         activeDirPath: keep(s.activeDirPath),
       };
@@ -255,6 +268,46 @@ export const useFileStore = create<FileState>((set, get) => ({
     if (!get().roots.some((r) => r.path === path)) return;
     set((s) => ({roots: s.roots.map((r) => (r.path === path ? {...r, color} : r))}));
     void persistWorkspace(get().roots, get().workspaceFilePath, set);
+  },
+
+  setRootAlias: (path, alias) => {
+    if (!get().roots.some((r) => r.path === path)) return;
+    // trim + предел длины (D2); пустое после trim = снять псевдоним —
+    // отсутствие свойства, а не undefined-поле (сравнения корней в тестах)
+    const trimmed = alias ? alias.trim().slice(0, ALIAS_MAX_LENGTH) : "";
+    set((s) => ({
+      roots: s.roots.map((r) => {
+        if (r.path !== path) return r;
+        if (trimmed === "") {
+          const {alias: _alias, ...rest} = r;
+          return rest;
+        }
+        return {...r, alias: trimmed};
+      }),
+    }));
+    void persistWorkspace(get().roots, get().workspaceFilePath, set);
+  },
+
+  moveRoot: (path, direction) => {
+    const {roots} = get();
+    const index = roots.findIndex((r) => r.path === path);
+    if (index === -1) return;
+    const target = direction === "up" ? index - 1 : index + 1;
+    if (target < 0 || target >= roots.length) return;
+    const next = [...roots];
+    [next[index], next[target]] = [next[target], next[index]];
+    set({roots: next});
+    void persistWorkspace(get().roots, get().workspaceFilePath, set);
+  },
+
+  toggleRootCollapsed: (path) => {
+    const collapsed = {...get().collapsedRoots};
+    if (collapsed[path]) {
+      delete collapsed[path];
+    } else {
+      collapsed[path] = true;
+    }
+    set({collapsedRoots: collapsed});
   },
 
   refreshRoot: async (path) => {
@@ -291,6 +344,8 @@ export const useFileStore = create<FileState>((set, get) => ({
     const roots: RootInfo[] = folders.map((f) => ({
       path: resolveFolderPath(f.path, wsPath),
       color: f.color,
+      // alias опционален (план 20261028_002): присутствует только непустой
+      ...(f.alias !== undefined ? {alias: f.alias} : {}),
     }));
     await replaceRoots(roots, wsPath, set, get);
     useUiStore.getState().setLastWorkspacePath(wsPath);
@@ -304,6 +359,7 @@ export const useFileStore = create<FileState>((set, get) => ({
       roots: [],
       trees: {},
       expandedPaths: {},
+      collapsedRoots: {},
       workspaceFilePath: wsPath,
       error: null,
       activeFilePath: null,
@@ -440,6 +496,12 @@ export const useFileStore = create<FileState>((set, get) => ({
     set((s) => {
       const remap = (p: string | null) => (p ? (remapPath(p, oldPath, newPath) ?? p) : p);
       let {roots, trees} = s;
+      // свёрнутость секции следует за переименованным корнем (D1)
+      let collapsedRoots = s.collapsedRoots;
+      if (wasRoot && collapsedRoots[oldPath]) {
+        const {[oldPath]: _collapsed, ...rest} = collapsedRoots;
+        collapsedRoots = {...rest, [newPath]: true};
+      }
       if (wasRoot) {
         roots = s.roots.map((r) => (r.path === oldPath ? {...r, path: newPath} : r));
         trees = {};
@@ -450,6 +512,7 @@ export const useFileStore = create<FileState>((set, get) => ({
       return {
         roots,
         trees,
+        collapsedRoots,
         activeFilePath: remap(s.activeFilePath),
         activeDirPath: remap(s.activeDirPath),
       };
@@ -479,6 +542,7 @@ async function replaceRoots(roots: RootInfo[], wsPath: string, set: SetPartial, 
     roots,
     trees: {},
     expandedPaths: {},
+    collapsedRoots: {},
     workspaceFilePath: wsPath,
     error: null,
     activeFilePath: null,

@@ -1,5 +1,6 @@
 import {describe, expect, it} from "vitest";
 import {
+  ALIAS_MAX_LENGTH,
   parseWorkspace,
   resolveFolderPath,
   serializeWorkspace,
@@ -107,5 +108,63 @@ describe("serializeWorkspace + resolveFolderPath roundtrip", () => {
     );
     const parsed = parseWorkspace(text);
     expect(parsed.map((f) => f.color)).toEqual(["red", "pink", "amber"]);
+  });
+});
+
+describe("alias (план 20261028_002)", () => {
+  it("parse: alias читается", () => {
+    const folders = parseWorkspace(
+      JSON.stringify({version: 1, folders: [{path: "./p", color: "blue", alias: "Мой проект"}]}),
+    );
+    expect(folders).toEqual([{path: "./p", color: "blue", alias: "Мой проект"}]);
+  });
+
+  it("parse: без alias и с пробельным alias поле отсутствует (strict)", () => {
+    const folders = parseWorkspace(
+      JSON.stringify({
+        version: 1,
+        folders: [{path: "./a", color: "blue"}, {path: "./b", color: "red", alias: "   "}],
+      }),
+    );
+    expect(folders).toStrictEqual([{path: "./a", color: "blue"}, {path: "./b", color: "red"}]);
+  });
+
+  it("parse: alias trim'ится", () => {
+    const folders = parseWorkspace(
+      JSON.stringify({version: 1, folders: [{path: "./p", color: "blue", alias: "  Docs  "}]}),
+    );
+    expect(folders[0].alias).toBe("Docs");
+  });
+
+  it("parse: нестроковый alias — WorkspaceFormatError", () => {
+    expect(() =>
+      parseWorkspace(JSON.stringify({version: 1, folders: [{path: "./p", color: "blue", alias: 5}]})),
+    ).toThrow(WorkspaceFormatError);
+  });
+
+  it("parse: alias длиннее предела обрезается, файл читается", () => {
+    const folders = parseWorkspace(
+      JSON.stringify({version: 1, folders: [{path: "./p", color: "blue", alias: "ж".repeat(150)}]}),
+    );
+    expect(folders[0].alias).toBe("ж".repeat(ALIAS_MAX_LENGTH));
+  });
+
+  it("serialize: alias пишется только непустой; roundtrip", () => {
+    const roots: RootInfo[] = [
+      {path: "C:/work/alpha", color: "blue", alias: "Альфа"},
+      {path: "C:/work/beta", color: "red"},
+      {path: "C:/work/gamma", color: "teal", alias: "  "},
+    ];
+    const text = serializeWorkspace(roots, "C:/work/ws.vasyavig-workspace");
+    const data = JSON.parse(text);
+    expect(data.folders[0].alias).toBe("Альфа");
+    expect(data.folders[1]).not.toHaveProperty("alias");
+    expect(data.folders[2]).not.toHaveProperty("alias");
+    const parsed = parseWorkspace(text);
+    expect(parsed).toStrictEqual([
+      {path: "./alpha", color: "blue", alias: "Альфа"},
+      {path: "./beta", color: "red"},
+      {path: "./gamma", color: "teal"},
+    ]);
   });
 });

@@ -23,6 +23,7 @@ import {DeleteConfirmModal} from "./components/Modals/DeleteConfirmModal";
 import {CreateFileModal} from "./components/Modals/CreateFileModal";
 import {ConvertModal} from "./components/Modals/ConvertModal";
 import {RenameModal} from "./components/Modals/RenameModal";
+import {AliasModal} from "./components/Modals/AliasModal";
 import {TocModal} from "./components/Modals/TocModal";
 import {MermaidModal} from "./components/Modals/MermaidModal";
 import {ErrorToasts} from "./components/ErrorToasts";
@@ -136,6 +137,7 @@ function App() {
         <CreateFileModal />
         <ConvertModal />
         <RenameModal />
+        <AliasModal />
         <TocModal />
         <MermaidModal />
         <ErrorToasts />

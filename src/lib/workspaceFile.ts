@@ -3,7 +3,8 @@ import {isPaletteColor, type PaletteColor, type RootInfo} from "./rootColors";
 
 /**
  * Файл workspace `.vasyavig-workspace` (спека workspace-file, design D6):
- * JSON version 1, упорядоченный список {path, color}. Чтение/запись —
+ * JSON version 1, упорядоченный список {path, color, alias?}. Порядок папок
+ * в файле — порядок секций в дереве (план 20261028_002, D4). Чтение/запись —
  * существующими командами readFile/writeFile, JSON-логика здесь.
  *
  * В памяти — абсолютные пути; в файле — относительные к каталогу файла
@@ -12,9 +13,19 @@ import {isPaletteColor, type PaletteColor, type RootInfo} from "./rootColors";
 
 export const WORKSPACE_EXTENSION = "vasyavig-workspace";
 
+/** Предел длины псевдонима (план 20261028_002, D2): больше — обрезается. */
+export const ALIAS_MAX_LENGTH = 100;
+
 export interface WorkspaceFolder {
   path: string;
   color: PaletteColor;
+  /**
+   * Псевдоним (план 20261028_002): опциональное поле версии 1. Отсутствие
+   * поля и пустая после trim строка равнозначны; нестроковое значение —
+   * ошибка формата. Файлы без alias читаются как раньше, файл с alias
+   * читается старой версией парсера (неизвестные поля не отвергаются).
+   */
+  alias?: string;
 }
 
 /** Ошибка формата: не JSON, чужая версия, кривая структура. Не крашит приложение. */
@@ -22,6 +33,16 @@ export class WorkspaceFormatError extends Error {}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/** Нормализация alias записи: undefined / непустая строка после trim (до ALIAS_MAX_LENGTH). */
+function normalizeAlias(value: unknown, where: string): string | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== "string") {
+    throw new WorkspaceFormatError(`${where}: invalid alias`);
+  }
+  const trimmed = value.trim().slice(0, ALIAS_MAX_LENGTH);
+  return trimmed === "" ? undefined : trimmed;
 }
 
 /** Парсинг содержимого файла workspace. Бросает WorkspaceFormatError при любом несоответствии. */
@@ -42,16 +63,24 @@ export function parseWorkspace(text: string): WorkspaceFolder[] {
     if (typeof entry.color !== "string" || !isPaletteColor(entry.color)) {
       throw new WorkspaceFormatError(`folders[${i}]: unknown color`);
     }
-    return {path: entry.path, color: entry.color};
+    const alias = normalizeAlias(entry.alias, `folders[${i}]`);
+    return alias === undefined ? {path: entry.path, color: entry.color} : {path: entry.path, color: entry.color, alias};
   });
 }
 
 /** Сериализация текущего состава корней в текст файла workspace. */
 export function serializeWorkspace(roots: readonly RootInfo[], workspaceFilePath: string): string {
-  const folders = roots.map((root) => ({
-    path: toWorkspaceRelative(root.path, workspaceFilePath),
-    color: root.color,
-  }));
+  const folders = roots.map((root) => {
+    const folder: WorkspaceFolder = {
+      path: toWorkspaceRelative(root.path, workspaceFilePath),
+      color: root.color,
+    };
+    // alias пишем только непустой — не плодим шум в файле
+    if (root.alias?.trim()) {
+      folder.alias = root.alias.trim().slice(0, ALIAS_MAX_LENGTH);
+    }
+    return folder;
+  });
   const json = {version: 1, folders};
   return JSON.stringify(json, null, 2);
 }
