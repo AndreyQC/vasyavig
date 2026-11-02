@@ -30,9 +30,13 @@ import {MermaidModal} from "./components/Modals/MermaidModal";
 import {ErrorToasts} from "./components/ErrorToasts";
 import {NoticeToasts} from "./components/NoticeToasts";
 import {HarnessUlidPopover} from "./components/HarnessUlidPopover";
+import {AssistantPanel} from "./components/Assistant/AssistantPanel";
 import {useEditorStore} from "./store/editorStore";
 import {useFileStore} from "./store/fileStore";
 import {useUiStore} from "./store/uiStore";
+import {useAssistantStore} from "./store/assistantStore";
+import {useConfigStore} from "./store/configStore";
+import {isConfigFileName} from "./lib/agent/config";
 import {useFileWatcher} from "./hooks/useFileWatcher";
 import {useHotkeys} from "./hooks/useHotkeys";
 import {useDragDrop} from "./hooks/useDragDrop";
@@ -58,6 +62,13 @@ function App() {
     void useFileStore.getState().restoreLastWorkspace();
   }, []);
 
+  // Конфиг ассистента живёт рядом с workspace-файлом: перечитываем при смене
+  // workspace. Внутри — defaults, если файла ещё нет (Phase 8.1).
+  const workspaceFilePath = useFileStore((s) => s.workspaceFilePath);
+  useEffect(() => {
+    void useConfigStore.getState().loadForWorkspace(workspaceFilePath);
+  }, [workspaceFilePath]);
+
   // Заголовок окна: [● ]{filename} — Vasyavig (идея §4.1.2; маркер dirty —
   // план 20261028_004, D6)
   const activeName = activeTab?.name ?? null;
@@ -81,8 +92,21 @@ function App() {
 
   // главная панель: вкладка документа или вкладка «Граф» (план 20261028_001)
   const mainPane = useUiStore((s) => s.mainPane);
+  // vasyavig.yaml — read-only: правки только через форму настроек (D5).
+  const assistantOpen = useAssistantStore((s) => s.panelOpen);
+  const activeIsConfig = activeTab ? isConfigFileName(activeTab.path) : false;
   return (
-    <Layout sidebar={sidebar} statusbar={<StatusBar />}>
+    <Layout
+      sidebar={sidebar}
+      statusbar={<StatusBar />}
+      assistant={
+        assistantOpen ? (
+          <ErrorBoundary>
+            <AssistantPanel />
+          </ErrorBoundary>
+        ) : undefined
+      }
+    >
       <ErrorBoundary>
         <div className="editor-area">
           <div className="editor-area__header">
@@ -121,9 +145,12 @@ function App() {
                   <MonacoViewer
                     content={activeTab.content}
                     path={activeTab.path}
-                    editable
-                    onChange={(value) =>
-                      useEditorStore.getState().updateContent(activeTab.path, value)
+                    editable={!activeIsConfig}
+                    onChange={
+                      activeIsConfig
+                        ? undefined
+                        : (value) =>
+                            useEditorStore.getState().updateContent(activeTab.path, value)
                     }
                   />
                 )}

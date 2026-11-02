@@ -1,7 +1,7 @@
 mod commands;
 mod services;
 
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 /// DevTools из JS (F12 в dev-сборках): browser accelerator keys WebView2
 /// отключены (disable_browser_accelerator_keys), штатный F12 больше не работает.
@@ -48,6 +48,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .manage(commands::watcher::WatcherState(Mutex::new(None)))
+        .manage(Arc::new(services::agent_service::AgentService::new()))
         .invoke_handler(tauri::generate_handler![
             commands::fs::list_directory,
             commands::fs::read_file,
@@ -66,6 +67,11 @@ pub fn run() {
             commands::spellcheck::suggest_word,
             commands::spellcheck::add_word_to_dictionary,
             commands::spellcheck::load_user_dictionary,
+            commands::agent::stream_chat,
+            commands::agent::cancel_run,
+            commands::agent::generate_fernet_key,
+            commands::agent::encrypt_text,
+            commands::agent::resolve_crypto_token,
             open_devtools,
         ])
         .setup(|_app| {

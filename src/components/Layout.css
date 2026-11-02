@@ -40,6 +40,20 @@
   overflow: hidden;
 }
 
+/* Панель ассистента справа (Phase 8.1): четвёртая колонка, свой скролл. */
+.layout--assistant {
+  grid-template-areas:
+    "sidebar divider main assistant"
+    "statusbar statusbar statusbar statusbar";
+}
+
+.layout__assistant {
+  grid-area: assistant;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
 .layout__statusbar {
   grid-area: statusbar;
   border-top: 1px solid var(--g-color-line-generic);

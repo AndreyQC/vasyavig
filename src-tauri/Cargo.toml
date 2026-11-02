@@ -27,6 +27,22 @@ notify = "8.2.0"
 zspell = { version = "0.5.5", features = ["unstable-suggestions"] }
 anydoc = { path = "../vendor/anydoc" }
 
+# HTTP/SSE для ассистента: только OpenAI-совместимый endpoint модели.
+# В reqwest 0.13 `default-tls` — это rustls/aws-lc (C-сборка); берём явный
+# native-tls = schannel на Windows, без ring/aws-lc.
+reqwest = { version = "0.13", default-features = false, features = ["native-tls", "json", "stream", "system-proxy"] }
+futures-util = "0.3"
+# Отмена должна срабатывать и на «зависшем» стриме, не дожидаясь таймаута.
+tokio = { version = "1", features = ["time", "macros"] }
+
+# Fernet (AES-128-CBC + HMAC-SHA256) — чистые Rust-крейты, без OpenSSL.
+aes = "0.8"
+cbc = { version = "0.1", features = ["alloc"] }
+hmac = "0.12"
+sha2 = "0.10"
+base64 = "0.22"
+rand = "0.10"
+
 # Отключение browser accelerator keys WebView2 (Ctrl+P = печать и пр.) —
 # версии повторяют транзитивные зависимости tauri/wry (Cargo.lock унифицирует)
 [target."cfg(windows)".dependencies]

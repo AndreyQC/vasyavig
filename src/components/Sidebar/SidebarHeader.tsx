@@ -1,9 +1,10 @@
 import {useEffect, useRef, useState} from "react";
 import {Button, Icon, Text, Tooltip} from "@gravity-ui/uikit";
-import {ArrowRotateRight, Eye, EyeSlash, FilePlus, FolderPlus, Folders, GraphNode, ListCheck, ListUl, TrashBin} from "@gravity-ui/icons";
+import {ArrowRotateRight, Eye, EyeSlash, FilePlus, FolderPlus, Folders, GraphNode, ListCheck, ListUl, Sparkles, TrashBin} from "@gravity-ui/icons";
 import {useTranslation} from "react-i18next";
 import {useFileStore} from "../../store/fileStore";
 import {useUiStore} from "../../store/uiStore";
+import {useAssistantStore} from "../../store/assistantStore";
 import {useFileActions} from "../../hooks/useFileActions";
 import {getFileName} from "../../lib/utils";
 
@@ -29,6 +30,8 @@ export function SidebarHeader() {
   const activeDirPath = useFileStore((s) => s.activeDirPath);
   const activeFilePath = useFileStore((s) => s.activeFilePath);
   const recentWorkspaces = useUiStore((s) => s.recentWorkspaces);
+  const assistantOpen = useAssistantStore((s) => s.panelOpen);
+  const toggleAssistant = useAssistantStore((s) => s.togglePanel);
   const {requestCreate, requestDelete, requestOpenWorkspace, requestNewWorkspace, requestRecentWorkspace} = useFileActions();
 
   const [wsMenu, setWsMenu] = useState<{x: number; y: number} | null>(null);
@@ -88,6 +91,15 @@ export function SidebarHeader() {
         </Tooltip>
       </div>
       <div className="sidebar-header__actions">
+        <Tooltip content={t("assistant.toggle")}>
+          <Button
+            view={assistantOpen ? "normal" : "flat"}
+            size="m"
+            onClick={toggleAssistant}
+          >
+            <Icon data={Sparkles} />
+          </Button>
+        </Tooltip>
         {hasHarness && (
           <Tooltip content={t(sidebarMode === "tasks" ? "sidebar.showTree" : "sidebar.showTasks")}>
             <Button

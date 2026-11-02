@@ -4,6 +4,7 @@ import {useTranslation} from "react-i18next";
 import {useEditorStore} from "../../store/editorStore";
 import {useSaveActions} from "../../hooks/useSaveActions";
 import {useMarkdownTools} from "../../hooks/useMarkdownTools";
+import {isConfigFileName} from "../../lib/agent/config";
 import {ModeSwitcher} from "./ModeSwitcher";
 import {HarnessLinksButton} from "./HarnessLinksButton";
 
@@ -21,8 +22,9 @@ export function MainToolbar({path}: Props) {
   const {restoreUrls, startToc, insertMermaid} = useMarkdownTools(path);
 
   const isMarkdown = kind === "markdown";
-  // полный цикл правки/сохранения — у markdown и text (design D5)
-  const savable = isMarkdown || kind === "text";
+  // полный цикл правки/сохранения — у markdown и text (design D5);
+  // vasyavig.yaml read-only — правки только через форму настроек (Phase 8.1)
+  const savable = (isMarkdown || kind === "text") && !isConfigFileName(path);
 
   return (
     <div className="main-toolbar">

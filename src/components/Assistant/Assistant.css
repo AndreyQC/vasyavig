@@ -1,0 +1,246 @@
+/* Панель ассистента справа (Phase 8.1). Скроллится только тело панели;
+   header закреплён (LESSONS_LEARNED §8: overscroll-behavior, min-height:0). */
+.assistant-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border-left: 1px solid var(--g-color-line-generic);
+  background: var(--g-color-base-background);
+}
+
+.assistant-panel__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--g-spacing-2);
+  padding: var(--g-spacing-3);
+  border-bottom: 1px solid var(--g-color-line-generic);
+}
+
+.assistant-panel__header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--g-spacing-2);
+}
+
+.assistant-panel__title {
+  display: flex;
+  align-items: center;
+  gap: var(--g-spacing-2);
+}
+
+.assistant-panel__actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.assistant-panel__body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: var(--g-spacing-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--g-spacing-3);
+}
+
+.assistant-panel__model-card,
+.assistant-panel__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--g-spacing-1);
+  padding: var(--g-spacing-2);
+  border: 1px solid var(--g-color-line-generic);
+  border-radius: var(--g-border-radius-m);
+  background: var(--g-color-base-generic-ultralight);
+  min-width: 0;
+}
+
+.assistant-panel__model-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--g-spacing-2);
+}
+
+.assistant-panel__scope {
+  flex: none;
+  padding: 0 var(--g-spacing-1);
+  border-radius: var(--g-border-radius-s);
+  font-size: 11px;
+  line-height: 18px;
+  background: var(--g-color-base-generic);
+  color: var(--g-color-text-secondary);
+}
+
+.assistant-panel__scope--perimeter {
+  color: var(--g-color-text-positive);
+}
+
+.assistant-panel__scope--external {
+  color: var(--g-color-text-warning);
+}
+
+.assistant-panel__mono,
+.assistant-settings__mono {
+  font-family: var(--g-font-family-monospace, monospace);
+  overflow-wrap: anywhere;
+}
+
+.assistant-panel__path {
+  overflow-wrap: anywhere;
+}
+
+.assistant-panel__caps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--g-spacing-1);
+  margin-top: var(--g-spacing-1);
+}
+
+.assistant-panel__caps span {
+  padding: 0 var(--g-spacing-1);
+  border-radius: var(--g-border-radius-s);
+  background: var(--g-color-base-generic);
+  color: var(--g-color-text-secondary);
+  font-family: var(--g-font-family-monospace, monospace);
+  font-size: 11px;
+  line-height: 18px;
+}
+
+.assistant-panel__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--g-spacing-2);
+  padding: var(--g-spacing-3);
+  border: 1px dashed var(--g-color-line-generic);
+  border-radius: var(--g-border-radius-m);
+}
+
+.assistant-panel__config-actions {
+  display: flex;
+  gap: var(--g-spacing-1);
+  margin-top: var(--g-spacing-1);
+}
+
+.assistant-panel__error {
+  overflow-wrap: anywhere;
+}
+
+.assistant-panel__placeholder {
+  margin-top: auto;
+  padding-top: var(--g-spacing-3);
+}
+
+/* === Модалка настроек моделей ============================================= */
+
+.assistant-settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--g-spacing-3);
+  width: min(760px, 90vw);
+  max-height: 82vh;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: var(--g-spacing-2);
+}
+
+.assistant-settings__header,
+.assistant-settings__editor-head,
+.assistant-settings__config,
+.assistant-settings__footer,
+.assistant-settings__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--g-spacing-2);
+}
+
+.assistant-settings__config {
+  padding: var(--g-spacing-2);
+  border-radius: var(--g-border-radius-m);
+  background: var(--g-color-base-generic-ultralight);
+}
+
+.assistant-settings__config-actions,
+.assistant-settings__row-actions,
+.assistant-settings__footer-right {
+  display: flex;
+  align-items: center;
+  gap: var(--g-spacing-1);
+  flex: none;
+}
+
+.assistant-settings__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--g-spacing-2);
+}
+
+.assistant-settings__row {
+  align-items: flex-start;
+  padding: var(--g-spacing-2);
+  border: 1px solid var(--g-color-line-generic);
+  border-radius: var(--g-border-radius-m);
+}
+
+.assistant-settings__row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.assistant-settings__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--g-spacing-3);
+}
+
+.assistant-settings__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--g-spacing-1);
+  min-width: 0;
+}
+
+.assistant-settings__field--wide {
+  grid-column: 1 / -1;
+}
+
+.assistant-settings__inline {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--g-spacing-2);
+}
+
+.assistant-settings__inline > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.assistant-settings__numbers {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--g-spacing-3);
+}
+
+.assistant-settings__checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--g-spacing-4);
+}
+
+.assistant-settings__footer {
+  position: sticky;
+  bottom: 0;
+  padding-top: var(--g-spacing-2);
+  border-top: 1px solid var(--g-color-line-generic);
+  background: var(--g-color-base-background);
+}
