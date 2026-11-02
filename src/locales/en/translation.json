@@ -230,7 +230,65 @@
     "configStatusLoading": "Loading…",
     "configBlocked": "Writing to the config is blocked: fix the file and press “Reload”.",
     "workspaceRequired": "Open a workspace to save vasyavig.yaml",
-    "panelHint": "Document check and HTML email will arrive in later Phase 8 steps.",
+    "panelHint": "Document check runs locally; HTML email arrives in Phase 8.4.",
+    "modelSection": "Model & config",
+    "context": {
+      "noDocument": "No active document",
+      "selection": "selection: {{count}} chars",
+      "volume": "context: {{used}} / {{max}}",
+      "truncated": "Context will be truncated by max_chars."
+    },
+    "actions": {
+      "check": "Check document",
+      "checking": "Checking…",
+      "email": "HTML email",
+      "emailSoon": "HTML email arrives in Phase 8.4.",
+      "needDocument": "Open a markdown or text document."
+    },
+    "severity": {
+      "error": "error",
+      "warning": "warning",
+      "info": "info"
+    },
+    "findings": {
+      "title": "Findings",
+      "running": "Checking the document…",
+      "empty": "No problems found.",
+      "clear": "Clear findings",
+      "line": "line {{line}}"
+    },
+    "finding": {
+      "percentCyrillic": "Link with percent-encoded Cyrillic ({{count}})",
+      "escapedUnderscore": "Escaped \\_ in a link ({{count}})",
+      "legacyUlid": "Legacy ULID link scheme ({{count}})",
+      "brokenAnchor": "Broken anchor: #{{fragment}}",
+      "tocMissing": "No table of contents although the document has headings",
+      "tocStale": "Table of contents is stale",
+      "envelopeMissing": "No harness envelope in the document header",
+      "envelopeBroken": "Harness envelope is broken",
+      "imageUnresolved": "Image not found: {{target}}",
+      "duplicateCustomId": "Duplicate custom id {{id}} ({{count}})"
+    },
+    "proposals": {
+      "title": "Proposals",
+      "kind": {
+        "replace": "Replace",
+        "insert": "Insert",
+        "create": "New document"
+      },
+      "status": {
+        "pending": "pending",
+        "applied": "applied",
+        "rejected": "rejected",
+        "stale": "stale"
+      },
+      "apply": "Apply",
+      "reject": "Reject",
+      "show": "Show",
+      "dismiss": "Dismiss",
+      "appliedHint": "Changes are in the buffer: the tab is dirty, save manually (Ctrl+S).",
+      "diffTruncated": "Diff is truncated."
+    },
     "scope": {
       "perimeter": "in perimeter",
       "local": "local",

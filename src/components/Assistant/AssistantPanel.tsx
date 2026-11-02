@@ -1,17 +1,31 @@
 import {Button, Icon, Text, Tooltip} from "@gravity-ui/uikit";
-import {ArrowRotateRight, FileArrowRight, Gear, Sparkles, Xmark} from "@gravity-ui/icons";
+import {
+  ArrowRotateRight,
+  CheckDouble,
+  Envelope,
+  FileArrowRight,
+  Gear,
+  Sparkles,
+  Xmark,
+} from "@gravity-ui/icons";
 import {useTranslation} from "react-i18next";
 import {useConfigStore} from "../../store/configStore";
 import {useAssistantStore} from "../../store/assistantStore";
+import {useAgentStore} from "../../store/agentStore";
+import {useEditorStore} from "../../store/editorStore";
 import {useFileStore} from "../../store/fileStore";
+import {isConfigFileName} from "../../lib/agent/config";
 import {ModelSelector} from "./ModelSelector";
 import {ModelSettingsModal} from "./ModelSettingsModal";
+import {ContextChips} from "./ContextChips";
+import {FindingsList} from "./FindingsList";
+import {ProposalCard} from "./ProposalCard";
 import "./Assistant.css";
 
 /**
- * Панель ассистента справа (Phase 8.1): только шапка с селектором модели,
- * статус конфига и карточка текущей модели. Quick actions, findings и diff
- * появятся в 8.2–8.4; свободного чата в MVP-1 нет.
+ * Панель ассистента справа (Phase 8.2): контекст-чипы, детерминированная
+ * проверка документа, findings и карточки предложений. Свободного чата нет;
+ * предложения применяются только кнопкой, на диск сохраняет пользователь.
  */
 export function AssistantPanel() {
   const {t} = useTranslation();
@@ -22,6 +36,20 @@ export function AssistantPanel() {
   const reload = useConfigStore((s) => s.reload);
   const setPanelOpen = useAssistantStore((s) => s.setPanelOpen);
   const openSettings = useAssistantStore((s) => s.openSettings);
+
+  const activeTab = useEditorStore((s) => s.tabs.find((item) => item.path === s.activePath) ?? null);
+  const findings = useAgentStore((s) => s.findings);
+  const findingsDocName = useAgentStore((s) => s.findingsDocName);
+  const findingsAt = useAgentStore((s) => s.findingsAt);
+  const checkRunning = useAgentStore((s) => s.checkRunning);
+  const proposals = useAgentStore((s) => s.proposals);
+  const lastError = useAgentStore((s) => s.lastError);
+  const runCheckDocument = useAgentStore((s) => s.runCheckDocument);
+  const clearFindings = useAgentStore((s) => s.clearFindings);
+
+  const canCheck =
+    (activeTab?.kind === "markdown" || activeTab?.kind === "text") &&
+    !isConfigFileName(activeTab?.path ?? "");
 
   const statusText =
     status === "ready"
@@ -67,37 +95,98 @@ export function AssistantPanel() {
       </div>
 
       <div className="assistant-panel__body">
-        {model ? (
-          <div className="assistant-panel__model-card">
-            <div className="assistant-panel__model-head">
-              <Text variant="subheader-1">{model.label || model.model}</Text>
-              <span className={`assistant-panel__scope assistant-panel__scope--${model.dataScope}`}>
-                {t(`assistant.scope.${model.dataScope}`)}
-              </span>
+        <ContextChips />
+
+        <div className="assistant-actions">
+          <Button
+            view="action"
+            size="m"
+            disabled={!canCheck || checkRunning}
+            onClick={() => void runCheckDocument()}
+          >
+            <Icon data={CheckDouble} size={16} />
+            {checkRunning ? t("assistant.actions.checking") : t("assistant.actions.check")}
+          </Button>
+          <Tooltip content={t("assistant.actions.emailSoon")}>
+            <span>
+              <Button view="flat" size="m" disabled>
+                <Icon data={Envelope} size={16} />
+                {t("assistant.actions.email")}
+              </Button>
+            </span>
+          </Tooltip>
+        </div>
+        {!canCheck && (
+          <Text variant="caption-2" color="secondary">
+            {t("assistant.actions.needDocument")}
+          </Text>
+        )}
+
+        {lastError && (
+          <Text variant="caption-2" color="danger" className="assistant-panel__error">
+            {lastError}
+          </Text>
+        )}
+
+        {(findingsAt !== null || checkRunning) && (
+          <FindingsList
+            findings={findings}
+            docName={findingsDocName}
+            running={checkRunning}
+            onClear={clearFindings}
+          />
+        )}
+
+        {proposals.length > 0 && (
+          <div className="assistant-section">
+            <div className="assistant-section__head">
+              <Text variant="subheader-1">{t("assistant.proposals.title")}</Text>
+              <span className="assistant-count">{proposals.length}</span>
             </div>
-            <Text variant="caption-2" color="secondary">
-              {model.model}
-            </Text>
-            <Text variant="caption-2" color="secondary" className="assistant-panel__mono">
-              {model.baseUrl}
-            </Text>
-            <div className="assistant-panel__caps">
-              {model.capabilities.streaming && <span>streaming</span>}
-              {model.capabilities.jsonMode && <span>json_mode</span>}
-              {model.capabilities.tools && <span>tools</span>}
+            <div className="assistant-proposals__list">
+              {proposals.map((proposal) => (
+                <ProposalCard key={proposal.id} proposal={proposal} />
+              ))}
             </div>
-          </div>
-        ) : (
-          <div className="assistant-panel__empty">
-            <Text variant="body-2">{t("assistant.noModel")}</Text>
-            <Text variant="caption-2" color="secondary">
-              {t("assistant.noModelHint")}
-            </Text>
-            <Button view="action" size="m" onClick={() => openSettings()}>
-              {t("assistant.openSettings")}
-            </Button>
           </div>
         )}
+
+        <div className="assistant-panel__section">
+          <Text variant="caption-2" color="secondary">
+            {t("assistant.modelSection")}
+          </Text>
+          {model ? (
+            <>
+              <div className="assistant-panel__model-head">
+                <Text variant="subheader-1">{model.label || model.model}</Text>
+                <span className={`assistant-panel__scope assistant-panel__scope--${model.dataScope}`}>
+                  {t(`assistant.scope.${model.dataScope}`)}
+                </span>
+              </div>
+              <Text variant="caption-2" color="secondary">
+                {model.model}
+              </Text>
+              <Text variant="caption-2" color="secondary" className="assistant-panel__mono">
+                {model.baseUrl}
+              </Text>
+              <div className="assistant-panel__caps">
+                {model.capabilities.streaming && <span>streaming</span>}
+                {model.capabilities.jsonMode && <span>json_mode</span>}
+                {model.capabilities.tools && <span>tools</span>}
+              </div>
+            </>
+          ) : (
+            <div className="assistant-panel__empty">
+              <Text variant="body-2">{t("assistant.noModel")}</Text>
+              <Text variant="caption-2" color="secondary">
+                {t("assistant.noModelHint")}
+              </Text>
+              <Button view="action" size="m" onClick={() => openSettings()}>
+                {t("assistant.openSettings")}
+              </Button>
+            </div>
+          )}
+        </div>
 
         <div className="assistant-panel__section">
           <Text variant="caption-2" color="secondary">
@@ -106,10 +195,7 @@ export function AssistantPanel() {
           <Text variant="caption-2" className="assistant-panel__path" title={configPath ?? undefined}>
             {configPath ?? t("assistant.noWorkspace")}
           </Text>
-          <Text
-            variant="caption-2"
-            color={status === "error" ? "danger" : "secondary"}
-          >
+          <Text variant="caption-2" color={status === "error" ? "danger" : "secondary"}>
             {statusText}
           </Text>
           {error && (
@@ -120,12 +206,7 @@ export function AssistantPanel() {
           <div className="assistant-panel__config-actions">
             <Tooltip content={t("assistant.reload")}>
               <span>
-                <Button
-                  view="flat"
-                  size="s"
-                  disabled={!configPath}
-                  onClick={() => void reload()}
-                >
+                <Button view="flat" size="s" disabled={!configPath} onClick={() => void reload()}>
                   <Icon data={ArrowRotateRight} size={14} />
                 </Button>
               </span>
@@ -138,12 +219,6 @@ export function AssistantPanel() {
               </span>
             </Tooltip>
           </div>
-        </div>
-
-        <div className="assistant-panel__placeholder">
-          <Text variant="caption-2" color="secondary">
-            {t("assistant.panelHint")}
-          </Text>
         </div>
       </div>
 

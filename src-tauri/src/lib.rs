@@ -72,6 +72,7 @@ pub fn run() {
             commands::agent::generate_fernet_key,
             commands::agent::encrypt_text,
             commands::agent::resolve_crypto_token,
+            commands::agent::validate_create_target,
             open_devtools,
         ])
         .setup(|_app| {

@@ -36,6 +36,7 @@ import {useFileStore} from "./store/fileStore";
 import {useUiStore} from "./store/uiStore";
 import {useAssistantStore} from "./store/assistantStore";
 import {useConfigStore} from "./store/configStore";
+import {useAgentStore} from "./store/agentStore";
 import {isConfigFileName} from "./lib/agent/config";
 import {useFileWatcher} from "./hooks/useFileWatcher";
 import {useHotkeys} from "./hooks/useHotkeys";
@@ -66,6 +67,8 @@ function App() {
   // workspace. Внутри — defaults, если файла ещё нет (Phase 8.1).
   const workspaceFilePath = useFileStore((s) => s.workspaceFilePath);
   useEffect(() => {
+    // opaque docId/rootId и предложения живут в рамках workspace (8.2)
+    useAgentStore.getState().resetSession();
     void useConfigStore.getState().loadForWorkspace(workspaceFilePath);
   }, [workspaceFilePath]);
 

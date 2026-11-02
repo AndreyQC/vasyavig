@@ -230,7 +230,65 @@
     "configStatusLoading": "Загрузка…",
     "configBlocked": "Запись в конфиг заблокирована: исправьте файл и нажмите «Перечитать».",
     "workspaceRequired": "Откройте workspace, чтобы сохранить vasyavig.yaml",
-    "panelHint": "Проверка документа и письмо HTML появятся на следующих этапах Phase 8.",
+    "panelHint": "Проверка документа работает локально; письмо HTML появится в Phase 8.4.",
+    "modelSection": "Модель и конфиг",
+    "context": {
+      "noDocument": "Нет активного документа",
+      "selection": "выделение: {{count}} симв.",
+      "volume": "контекст: {{used}} / {{max}}",
+      "truncated": "Контекст будет обрезан по лимиту max_chars."
+    },
+    "actions": {
+      "check": "Проверить документ",
+      "checking": "Проверяю…",
+      "email": "Письмо HTML",
+      "emailSoon": "Письмо HTML появится в Phase 8.4.",
+      "needDocument": "Откройте markdown- или text-документ."
+    },
+    "severity": {
+      "error": "ошибка",
+      "warning": "внимание",
+      "info": "инфо"
+    },
+    "findings": {
+      "title": "Findings",
+      "running": "Проверяю документ…",
+      "empty": "Проблем не найдено.",
+      "clear": "Очистить findings",
+      "line": "строка {{line}}"
+    },
+    "finding": {
+      "percentCyrillic": "Ссылка с %-кодированием кириллицы ({{count}})",
+      "escapedUnderscore": "Экранированный \\_ в ссылке ({{count}})",
+      "legacyUlid": "Legacy-схема ULID-ссылки ({{count}})",
+      "brokenAnchor": "Битый якорь: #{{fragment}}",
+      "tocMissing": "Оглавления нет, хотя в документе есть заголовки",
+      "tocStale": "Оглавление устарело",
+      "envelopeMissing": "Нет harness-конверта в шапке документа",
+      "envelopeBroken": "Harness-конверт повреждён",
+      "imageUnresolved": "Картинка не найдена: {{target}}",
+      "duplicateCustomId": "Дубль custom-id {{id}} ({{count}})"
+    },
+    "proposals": {
+      "title": "Предложения",
+      "kind": {
+        "replace": "Замена",
+        "insert": "Вставка",
+        "create": "Новый документ"
+      },
+      "status": {
+        "pending": "ожидает",
+        "applied": "применено",
+        "rejected": "отклонено",
+        "stale": "устарело"
+      },
+      "apply": "Применить",
+      "reject": "Отклонить",
+      "show": "Показать",
+      "dismiss": "Убрать",
+      "appliedHint": "Изменения в буфере: вкладка dirty, сохраните вручную (Ctrl+S).",
+      "diffTruncated": "Diff сокращён."
+    },
     "scope": {
       "perimeter": "в периметре",
       "local": "локальная",

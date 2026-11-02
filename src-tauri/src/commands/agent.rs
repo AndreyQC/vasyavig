@@ -5,6 +5,8 @@
 
 use crate::services::agent_service::{AgentService, StreamChunk};
 use crate::services::crypto;
+use crate::services::path_policy::{self, CreateTarget};
+use std::path::Path;
 use std::sync::Arc;
 use tauri::ipc::Channel;
 use tauri::State;
@@ -49,4 +51,11 @@ pub fn encrypt_text(plaintext: String, env_var: String) -> Result<String, String
 #[tauri::command]
 pub fn resolve_crypto_token(token: String) -> Result<String, String> {
     crypto::resolve_value(&token)
+}
+
+/// Проверить цель `propose_create`: путь внутри корня, без `..`/symlink-выхода,
+/// разрешённое расширение, файла ещё нет. Ничего не пишет.
+#[tauri::command]
+pub fn validate_create_target(root: String, relative_path: String) -> Result<CreateTarget, String> {
+    path_policy::validate_create_target(Path::new(&root), &relative_path)
 }

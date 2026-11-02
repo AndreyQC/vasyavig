@@ -70,6 +70,24 @@ export function createDir(path: string): Promise<void> {
   return invoke("create_dir", {path});
 }
 
+export interface CreateTarget {
+  /** Абсолютный путь от исходного корня; родитель проверен канонизацией. */
+  absolutePath: string;
+  relativePath: string;
+}
+
+/**
+ * Проверка цели `propose_create` в Rust (Phase 8.2): родитель существует и
+ * канонизируется внутри корня, symlink-выход/абсолютные пути/`..` запрещены,
+ * файла ещё нет, расширение разрешено. Команда ничего не пишет.
+ */
+export function validateCreateTarget(
+  root: string,
+  relativePath: string,
+): Promise<CreateTarget> {
+  return invoke("validate_create_target", {root, relativePath});
+}
+
 /** Удаляет файл или папку (папки — рекурсивно). */
 export function deletePath(path: string): Promise<void> {
   return invoke("delete_path", {path});

@@ -2,6 +2,7 @@ import {create} from "zustand";
 import {getExtension, getFileName, isMdYfmSwap, remapPath, type FileKind} from "../lib/utils";
 import {saveFileDialog, writeFile} from "../hooks/useTauriFS";
 import {useUiStore} from "./uiStore";
+import {useSelectionStore} from "./selectionStore";
 
 export type EditorMode = "wysiwyg" | "markup" | "split";
 
@@ -132,9 +133,10 @@ export const useEditorStore = create<EditorState>((set, get) => {
     },
 
     setActiveTab: (path) => {
-      // курсор прошлой вкладки больше не актуален; новый редактор пришлёт
-      // свою позицию при монтировании (план 20261028_004, D5)
+      // курсор и выделение прошлой вкладки больше не актуальны; новый
+      // редактор пришлёт своё состояние при монтировании (8.2)
       useUiStore.getState().setCursorPos(null);
+      useSelectionStore.getState().clearFor();
       set({activePath: path});
     },
 

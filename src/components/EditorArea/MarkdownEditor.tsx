@@ -12,6 +12,11 @@ import {mermaidWysiwygExtension} from "../../lib/mermaidWysiwygExtension";
 import {harnessUlidExtension} from "../../lib/harnessUlidExtension";
 import {harnessUlidMarkupExtension} from "../../lib/harnessUlidMarkupExtension";
 import {cursorPosExtension, cursorPosMarkupExtension} from "../../lib/cursorPosExtension";
+import {
+  selectionMarkupExtension,
+  selectionPmExtension,
+} from "../../lib/agent/selectionExtension";
+import {useSelectionStore} from "../../store/selectionStore";
 import {useHarnessStore} from "../../store/harnessStore";
 import {setMermaidTheme} from "../../lib/mermaidRenderer";
 import {combineExtensions} from "../../lib/combineExtensions";
@@ -39,7 +44,11 @@ export function MarkdownEditor({path, initialContent}: Props) {
       // Markup-режим: подсветка/клики по harness-ulid:-ссылкам (task 20261027_004)
       // + позиция курсора для статус-бара (план 20261028_004, D5)
       markupConfig: {
-        extensions: [harnessUlidMarkupExtension(path), cursorPosMarkupExtension()],
+        extensions: [
+          harnessUlidMarkupExtension(path),
+          cursorPosMarkupExtension(),
+          selectionMarkupExtension(path),
+        ],
       },
       wysiwygConfig: {
         extensions: combineExtensions(
@@ -57,6 +66,8 @@ export function MarkdownEditor({path, initialContent}: Props) {
           harnessUlidExtension(path),
           // позиция курсора для статус-бара (план 20261028_004, D5)
           cursorPosExtension(),
+          // выделение для get_selection / контекст-чипов (Phase 8.2)
+          selectionPmExtension(path),
         ),
       },
     },
@@ -66,7 +77,10 @@ export function MarkdownEditor({path, initialContent}: Props) {
   // editor-instance доступен кнопкам тулбара (phase 4)
   useEffect(() => {
     registerEditor(path, editor);
-    return () => unregisterEditor(path);
+    return () => {
+      unregisterEditor(path);
+      useSelectionStore.getState().clearFor(path);
+    };
   }, [editor, path]);
 
   // harness-репозиторий: лениво загрузить реестр ULID для каталога файла (D4)
