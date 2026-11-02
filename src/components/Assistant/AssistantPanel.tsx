@@ -21,11 +21,13 @@ import {ModelSettingsModal} from "./ModelSettingsModal";
 import {ContextChips} from "./ContextChips";
 import {FindingsList} from "./FindingsList";
 import {ProposalCard} from "./ProposalCard";
+import {EmailResultCard} from "./EmailResultCard";
 import "./Assistant.css";
 
 /**
- * Панель ассистента справа (Phase 8.2): контекст-чипы, детерминированная
- * проверка документа, findings и карточки предложений. Свободного чата нет;
+ * Панель ассистента справа (Phase 8.2–8.4): контекст-чипы, детерминированная
+ * проверка документа, findings, карточки предложений и «Письмо HTML»
+ * (детерминированный экспорт + тема/preheader от модели). Свободного чата нет;
  * предложения применяются только кнопкой, на диск сохраняет пользователь.
  */
 export function AssistantPanel() {
@@ -48,8 +50,13 @@ export function AssistantPanel() {
   const verdicts = useAgentStore((s) => s.verdicts);
   const proposals = useAgentStore((s) => s.proposals);
   const lastError = useAgentStore((s) => s.lastError);
+  const emailRunning = useAgentStore((s) => s.emailRunning);
+  const emailResult = useAgentStore((s) => s.emailResult);
+  const emailNotice = useAgentStore((s) => s.emailNotice);
   const runCheckDocument = useAgentStore((s) => s.runCheckDocument);
   const cancelCheck = useAgentStore((s) => s.cancelCheck);
+  const runEmailHtml = useAgentStore((s) => s.runEmailHtml);
+  const cancelEmail = useAgentStore((s) => s.cancelEmail);
   const clearFindings = useAgentStore((s) => s.clearFindings);
 
   // Пояснения модели (explain/keep) под соответствующими findings.
@@ -117,20 +124,21 @@ export function AssistantPanel() {
           <Button
             view="action"
             size="m"
-            disabled={!canCheck || checkRunning}
+            disabled={!canCheck || checkRunning || emailRunning}
             onClick={() => void runCheckDocument()}
           >
             <Icon data={CheckDouble} size={16} />
             {checkRunning ? t("assistant.actions.checking") : t("assistant.actions.check")}
           </Button>
-          <Tooltip content={t("assistant.actions.emailSoon")}>
-            <span>
-              <Button view="flat" size="m" disabled>
-                <Icon data={Envelope} size={16} />
-                {t("assistant.actions.email")}
-              </Button>
-            </span>
-          </Tooltip>
+          <Button
+            view="flat"
+            size="m"
+            disabled={!canCheck || checkRunning || emailRunning}
+            onClick={() => void runEmailHtml()}
+          >
+            <Icon data={Envelope} size={16} />
+            {emailRunning ? t("assistant.actions.emailing") : t("assistant.actions.email")}
+          </Button>
         </div>
         {!canCheck && (
           <Text variant="caption-2" color="secondary">
@@ -159,6 +167,30 @@ export function AssistantPanel() {
             {t(modelNotice.key, modelNotice.params ?? {})}
           </Text>
         )}
+
+        {emailRunning && (
+          <div className="assistant-model-stage">
+            <Text variant="caption-2" color="secondary">
+              {t("assistant.email.running")}
+            </Text>
+            <Button view="flat" size="xs" onClick={cancelEmail}>
+              <Icon data={Xmark} size={12} />
+              {t("assistant.modelStage.cancel")}
+            </Button>
+          </div>
+        )}
+
+        {emailNotice && !emailRunning && (
+          <Text
+            variant="caption-2"
+            color={emailNotice.kind === "error" ? "danger" : "secondary"}
+            className={emailNotice.kind === "error" ? "assistant-panel__error" : undefined}
+          >
+            {t(emailNotice.key, emailNotice.params ?? {})}
+          </Text>
+        )}
+
+        {emailResult && !emailRunning && <EmailResultCard result={emailResult} />}
 
         {lastError && (
           <Text variant="caption-2" color="danger" className="assistant-panel__error">

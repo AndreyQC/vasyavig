@@ -230,7 +230,7 @@
     "configStatusLoading": "Loading…",
     "configBlocked": "Writing to the config is blocked: fix the file and press “Reload”.",
     "workspaceRequired": "Open a workspace to save vasyavig.yaml",
-    "panelHint": "Document check runs locally; HTML email arrives in Phase 8.4.",
+    "panelHint": "Document check runs locally; “HTML email” deterministically exports the active document.",
     "modelSection": "Model & config",
     "context": {
       "noDocument": "No active document",
@@ -242,7 +242,7 @@
       "check": "Check document",
       "checking": "Checking…",
       "email": "HTML email",
-      "emailSoon": "HTML email arrives in Phase 8.4.",
+      "emailing": "Preparing email…",
       "needDocument": "Open a markdown or text document."
     },
     "modelStage": {
@@ -254,6 +254,33 @@
       "empty": "The model proposed no changes.",
       "invalid": "Model response failed validation: {{errors}}",
       "error": "Model error: {{error}}"
+    },
+    "email": {
+      "title": "HTML email",
+      "running": "The model is picking the subject and preheader…",
+      "cancelled": "Request cancelled — the email was not built.",
+      "subject": "Subject",
+      "preheader": "Preheader",
+      "sourceModel": "Subject and preheader come from the model.",
+      "sourceFallback": "No model configured — subject is the document name.",
+      "sourceInvalid": "Subject is the document name: model response failed validation ({{errors}}).",
+      "sourceError": "Subject is the document name (model error: {{error}}).",
+      "renderError": "Failed to build the email: {{error}}",
+      "preview": "Preview",
+      "saveHtml": "Save .html",
+      "saved": "File saved",
+      "saveFailed": "Failed to save: {{error}}",
+      "copyHtml": "Copy HTML",
+      "copied": "Rich HTML copied to clipboard",
+      "copiedPlain": "HTML copied to clipboard (as text)",
+      "copyFailed": "Failed to copy",
+      "warnings": {
+        "tabs": "YFM tabs are not supported in the email — content is inserted sequentially.",
+        "video": "Video removed from the email: {{count}}.",
+        "ulidLinks": "ULID links do not work in the email: {{count}}. Replace with regular links.",
+        "imageLimit": "Images not embedded — total 2 MB limit exceeded: {{skipped}}.",
+        "imageMissing": "Images not embedded (file missing or unsupported format): {{skipped}}."
+      }
     },
     "severity": {
       "error": "error",

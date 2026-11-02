@@ -13,7 +13,8 @@ export type AuditOperation =
   | "propose_insert"
   | "propose_create"
   | "apply_proposal"
-  | "run";
+  | "run"
+  | "email_html";
 
 export type AuditResult =
   | "ok"

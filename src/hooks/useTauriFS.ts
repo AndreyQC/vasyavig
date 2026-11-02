@@ -154,6 +154,21 @@ export async function saveWorkspaceFileDialog(defaultPath?: string): Promise<str
   return typeof selected === "string" ? selected : null;
 }
 
+/**
+ * Диалог «Сохранить письмо HTML» (Phase 8.4): экспорт .html — действие
+ * пользователя, в propose_* путь не входит.
+ */
+export async function saveEmailHtmlDialog(defaultPath: string): Promise<string | null> {
+  const selected = await save({
+    defaultPath,
+    filters: [
+      {name: "HTML", extensions: ["html"]},
+      {name: "All files", extensions: ["*"]},
+    ],
+  });
+  return typeof selected === "string" ? selected : null;
+}
+
 /** Разрешает asset protocol доступ к каталогу (рекурсивно) — картинки phase 5. */
 export function grantAssetScope(path: string): Promise<void> {
   return invoke("grant_asset_scope", {path});

@@ -1,5 +1,6 @@
 import {create} from "zustand";
 import {recordAudit, type AuditOperation} from "../lib/agent/audit";
+import {useFileStore} from "./fileStore";
 import {
   deterministicFixFor,
   fixTargetFor,
@@ -8,6 +9,22 @@ import {
 import type {Finding} from "../lib/agent/findings";
 import {contentHash, countOccurrences} from "../lib/agent/hash";
 import {resetSessionIds, sessionIds} from "../lib/agent/ids";
+import {resolveRoot} from "../lib/roots";
+import {getParentDir} from "../lib/utils";
+import {isConfigFileName} from "../lib/agent/config";
+import {
+  buildEmailHtml,
+} from "../lib/agent/email/template";
+import {
+  renderEmailBody,
+  type EmailWarning,
+} from "../lib/agent/email/render";
+import type {ReadImageBytes} from "../lib/agent/email/images";
+import {
+  buildEmailMetaMessages,
+  buildEmailRepairMessages,
+  parseEmailMeta,
+} from "../lib/agent/recipes/emailHtml";
 import {
   createToolBudget,
   DEFAULT_POLICY_LIMITS,
@@ -33,29 +50,57 @@ import {buildContextPack} from "../lib/agent/context";
 import {cancelChatRun, runChat, type ChatMessage} from "../lib/agent/provider";
 import {executeTool, type ToolCallResult} from "../lib/agent/tools";
 import {defaultToolDeps, proposalApplyDeps} from "../lib/agent/tools/deps";
+import {relativePathOf} from "../lib/agent/tools/read";
 import type {CheckDocumentResult} from "../lib/agent/tools/read";
+import {readFileLatin1} from "../hooks/useTauriFS";
 import {currentSelection} from "./selectionStore";
 import {useConfigStore} from "./configStore";
 import {useEditorStore} from "./editorStore";
 
 /**
- * Состояние прогонов ассистента (Phase 8.2/8.3): findings, proposals, бюджет
- * инструментов, последний error. Session-only; содержимое документов здесь
- * не дублируется — только findings/proposals, которые строит приложение.
+ * Состояние прогонов ассистента (Phase 8.2/8.3/8.4): findings, proposals,
+ * бюджет инструментов, последний error, результат «Письма HTML». Session-only;
+ * содержимое документов здесь не дублируется — только findings/proposals,
+ * которые строит приложение, и сгенерированное письмо.
  *
  * `runCheckDocument` — рецепт «Проверка документа» (8.3): детерминированные
  * findings -> детерминированные фиксы (без модели) -> модель -> строгий JSON
  * `{findingId, action, replacement?, rationale?}` -> proposals через
  * propose_* путь. Без модели/endpoint'а findings и локальные фиксы работают.
  *
+ * `runEmailHtml` — рецепт «Письмо HTML» (8.4, §6.2): детерминированный рендер
+ * тела (renderEmailBody), модель — только тема/preheader (строгий JSON,
+ * repair-retry, fallback «тема = имя документа»). Это ЭКСПОРТ, не
+ * write-инструмент: никаких propose_* и apply, документ не меняется. Вывод —
+ * превью в HtmlViewer (preview-вкладка), сохранение/копирование — действия
+ * пользователя в EmailResultCard.
+ *
  * `applyProposalById` — app-only путь: UI подтверждает, модель сюда не ходит.
  */
 
 export interface ModelNotice {
   kind: "info" | "error";
-  /** Ключ i18n в assistant.modelStage.*; params переводит UI. */
+  /** Ключ i18n в assistant.modelStage.* / assistant.email.*; params переводит UI. */
   key: string;
   params?: Record<string, unknown>;
+}
+
+/** Итог «Письма HTML» (8.4). html session-only; на диск пишет пользователь. */
+export interface EmailResult {
+  docId: string;
+  docName: string;
+  /** Путь вкладки-источника (внутренняя связка, наружу не идёт). */
+  docPath: string;
+  /** Имя для диалога сохранения/preview-вкладки. */
+  htmlFileName: string;
+  subject: string;
+  preheader: string;
+  /** model — тема от модели; fallback — имя документа. */
+  metaSource: "model" | "fallback";
+  warnings: EmailWarning[];
+  html: string;
+  /** Путь preview-вкладки (виртуальный, kind html). */
+  previewPath: string;
 }
 
 export interface ToolCallLog {
@@ -84,6 +129,11 @@ export interface AgentState {
   runId: string | null;
   applyingProposalId: string | null;
   lastError: string | null;
+  /** Идёт сборка письма (8.4): рендер + модельная стадия темы. */
+  emailRunning: boolean;
+  emailResult: EmailResult | null;
+  /** Итог сборки письма (i18n-ключ, без содержимого). */
+  emailNotice: ModelNotice | null;
 
   runTool: (
     name: string,
@@ -93,6 +143,9 @@ export interface AgentState {
   ) => Promise<ToolCallResult>;
   runCheckDocument: () => Promise<ToolCallResult>;
   cancelCheck: () => void;
+  /** Рецепт «Письмо HTML» (8.4): рендер + тема/preheader + превью. */
+  runEmailHtml: () => Promise<void>;
+  cancelEmail: () => void;
   applyProposalById: (proposalId: string) => Promise<ApplyResult>;
   rejectProposal: (proposalId: string) => void;
   clearProposal: (proposalId: string) => void;
@@ -101,6 +154,30 @@ export interface AgentState {
 }
 
 let toolCallSeq = 0;
+
+/** Тема/preheader-fallback: имя документа без расширения. */
+function baseName(name: string): string {
+  const dot = name.lastIndexOf(".");
+  return dot > 0 ? name.slice(0, dot) : name;
+}
+
+/** Байты картинки через latin1-чтение (байт = U+00XX); ошибка — null. */
+const readImageFileBytes: ReadImageBytes = async (path) => {
+  try {
+    const text = await readFileLatin1(path);
+    const bytes = new Uint8Array(text.length);
+    for (let i = 0; i < text.length; i++) bytes[i] = text.charCodeAt(i) & 0xff;
+    return bytes;
+  } catch {
+    return null;
+  }
+};
+
+/** Виртуальный путь preview-вкладки письма: уникален на прогон, kind — html. */
+function emailPreviewPath(docName: string): string {
+  const unique = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+  return `vasyavig-email-preview/${unique}/${baseName(docName)}.html`;
+}
 
 function auditOptions(): {enabled: boolean; retainRuns: number} {
   const audit = useConfigStore.getState().config.app.assistant.audit;
@@ -135,6 +212,9 @@ const initialState = {
   runId: null as string | null,
   applyingProposalId: null as string | null,
   lastError: null as string | null,
+  emailRunning: false,
+  emailResult: null as EmailResult | null,
+  emailNotice: null as ModelNotice | null,
 };
 
 export const useAgentStore = create<AgentState>((set, get) => {
@@ -396,6 +476,14 @@ export const useAgentStore = create<AgentState>((set, get) => {
         error: "Активная вкладка не редактируется",
       };
     }
+    if (get().checkRunning || get().emailRunning) {
+      return {
+        ok: false,
+        name: "check_document",
+        code: "already_running",
+        error: "Прогон уже выполняется",
+      };
+    }
 
     set({checkRunning: true, lastError: null, modelNotice: null, verdicts: []});
     const docId = sessionIds().docId(tab.path);
@@ -449,6 +537,185 @@ export const useAgentStore = create<AgentState>((set, get) => {
   },
 
   cancelCheck: () => {
+    const runId = get().runId;
+    if (runId) cancelChatRun(runId);
+  },
+
+  /**
+   * «Письмо HTML» (8.4, §6.2): детерминированный рендер тела, модель — только
+   * тема/preheader (строгий JSON, один repair-retry), затем fallback «тема =
+   * имя документа» с понятным notice. Экспорт, не write-инструмент: документ
+   * не меняется, propose_* не вызываются; audit — только метаданные
+   * (operation email_html, model/path/hash/result, без содержимого).
+   */
+  runEmailHtml: async () => {
+    const editor = useEditorStore.getState();
+    const tab = editor.tabs.find((item) => item.path === editor.activePath);
+    if (!tab || (tab.kind !== "markdown" && tab.kind !== "text") || isConfigFileName(tab.path)) {
+      set({lastError: "Активная вкладка не редактируется"});
+      return;
+    }
+    if (get().emailRunning || get().checkRunning) return;
+
+    set({emailRunning: true, emailResult: null, emailNotice: null, lastError: null});
+    let runId = get().runId;
+    if (!runId) {
+      runId = `run-${Date.now().toString(36)}`;
+      set({runId});
+    }
+    const docId = sessionIds().docId(tab.path);
+
+    const auditEmail = (result: "ok" | "error" | "cancelled", model?: string) => {
+      const deps = defaultToolDeps();
+      recordAudit(
+        {
+          operation: "email_html",
+          result,
+          ...(model ? {model} : {}),
+          runId,
+          path: relativePathOf(tab.path, deps.getRoots(), deps.getHarnessIndexes()),
+          hash: contentHash(tab.content),
+        },
+        auditOptions(),
+      );
+    };
+
+    let usedModel: string | undefined;
+    try {
+      const roots = useFileStore.getState().roots;
+      const body = await renderEmailBody({
+        markdown: tab.content,
+        basePath: getParentDir(tab.path),
+        rootPath: resolveRoot(tab.path, roots)?.path ?? null,
+        readImageBytes: readImageFileBytes,
+      });
+
+      // Модельная стадия: только тема и preheader; любой сбой — fallback.
+      const config = useConfigStore.getState();
+      const model = config.models[config.selectedModel] ?? null;
+      let subject = baseName(tab.name);
+      let preheader = "";
+      let metaSource: "model" | "fallback" = "fallback";
+      let notice: ModelNotice | null = null;
+      usedModel = model ? config.selectedModel : undefined;
+
+      if (model) {
+        const pack = buildContextPack({
+          docId,
+          name: tab.name,
+          content: tab.content,
+          selection: null,
+          settings: config.config.app.assistant.context,
+        });
+        const messages = buildEmailMetaMessages({
+          docName: tab.name,
+          document: pack.document?.content ?? "",
+        });
+        const ask = (msgs: readonly ChatMessage[]) =>
+          runChat({
+            model,
+            requestConfig: config.config.llm.request,
+            messages: [...msgs],
+            jsonMode: true,
+            stream: false,
+            runId,
+          });
+
+        const chat = await ask(messages);
+        if (!chat.ok) {
+          if (chat.cancelled) {
+            auditEmail("cancelled", usedModel);
+            set({
+              emailRunning: false,
+              emailNotice: {kind: "info", key: "assistant.email.cancelled"},
+            });
+            return;
+          }
+          notice = {
+            kind: "error",
+            key: "assistant.email.sourceError",
+            params: {error: chat.error ?? "модель недоступна"},
+          };
+        } else {
+          let parsed = parseEmailMeta(chat.text);
+          if (!parsed.ok) {
+            // один repair-retry, затем fallback (§6.2, паттерн 8.3)
+            const retry = await ask(buildEmailRepairMessages(messages, chat.text, parsed.errors));
+            if (!retry.ok) {
+              if (retry.cancelled) {
+                auditEmail("cancelled", usedModel);
+                set({
+                  emailRunning: false,
+                  emailNotice: {kind: "info", key: "assistant.email.cancelled"},
+                });
+                return;
+              }
+              notice = {
+                kind: "error",
+                key: "assistant.email.sourceError",
+                params: {error: retry.error ?? "модель недоступна"},
+              };
+            } else {
+              parsed = parseEmailMeta(retry.text);
+            }
+          }
+          if (parsed.ok) {
+            subject = parsed.meta.subject;
+            preheader = parsed.meta.preheader;
+            metaSource = "model";
+          } else if (!notice) {
+            notice = {
+              kind: "info",
+              key: "assistant.email.sourceInvalid",
+              params: {errors: parsed.errors.slice(0, 3).join("; ")},
+            };
+          }
+        }
+      }
+
+      const html = buildEmailHtml({subject, preheader, bodyHtml: body.html});
+      const previewPath = emailPreviewPath(tab.name);
+      // Превью в HtmlViewer: эфемерная preview-вкладка, документ не меняется.
+      useEditorStore.getState().openTab(
+        {path: previewPath, kind: "html", content: html},
+        {preview: true},
+      );
+      set({
+        emailRunning: false,
+        emailResult: {
+          docId,
+          docName: tab.name,
+          docPath: tab.path,
+          htmlFileName: `${baseName(tab.name)}.html`,
+          subject,
+          preheader,
+          metaSource,
+          warnings: body.warnings,
+          html,
+          previewPath,
+        },
+        emailNotice:
+          notice ??
+          (metaSource === "model"
+            ? {kind: "info", key: "assistant.email.sourceModel"}
+            : {kind: "info", key: "assistant.email.sourceFallback"}),
+        lastError: null,
+      });
+      auditEmail("ok", usedModel);
+    } catch (e) {
+      auditEmail("error", usedModel);
+      set({
+        emailRunning: false,
+        emailNotice: {
+          kind: "error",
+          key: "assistant.email.renderError",
+          params: {error: e instanceof Error ? e.message : String(e)},
+        },
+      });
+    }
+  },
+
+  cancelEmail: () => {
     const runId = get().runId;
     if (runId) cancelChatRun(runId);
   },

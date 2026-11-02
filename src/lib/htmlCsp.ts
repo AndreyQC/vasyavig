@@ -8,6 +8,9 @@
 const CSP_POLICY =
   "default-src 'none'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data:";
 
+/** Тот же полиси используется в email-шаблоне (Phase 8.4) — экспорт для него. */
+export {CSP_POLICY};
+
 const CSP_META = `<meta http-equiv="Content-Security-Policy" content="${CSP_POLICY}">`;
 
 /** Пролог документа (XML-декларация + doctype) — мету вставляем ПОСЛЕ него,

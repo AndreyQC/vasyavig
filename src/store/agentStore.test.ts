@@ -29,6 +29,7 @@ vi.mock("../hooks/useTauriFS", () => ({
   readFile: vi.fn(async () => ""),
   readFileLatin1: vi.fn(async () => ""),
   renamePath: vi.fn(async () => {}),
+  saveEmailHtmlDialog: vi.fn(async () => null),
   saveFileDialog: vi.fn(async () => null),
   saveWorkspaceFileDialog: vi.fn(async () => null),
   unwatchFolder: vi.fn(async () => {}),
@@ -391,5 +392,165 @@ describe("рецепт проверки документа (8.3)", () => {
     useAgentStore.getState().cancelCheck();
 
     expect(cancelChatRunMock).toHaveBeenCalledWith(runId);
+  });
+});
+
+describe("рецепт письма HTML (8.4)", () => {
+  const DOC = "# Отчёт\n\nПервый абзац документа.\n";
+
+  it("без модели: письмо строится, тема = имя документа, preview-вкладка html", async () => {
+    openText(DOC);
+
+    await useAgentStore.getState().runEmailHtml();
+
+    const state = useAgentStore.getState();
+    expect(runChatMock).not.toHaveBeenCalled();
+    expect(state.emailRunning).toBe(false);
+    expect(state.emailResult).not.toBeNull();
+    const result = state.emailResult!;
+    expect(result.metaSource).toBe("fallback");
+    expect(result.subject).toBe("a"); // имя без расширения
+    expect(result.preheader).toBe("");
+    expect(result.warnings).toEqual([]);
+    expect(result.html).toContain('width="600"');
+    expect(result.html).toContain("Первый абзац документа");
+    // превью — эфемерная вкладка kind html; документ-источник не менялся
+    const tabs = useEditorStore.getState().tabs;
+    expect(tabs).toHaveLength(2);
+    expect(tabs[1].kind).toBe("html");
+    expect(tabs[1].preview).toBe(true);
+    expect(tabs[1].content).toBe(result.html);
+    expect(useEditorStore.getState().tabs[0].content).toBe(DOC);
+    expect(state.emailNotice?.key).toBe("assistant.email.sourceFallback");
+    // audit: метаданные без содержимого
+    const entries = auditLog.list().filter((entry) => entry.operation === "email_html");
+    expect(entries).toHaveLength(1);
+    expect(entries[0].result).toBe("ok");
+    expect(entries[0].model).toBeUndefined();
+    const auditJson = JSON.stringify(entries);
+    expect(auditJson).not.toContain("Первый абзац");
+    expect(auditJson).not.toContain("Отчёт");
+  });
+
+  it("модель: тема/preheader из строгого JSON, jsonMode, audit с моделью и без содержимого", async () => {
+    openText(DOC);
+    enableModel();
+    runChatMock.mockResolvedValue(
+      chatOk(JSON.stringify({subject: "Отчёт за неделю", preheader: "Анонс письма"})),
+    );
+
+    await useAgentStore.getState().runEmailHtml();
+
+    expect(runChatMock).toHaveBeenCalledTimes(1);
+    const call = runChatMock.mock.calls[0][0];
+    expect(call.jsonMode).toBe(true);
+    expect(call.stream).toBe(false);
+    expect(JSON.stringify(call.messages)).toContain("Первый абзац документа");
+    expect(JSON.stringify(call.messages)).not.toContain("C:");
+    expect(JSON.stringify(call.messages)).not.toContain(PATH);
+
+    const state = useAgentStore.getState();
+    const result = state.emailResult!;
+    expect(result.metaSource).toBe("model");
+    expect(result.subject).toBe("Отчёт за неделю");
+    expect(result.preheader).toBe("Анонс письма");
+    const entries = auditLog.list().filter((entry) => entry.operation === "email_html");
+    expect(entries[0].result).toBe("ok");
+    expect(entries[0].model).toBe("m1");
+    expect(JSON.stringify(entries)).not.toContain("Отчёт за неделю");
+  });
+
+  it("невалидный JSON дважды: repair-retry, затем fallback с notice", async () => {
+    openText(DOC);
+    enableModel();
+    runChatMock
+      .mockResolvedValueOnce(chatOk("совсем не json"))
+      .mockResolvedValueOnce(chatOk('{"unknown": true}'));
+
+    await useAgentStore.getState().runEmailHtml();
+
+    expect(runChatMock).toHaveBeenCalledTimes(2);
+    const state = useAgentStore.getState();
+    expect(state.emailResult?.metaSource).toBe("fallback");
+    expect(state.emailNotice?.key).toBe("assistant.email.sourceInvalid");
+  });
+
+  it("первый ответ невалиден, repair успешен — тема от модели", async () => {
+    openText(DOC);
+    enableModel();
+    runChatMock
+      .mockResolvedValueOnce(chatOk('{"subject": "Тема", "body": "лишнее поле"}'))
+      .mockResolvedValueOnce(
+        chatOk(JSON.stringify({subject: "Тема из repair", preheader: "П"})),
+      );
+
+    await useAgentStore.getState().runEmailHtml();
+
+    expect(runChatMock).toHaveBeenCalledTimes(2);
+    const state = useAgentStore.getState();
+    expect(state.emailResult?.subject).toBe("Тема из repair");
+    expect(state.emailResult?.metaSource).toBe("model");
+  });
+
+  it("транспортная ошибка модели: fallback и письмо строится", async () => {
+    openText(DOC);
+    enableModel();
+    runChatMock.mockResolvedValue({
+      ok: false,
+      text: "",
+      error: "HTTP 500",
+      cancelled: false,
+      attempts: 2,
+      streaming: false,
+      jsonMode: true,
+    });
+
+    await useAgentStore.getState().runEmailHtml();
+
+    const state = useAgentStore.getState();
+    expect(state.emailResult).not.toBeNull();
+    expect(state.emailResult?.metaSource).toBe("fallback");
+    expect(state.emailNotice).toMatchObject({kind: "error", key: "assistant.email.sourceError"});
+  });
+
+  it("отмена: письма нет, audit cancelled", async () => {
+    openText(DOC);
+    enableModel();
+    runChatMock.mockResolvedValue({
+      ok: false,
+      text: "",
+      error: "Запрос отменён",
+      cancelled: true,
+      attempts: 1,
+      streaming: false,
+      jsonMode: true,
+    });
+
+    await useAgentStore.getState().runEmailHtml();
+
+    const state = useAgentStore.getState();
+    expect(state.emailResult).toBeNull();
+    expect(state.emailRunning).toBe(false);
+    expect(state.emailNotice?.key).toBe("assistant.email.cancelled");
+    const entries = auditLog.list().filter((entry) => entry.operation === "email_html");
+    expect(entries[0].result).toBe("cancelled");
+  });
+
+  it("cancelEmail вызывает cancelChatRun по runId", async () => {
+    openText(DOC);
+    await useAgentStore.getState().runTool("get_active_document", {});
+    const runId = useAgentStore.getState().runId;
+    expect(runId).toBeTruthy();
+
+    useAgentStore.getState().cancelEmail();
+
+    expect(cancelChatRunMock).toHaveBeenCalledWith(runId);
+  });
+
+  it("нет активного документа: lastError, письмо не строится", async () => {
+    await useAgentStore.getState().runEmailHtml();
+
+    expect(useAgentStore.getState().lastError).toBeTruthy();
+    expect(useAgentStore.getState().emailResult).toBeNull();
   });
 });

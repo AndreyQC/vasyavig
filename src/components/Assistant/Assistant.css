@@ -524,3 +524,36 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+/* === Phase 8.4: письмо HTML =============================================== */
+
+.assistant-email__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.assistant-email__subject {
+  overflow-wrap: anywhere;
+}
+
+.assistant-email__preheader {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.assistant-email__warnings {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--g-spacing-2);
+  border-radius: var(--g-border-radius-s);
+  background: var(--g-color-base-warning-light);
+}
+
+.assistant-email__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--g-spacing-1);
+}
