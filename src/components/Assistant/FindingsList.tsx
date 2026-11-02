@@ -7,15 +7,17 @@ interface Props {
   findings: Finding[];
   docName: string | null;
   running: boolean;
+  /** Пояснения модели (explain/keep) по findingId — Phase 8.3. */
+  notes?: Record<string, string>;
   onClear: () => void;
 }
 
 /**
  * Findings детерминированной проверки (Phase 8.2): severity, ключ правила,
- * строка и сниппет. Правок здесь нет — предложения появятся отдельными
- * карточками в 8.3.
+ * строка и сниппет. Правки — отдельными diff-карточками (8.3); здесь же —
+ * пояснения модели для finding'ов без правки.
  */
-export function FindingsList({findings, docName, running, onClear}: Props) {
+export function FindingsList({findings, docName, running, notes, onClear}: Props) {
   const {t} = useTranslation();
 
   return (
@@ -66,6 +68,11 @@ export function FindingsList({findings, docName, running, onClear}: Props) {
                 )}
                 {finding.snippet && (
                   <code className="assistant-finding__snippet">{finding.snippet}</code>
+                )}
+                {notes?.[finding.id] && (
+                  <Text variant="caption-2" color="secondary" className="assistant-finding__note">
+                    {t("assistant.findings.note", {note: notes[finding.id]})}
+                  </Text>
                 )}
               </div>
             </li>

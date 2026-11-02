@@ -245,6 +245,16 @@
       "emailSoon": "Письмо HTML появится в Phase 8.4.",
       "needDocument": "Откройте markdown- или text-документ."
     },
+    "modelStage": {
+      "running": "Модель анализирует findings…",
+      "cancel": "Отменить",
+      "cancelled": "Запрос отменён — findings и локальные фиксы сохранены.",
+      "ok": "Модель: правок {{fixes}}, пояснений {{notes}}.",
+      "okWithDropped": "Модель: правок {{fixes}}, пояснений {{notes}}, отброшено {{dropped}}.",
+      "empty": "Модель не предложила правок.",
+      "invalid": "Ответ модели не прошёл валидацию: {{errors}}",
+      "error": "Ошибка модели: {{error}}"
+    },
     "severity": {
       "error": "ошибка",
       "warning": "внимание",
@@ -255,7 +265,8 @@
       "running": "Проверяю документ…",
       "empty": "Проблем не найдено.",
       "clear": "Очистить findings",
-      "line": "строка {{line}}"
+      "line": "строка {{line}}",
+      "note": "Пояснение модели: {{note}}"
     },
     "finding": {
       "percentCyrillic": "Ссылка с %-кодированием кириллицы ({{count}})",

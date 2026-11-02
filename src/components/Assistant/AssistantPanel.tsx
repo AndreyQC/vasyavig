@@ -1,3 +1,4 @@
+import {useMemo} from "react";
 import {Button, Icon, Text, Tooltip} from "@gravity-ui/uikit";
 import {
   ArrowRotateRight,
@@ -42,10 +43,25 @@ export function AssistantPanel() {
   const findingsDocName = useAgentStore((s) => s.findingsDocName);
   const findingsAt = useAgentStore((s) => s.findingsAt);
   const checkRunning = useAgentStore((s) => s.checkRunning);
+  const modelRunning = useAgentStore((s) => s.modelRunning);
+  const modelNotice = useAgentStore((s) => s.modelNotice);
+  const verdicts = useAgentStore((s) => s.verdicts);
   const proposals = useAgentStore((s) => s.proposals);
   const lastError = useAgentStore((s) => s.lastError);
   const runCheckDocument = useAgentStore((s) => s.runCheckDocument);
+  const cancelCheck = useAgentStore((s) => s.cancelCheck);
   const clearFindings = useAgentStore((s) => s.clearFindings);
+
+  // Пояснения модели (explain/keep) под соответствующими findings.
+  const verdictNotes = useMemo(() => {
+    const notes: Record<string, string> = {};
+    for (const verdict of verdicts) {
+      if (verdict.action !== "fix" && verdict.rationale) {
+        notes[verdict.findingId] = verdict.rationale;
+      }
+    }
+    return notes;
+  }, [verdicts]);
 
   const canCheck =
     (activeTab?.kind === "markdown" || activeTab?.kind === "text") &&
@@ -122,6 +138,28 @@ export function AssistantPanel() {
           </Text>
         )}
 
+        {modelRunning && (
+          <div className="assistant-model-stage">
+            <Text variant="caption-2" color="secondary">
+              {t("assistant.modelStage.running")}
+            </Text>
+            <Button view="flat" size="xs" onClick={cancelCheck}>
+              <Icon data={Xmark} size={12} />
+              {t("assistant.modelStage.cancel")}
+            </Button>
+          </div>
+        )}
+
+        {modelNotice && !modelRunning && (
+          <Text
+            variant="caption-2"
+            color={modelNotice.kind === "error" ? "danger" : "secondary"}
+            className={modelNotice.kind === "error" ? "assistant-panel__error" : undefined}
+          >
+            {t(modelNotice.key, modelNotice.params ?? {})}
+          </Text>
+        )}
+
         {lastError && (
           <Text variant="caption-2" color="danger" className="assistant-panel__error">
             {lastError}
@@ -133,6 +171,7 @@ export function AssistantPanel() {
             findings={findings}
             docName={findingsDocName}
             running={checkRunning}
+            notes={verdictNotes}
             onClear={clearFindings}
           />
         )}

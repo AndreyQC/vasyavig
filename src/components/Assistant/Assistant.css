@@ -511,3 +511,16 @@
 .assistant-diff__line--same {
   color: var(--g-color-text-secondary);
 }
+
+.assistant-model-stage {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--g-spacing-2);
+}
+
+.assistant-finding__note {
+  margin-top: var(--g-spacing-1);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

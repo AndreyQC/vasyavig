@@ -245,6 +245,16 @@
       "emailSoon": "HTML email arrives in Phase 8.4.",
       "needDocument": "Open a markdown or text document."
     },
+    "modelStage": {
+      "running": "Model is analyzing findings…",
+      "cancel": "Cancel",
+      "cancelled": "Request cancelled — findings and local fixes are kept.",
+      "ok": "Model: {{fixes}} fixes, {{notes}} explanations.",
+      "okWithDropped": "Model: {{fixes}} fixes, {{notes}} explanations, {{dropped}} dropped.",
+      "empty": "The model proposed no changes.",
+      "invalid": "Model response failed validation: {{errors}}",
+      "error": "Model error: {{error}}"
+    },
     "severity": {
       "error": "error",
       "warning": "warning",
@@ -255,7 +265,8 @@
       "running": "Checking the document…",
       "empty": "No problems found.",
       "clear": "Clear findings",
-      "line": "line {{line}}"
+      "line": "line {{line}}",
+      "note": "Model note: {{note}}"
     },
     "finding": {
       "percentCyrillic": "Link with percent-encoded Cyrillic ({{count}})",
