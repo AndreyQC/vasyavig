@@ -424,6 +424,22 @@
   gap: var(--g-spacing-1);
 }
 
+.ner-panel__section--repo {
+  padding-bottom: var(--g-spacing-2);
+  border-bottom: 1px solid var(--g-color-line-generic);
+}
+
+.ner-panel__rebuild {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--g-color-text-link);
+  font: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  text-decoration: underline dotted;
+}
+
 /* Секции NER-панели (T3): размечено / предложения. */
 .ner-panel__section {
   display: flex;

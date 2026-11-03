@@ -12,6 +12,8 @@ import {generateUlid} from "../../lib/agent/masking/ulid";
 import type {EntityType} from "../../lib/agent/masking/types";
 import {ensureEntitiesIndex, matchEntityEntry, type EntityIndexEntry} from "../../lib/entitiesIndex";
 import {customTypeLabel, ensureEntityTypes} from "../../lib/entityTypes";
+import {useEntityScanStore} from "../../store/entityScanStore";
+import {findHarnessRoot} from "../../lib/harnessIndex";
 
 /**
  * Кнопка «NER» в тулбаре markdown-вкладок (T2 + T3; план 20261105_001,
@@ -104,6 +106,24 @@ export function NerButton({path}: {path: string}) {
   const typeLabel = (token: string): string =>
     customTypeLabel(token, i18n.language) ?? t(`assistant.entityType.${token}`);
 
+  // Re-markup уровня репо (T3b, B-4): скан по harness-корню документа
+  const [repoRoot, setRepoRoot] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void findHarnessRoot(getParentDir(path)).then((root) => {
+      if (alive) setRepoRoot(root);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [path]);
+  const rootKey = repoRoot?.replace(/\\/g, "/") ?? null;
+  const scanState = useEntityScanStore((s) => (rootKey ? s.byRoot[rootKey] : undefined));
+  const scanRepo = useEntityScanStore((s) => s.scan);
+  const rebuildIndex = useEntityScanStore((s) => s.rebuildIndex);
+  const resolveChanged = useEntityScanStore((s) => s.resolveChanged);
+  const removeMissing = useEntityScanStore((s) => s.removeMissing);
+
   return (
     <Tooltip content={t("tools.nerTooltip")}>
       <span>
@@ -114,6 +134,90 @@ export function NerButton({path}: {path: string}) {
           content={
             <div className="ner-panel">
               <div className="ner-panel__title">{t("ner.title")}</div>
+
+              {repoRoot != null && (
+                <div className="ner-panel__section ner-panel__section--repo">
+                  <div className="ner-panel__section-title">
+                    {t("entity.repoSection")}
+                    <Button size="xs" view="flat" disabled={scanState?.scanning} onClick={() => void scanRepo(repoRoot)}>
+                      {t("entity.repoScan")}
+                    </Button>
+                  </div>
+                  {scanState?.error != null && (
+                    <div className="ner-panel__empty">
+                      {scanState.error === "open_required"
+                        ? t("entity.repoOpenRequired")
+                        : t("entity.repoScanError")}
+                    </div>
+                  )}
+                  {scanState?.diff != null && (
+                    <>
+                      <div className="ner-panel__empty">
+                        {t("entity.repoSummary", {
+                          docs: scanState.scannedDocs,
+                          changed: scanState.diff.changed.length,
+                          missing: scanState.diff.missing.length,
+                          known: scanState.diff.unknownKnown.length,
+                        })}
+                        {" · "}
+                        <button type="button" className="ner-panel__rebuild" onClick={() => void rebuildIndex(repoRoot)}>
+                          {t("entity.repoRebuild")}
+                        </button>
+                      </div>
+                      {scanState.diff.changed.map((change) => (
+                        <div key={change.ulid} className="ner-panel__row">
+                          <span className="ner-panel__item">
+                            <span className={`ner-panel__type ner-panel__type--${change.type}`}>
+                              {typeLabel(change.type)}
+                            </span>
+                            <span className="ner-panel__value">{change.value}</span>
+                            <span className="ner-panel__line">{t("entity.known")}: {change.canonical}</span>
+                          </span>
+                          <Button size="xs" view="flat" onClick={() => void resolveChanged(repoRoot, change, "same")}>
+                            {t("entity.changeSame")}
+                          </Button>
+                          <Button size="xs" view="outlined" onClick={() => void resolveChanged(repoRoot, change, "new")}>
+                            {t("entity.changeNew")}
+                          </Button>
+                        </div>
+                      ))}
+                      {scanState.diff.missing.map((missing) => (
+                        <div key={missing.ulid} className="ner-panel__row">
+                          <span className="ner-panel__item">
+                            <span className={`ner-panel__type ner-panel__type--${missing.type}`}>
+                              {typeLabel(missing.type)}
+                            </span>
+                            <span className="ner-panel__value">{missing.canonical}</span>
+                            <span className="ner-panel__line">{t("entity.repoMissing")}</span>
+                          </span>
+                          <Button size="xs" view="flat" onClick={() => void removeMissing(repoRoot, missing.ulid)}>
+                            {t("entity.repoRemove")}
+                          </Button>
+                        </div>
+                      ))}
+                      {scanState.diff.unknownKnown.slice(0, 20).map((unknown, index) => (
+                        <div key={`${unknown.ulid}-${unknown.doc}-${index}`} className="ner-panel__row">
+                          <button
+                            type="button"
+                            className="ner-panel__item"
+                            onClick={() => {
+                              useEditorStore.getState().openTab({path: unknown.doc, kind: "markdown", content: ""});
+                              useEditorStore.getState().setActiveTab(unknown.doc);
+                            }}
+                          >
+                            <span className={`ner-panel__type ner-panel__type--${unknown.type}`}>
+                              {typeLabel(unknown.type)}
+                            </span>
+                            <span className="ner-panel__value">{unknown.value}</span>
+                            <span className="ner-panel__line">{t("entity.known")}: {unknown.canonical}</span>
+                          </button>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                  {scanState == null && <div className="ner-panel__empty">{t("entity.repoIdle")}</div>}
+                </div>
+              )}
 
               {markedCount > 0 && (
                 <div className="ner-panel__section">

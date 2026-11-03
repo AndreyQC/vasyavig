@@ -69,7 +69,18 @@
     "suggestionsSection": "Предложения",
     "known": "известная",
     "markAction": "Разметить",
-    "markAllKnown": "Разметить все известные"
+    "markAllKnown": "Разметить все известные",
+    "repoSection": "Репозиторий",
+    "repoScan": "Скан репо",
+    "repoIdle": "Запустите скан — будут найдены changed, исчезнувшие и неразмеченные известные значения",
+    "repoSummary": "Документов: {{docs}} · changed: {{changed}} · исчезнувших: {{missing}} · известных неразмеченных: {{known}}",
+    "repoRebuild": "Пересобрать индекс",
+    "repoMissing": "нет вхождений",
+    "repoRemove": "Вывести",
+    "changeSame": "Та же",
+    "changeNew": "Новая",
+    "repoOpenRequired": "Откройте документ — правка нередактируемых файлов невозможна",
+    "repoScanError": "Скан не удался"
   },
   "tabs": {
     "close": "Закрыть",

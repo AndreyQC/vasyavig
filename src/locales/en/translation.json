@@ -69,7 +69,18 @@
     "suggestionsSection": "Suggestions",
     "known": "known",
     "markAction": "Mark",
-    "markAllKnown": "Mark all known"
+    "markAllKnown": "Mark all known",
+    "repoSection": "Repository",
+    "repoScan": "Scan repo",
+    "repoIdle": "Run the scan — changed, missing and unmarked known values will be found",
+    "repoSummary": "Docs: {{docs}} · changed: {{changed}} · missing: {{missing}} · unmarked known: {{known}}",
+    "repoRebuild": "Rebuild index",
+    "repoMissing": "no occurrences",
+    "repoRemove": "Remove",
+    "changeSame": "Same",
+    "changeNew": "New",
+    "repoOpenRequired": "Open the document — uneditable files cannot be changed",
+    "repoScanError": "Scan failed"
   },
   "tabs": {
     "close": "Close",

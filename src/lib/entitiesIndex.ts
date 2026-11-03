@@ -169,6 +169,21 @@ export function resetEntitiesIndexCache(): void {
 }
 
 /**
+ * Сброс кэша по пути файла (watcher, B-5): изменился entities.jsonl —
+ * кэш каталога устарел, следующий ensureEntitiesIndex перечитает с диска.
+ */
+export function invalidateEntitiesIndex(path: string): void {
+  const norm = path.replace(/\\/g, "/").toLowerCase();
+  if (!norm.endsWith(`/${ENTITIES_FILE_NAME}`)) return;
+  for (const key of [...cache.keys()]) {
+    const file = cache.get(key);
+    if (file && file.path.replace(/\\/g, "/").toLowerCase() === norm) {
+      cache.delete(key);
+    }
+  }
+}
+
+/**
  * Инкремент индекса содержимым документа (save-хук, T3-11): разметка ->
  * записи {ulid, type, canonical, forms} -> merge -> запись на диск.
  * Ошибки глотаются: индекс производный, send не должен падать.
@@ -184,10 +199,17 @@ export async function updateEntitiesIndexForContent(dir: string, markdown: strin
       forms: record.forms,
     }));
     const {entries} = mergeEntitiesIndex(file.entries, incoming);
-    const text = serializeEntitiesJsonl(entries);
-    await writeFile(file.path, text);
-    file.entries = entries;
+    await writeEntitiesIndex(file, entries);
   } catch {
     // индекс — кэш; сбой записи не ломает сохранение документа
   }
+}
+
+/** Записать индекс на диск и обновить кэш (rebuild/решения панели, B-3). */
+export async function writeEntitiesIndex(
+  file: EntitiesIndexFile,
+  entries: EntityIndexEntry[],
+): Promise<void> {
+  await writeFile(file.path, serializeEntitiesJsonl(entries));
+  file.entries = entries;
 }
