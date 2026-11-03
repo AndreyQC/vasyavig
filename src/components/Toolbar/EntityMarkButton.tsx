@@ -48,7 +48,7 @@ export function EntityMarkButton({path}: {path: string}) {
     customTypeLabel(token, i18n.language) ?? t(`assistant.entityType.${token}`);
 
   const mark = (token: string) => {
-    const known = matchEntityEntry(indexEntries, selText);
+    const known = matchEntityEntry(indexEntries, selText, undefined, {fuzzy: true});
     const ulid = known?.ulid ?? generateUlid();
     const ok = markSelectionAsEntity(path, token, ulid);
     if (!ok) {

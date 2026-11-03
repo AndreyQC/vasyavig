@@ -17,6 +17,7 @@ import {readFile, writeFile} from "../hooks/useTauriFS";
 import {defaultReadProbe, findHarnessRoot} from "./harnessIndex";
 import type {EntityType} from "./agent/masking/types";
 import {collectMarkedEntities, parseEntityLinks} from "./agent/masking/vasEntityMarkup";
+import {expandEntityForms} from "./agent/masking/declension";
 
 export const ENTITIES_FILE_NAME = "entities.jsonl";
 /** В harness-репо лежит рядом с documents.jsonl. */
@@ -114,11 +115,19 @@ export function matchEntityEntry(
   entries: readonly EntityIndexEntry[],
   value: string,
   type?: EntityType,
+  opts?: {fuzzy?: boolean},
 ): EntityIndexEntry | null {
   const wantType = type?.toLowerCase();
+  // точное — приоритет: наблюдаемые формы важнее сгенерированных
   for (const entry of entries) {
     if (wantType != null && entry.type !== wantType) continue;
     if (entry.canonical === value || entry.forms.includes(value)) return entry;
+  }
+  if (opts?.fuzzy !== true) return null;
+  // T3d: сгенерированные падежные формы (person/loc) — неразмеченные склонения
+  for (const entry of entries) {
+    if (wantType != null && entry.type !== wantType) continue;
+    if (expandEntityForms(entry.canonical, entry.type).includes(value)) return entry;
   }
   return null;
 }

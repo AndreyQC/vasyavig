@@ -527,7 +527,7 @@ export const useAgentStore = create<AgentState>((set, get) => {
           await ensureEntityTypes(getParentDir(tab.path));
           applyDomainDictionary();
           const index = await ensureEntitiesIndex(getParentDir(tab.path));
-          resolver = (value, type) => matchEntityEntry(index.entries, value, type)?.ulid ?? null;
+          resolver = (value, type) => matchEntityEntry(index.entries, value, type, {fuzzy: true})?.ulid ?? null;
         } catch {
           resolver = undefined; // индекс недоступен — только per-run ULID
         }

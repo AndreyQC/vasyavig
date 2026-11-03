@@ -55,7 +55,7 @@ export function NerButton({path}: {path: string}) {
   );
 
   const knownSuggestions = useMemo(
-    () => suggestions.map((span) => ({span, known: matchEntityEntry(indexEntries, span.value)})),
+    () => suggestions.map((span) => ({span, known: matchEntityEntry(indexEntries, span.value, undefined, {fuzzy: true})})),
     [suggestions, indexEntries],
   );
   const knownCount = knownSuggestions.filter((item) => item.known != null).length;

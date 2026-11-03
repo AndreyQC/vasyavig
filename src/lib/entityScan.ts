@@ -7,6 +7,7 @@
  */
 
 import {parseEntityLinks} from "./agent/masking/vasEntityMarkup";
+import {expandEntityForms} from "./agent/masking/declension";
 import type {EntitiesIndexFile} from "./entitiesIndex";
 
 /** Вхождение разметки в документе (позиции raw-markdown). */
@@ -148,7 +149,12 @@ export function diffEntitiesScan(
   for (const file of docContents) {
     const marked = markedRangesByDoc.get(file.path) ?? [];
     for (const entry of index.entries) {
-      for (const form of new Set([entry.canonical, ...entry.forms])) {
+      // T3d: точные формы + сгенерированные падежные (неразмеченные склонения)
+      for (const form of new Set([
+        entry.canonical,
+        ...entry.forms,
+        ...expandEntityForms(entry.canonical, entry.type),
+      ])) {
         let from = 0;
         for (;;) {
           const at = file.content.indexOf(form, from);
