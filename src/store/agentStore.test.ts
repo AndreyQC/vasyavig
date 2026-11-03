@@ -752,6 +752,27 @@ describe("маскирование (8.5 T1c/T1b)", () => {
     expect(runEntry?.masking?.entities).toBe(0);
   });
 
+  it("ner (T2): PERSON/ORG маскируются и видны в превью", async () => {
+    resetUlidMonotonic();
+    const NER_DOC = LEGACY_DOC + "\nООО Ромашка поручило Иванову И. И. отчёт до пятницы.\n";
+    openText(NER_DOC);
+    enableModel();
+    enableMasking();
+
+    await useAgentStore.getState().runCheckDocument();
+
+    expect(runChatMock).not.toHaveBeenCalled();
+    const preview = useAgentStore.getState().maskPreview;
+    expect(preview).not.toBeNull();
+    const types = preview?.entities.map((item) => item.type) ?? [];
+    expect(types).toContain("ORG");
+    expect(types).toContain("PERSON");
+    expect(preview?.maskedText).not.toContain("Ромашка");
+    expect(preview?.maskedText).not.toContain("Иванову");
+    expect(preview?.maskedText).toContain("[[VAS_ORG_");
+    expect(preview?.maskedText).toContain("[[VAS_PERSON_");
+  });
+
   it("cancel: модель не вызывается, notice previewCancelled, audit без run", async () => {
     resetUlidMonotonic();
     openText(MASK_DOC);

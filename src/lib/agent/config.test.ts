@@ -86,9 +86,9 @@ describe("config defaults", () => {
     expect(config.llm.request).toEqual({timeoutMs: 60000, retries: 2, retryBackoffMs: 500});
     expect(config.app.editor).toEqual({spellcheck: "ru+en", defaultMode: "wysiwyg", fontSize: 14});
     expect(config.app.assistant.masking).toEqual({
-      // T1b: превью отправки — дефолт (R1); off возможен только явно.
+      // T1b: превью — дефолт (R1); T2 (N8): ner включён из коробки.
       mode: "preview",
-      detectors: ["secrets", "email", "phone"],
+      detectors: ["secrets", "email", "phone", "ner"],
     });
   });
 

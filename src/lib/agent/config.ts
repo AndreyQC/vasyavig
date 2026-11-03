@@ -23,7 +23,7 @@ export type EditorSpellcheck = "off" | "ru" | "en" | "ru+en";
 export type EditorDefaultMode = "wysiwyg" | "markup" | "split";
 export type ContextChunking = "headings" | "none";
 export type MaskingMode = "off" | "preview";
-export type MaskingDetector = "secrets" | "email" | "phone" | "url_credentials";
+export type MaskingDetector = "secrets" | "email" | "phone" | "url_credentials" | "ner";
 
 export interface ModelCapabilities {
   streaming: boolean;
@@ -143,7 +143,9 @@ export function createDefaultConfig(): VasyavigConfig {
         },
         writes: {requireConfirmation: true},
         // T1b (R1): превью отправки — дефолт; без подтверждения модель не зовётся.
-        masking: {mode: "preview", detectors: ["secrets", "email", "phone"]},
+        // T2 (N8): ner включён по умолчанию — preview с подтверждением делает
+        // это безопасным, персоны/организации ловятся из коробки.
+        masking: {mode: "preview", detectors: ["secrets", "email", "phone", "ner"]},
         audit: {enabled: true, retainRuns: 50},
       },
     },
@@ -252,6 +254,7 @@ const MASKING_DETECTORS: readonly MaskingDetector[] = [
   "email",
   "phone",
   "url_credentials",
+  "ner",
 ];
 
 function parseCapabilities(value: unknown, path: string): ModelCapabilities {
@@ -389,7 +392,7 @@ function parseFiles(value: unknown): FilesSettings {
 }
 
 function parseMaskingDetectors(value: unknown): MaskingDetector[] {
-  if (value === undefined || value === null) return ["secrets", "email", "phone"];
+  if (value === undefined || value === null) return ["secrets", "email", "phone", "ner"];
   if (!Array.isArray(value)) {
     throw new ConfigError("ожидается список детекторов", "app.assistant.masking.detectors");
   }

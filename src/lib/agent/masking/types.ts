@@ -18,7 +18,7 @@ export type EntityType =
   | "URL_CRED";
 
 /** Идентификаторы детекторов — совпадают со значениями `masking.detectors` конфига. */
-export type DetectorId = "secrets" | "email" | "phone" | "url_credentials";
+export type DetectorId = "secrets" | "email" | "phone" | "url_credentials" | "ner";
 
 /** Найденное чувствительное значение: спан [start, end) в исходном тексте. */
 export interface DetectorSpan {

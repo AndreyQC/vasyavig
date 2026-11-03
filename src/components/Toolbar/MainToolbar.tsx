@@ -7,6 +7,7 @@ import {useMarkdownTools} from "../../hooks/useMarkdownTools";
 import {isConfigFileName} from "../../lib/agent/config";
 import {ModeSwitcher} from "./ModeSwitcher";
 import {HarnessLinksButton} from "./HarnessLinksButton";
+import {NerButton} from "./NerButton";
 
 interface Props {
   path: string;
@@ -48,6 +49,7 @@ export function MainToolbar({path}: Props) {
               </span>
             </Tooltip>
             <HarnessLinksButton path={path} />
+            <NerButton path={path} />
             <Tooltip content={t("tools.mermaidTooltip")}>
               <span>
                 <Button view="flat" onClick={insertMermaid}>

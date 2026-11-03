@@ -8,6 +8,7 @@
  * R5: в `KEY=value` маскируется только значение, имя ключа остаётся видимым.
  */
 
+import {detectNer} from "./ner";
 import type {DetectorId, DetectorSpan, EntityType} from "./types";
 
 interface Rule {
@@ -120,6 +121,8 @@ export function detectText(text: string, detectors: readonly DetectorId[]): Dete
       }
     }
   }
+  // NER (T2, D3): правила+словари в общем реестре; пересечения — в mergeSpans.
+  if (enabled.has("ner")) spans.push(...detectNer(text));
   return mergeSpans(spans);
 }
 

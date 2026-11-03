@@ -47,7 +47,14 @@
     "nothingToRestore": "No repairable links found",
     "noHeadings": "No headings found",
     "mermaid": "Diagram",
-    "mermaidTooltip": "Insert a mermaid diagram at the cursor (double-click the diagram to edit)"
+    "mermaidTooltip": "Insert a mermaid diagram at the cursor (double-click the diagram to edit)",
+    "ner": "NER",
+    "nerTooltip": "Found NER entities (persons, organizations, locations) — jump to the occurrence in the document"
+  },
+  "ner": {
+    "title": "Found NER entities",
+    "empty": "No entities found",
+    "line": "line {{line}}"
   },
   "tabs": {
     "close": "Close",
