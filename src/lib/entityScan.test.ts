@@ -118,3 +118,21 @@ describe("scanToIndexEntries (rebuild)", () => {
     expect(entries).toEqual([{ulid: O, type: "org", canonical: "ООО Ромашка", forms: ["ООО Ромашка"]}]);
   });
 });
+
+describe("typeConflicts (T3e-1)", () => {
+  it("один ULID с разными type в href — конфликт собран", async () => {
+    const DOC =
+      `[А](vas-entity:person:${P}) и [ООО Ромашка](vas-entity:org:${O}) и [Б](vas-entity:org:${P}).`;
+    const scan = await scanMarkdownContents("C:/repo", [{path: "C:/repo/a.md", content: DOC}]);
+    expect(scan.typeConflicts).toEqual([{ulid: P, types: ["org", "person"]}]);
+    expect(scan.byUlid.get(P)).toHaveLength(2); // вхождения всё равно собираются
+  });
+
+  it("без конфликта — пусто; одинаковый тип в разных документах — не конфликт", async () => {
+    const scan = await scanMarkdownContents("C:/repo", [
+      {path: "C:/repo/a.md", content: `[А](vas-entity:person:${P})`},
+      {path: "C:/repo/b.md", content: `[Б](vas-entity:person:${P}) [В](vas-entity:org:${O})`},
+    ]);
+    expect(scan.typeConflicts).toEqual([]);
+  });
+});

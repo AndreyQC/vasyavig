@@ -123,6 +123,8 @@ export function NerButton({path}: {path: string}) {
   const rebuildIndex = useEntityScanStore((s) => s.rebuildIndex);
   const resolveChanged = useEntityScanStore((s) => s.resolveChanged);
   const removeMissing = useEntityScanStore((s) => s.removeMissing);
+  const resolveTypeConflict = useEntityScanStore((s) => s.resolveTypeConflict);
+  const [showAllKnown, setShowAllKnown] = useState(false);
 
   return (
     <Tooltip content={t("tools.nerTooltip")}>
@@ -195,7 +197,32 @@ export function NerButton({path}: {path: string}) {
                           </Button>
                         </div>
                       ))}
-                      {scanState.diff.unknownKnown.slice(0, 20).map((unknown, index) => (
+                      {scanState.diff.typeConflicts.length > 0 && (
+                        <div className="ner-panel__section">
+                          <div className="ner-panel__section-title">
+                            {t("entity.repoConflicts")} · {scanState.diff.typeConflicts.length}
+                          </div>
+                          {scanState.diff.typeConflicts.map((conflict) => (
+                            <div key={conflict.ulid} className="ner-panel__row">
+                              <span className="ner-panel__item">
+                                <span className="ner-panel__value">{conflict.ulid.slice(0, 8)}…</span>
+                                <span className="ner-panel__line">{conflict.types.join(" / ")}</span>
+                              </span>
+                              {conflict.types.map((type) => (
+                                <Button
+                                  key={type}
+                                  size="xs"
+                                  view="outlined"
+                                  onClick={() => void resolveTypeConflict(repoRoot, conflict.ulid, type)}
+                                >
+                                  {typeLabel(type)}
+                                </Button>
+                              ))}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {(showAllKnown ? scanState.diff.unknownKnown : scanState.diff.unknownKnown.slice(0, 20)).map((unknown, index) => (
                         <div key={`${unknown.ulid}-${unknown.doc}-${index}`} className="ner-panel__row">
                           <button
                             type="button"
@@ -213,6 +240,11 @@ export function NerButton({path}: {path: string}) {
                           </button>
                         </div>
                       ))}
+                      {!showAllKnown && scanState.diff.unknownKnown.length > 20 && (
+                        <Button size="xs" view="flat" onClick={() => setShowAllKnown(true)}>
+                          {t("entity.showAll", {count: scanState.diff.unknownKnown.length})}
+                        </Button>
+                      )}
                     </>
                   )}
                   {scanState == null && <div className="ner-panel__empty">{t("entity.repoIdle")}</div>}

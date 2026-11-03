@@ -80,7 +80,17 @@
     "changeSame": "Same",
     "changeNew": "New",
     "repoOpenRequired": "Open the document — uneditable files cannot be changed",
-    "repoScanError": "Scan failed"
+    "repoScanError": "Scan failed",
+    "repoConflicts": "Type conflicts",
+    "showAll": "Show all ({{count}})"
+  },
+  "audit": {
+    "title": "Audit log",
+    "close": "Close",
+    "hint": "Assistant run metadata: time, operation, result, masking counters. Entity values are never recorded.",
+    "empty": "No entries yet",
+    "findings": "findings: {{count}}",
+    "masking": "masking: {{mode}}/{{confirmation}}, entities: {{entities}}, {{counts}}"
   },
   "tabs": {
     "close": "Close",

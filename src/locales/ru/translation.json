@@ -80,7 +80,17 @@
     "changeSame": "Та же",
     "changeNew": "Новая",
     "repoOpenRequired": "Откройте документ — правка нередактируемых файлов невозможна",
-    "repoScanError": "Скан не удался"
+    "repoScanError": "Скан не удался",
+    "repoConflicts": "Конфликты типов",
+    "showAll": "Показать все ({{count}})"
+  },
+  "audit": {
+    "title": "Audit лог",
+    "close": "Закрыть",
+    "hint": "Метаданные прогонов ассистента: время, операция, результат, счётчики маскирования. Значения сущностей не записываются.",
+    "empty": "Записей пока нет",
+    "findings": "findings: {{count}}",
+    "masking": "маскирование: {{mode}}/{{confirmation}}, сущностей: {{entities}}, {{counts}}"
   },
   "tabs": {
     "close": "Закрыть",
@@ -249,6 +259,7 @@
     "toggle": "Панель ассистента",
     "close": "Закрыть панель",
     "settings": "Настройки моделей",
+    "audit": "Audit лог ассистента",
     "selectModel": "Модель",
     "noModel": "Модель не настроена",
     "noModelHint": "Добавьте OpenAI-совместимую модель и ключ в формате crypto__<ENV>__<ciphertext>.",

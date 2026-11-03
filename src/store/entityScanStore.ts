@@ -40,6 +40,8 @@ interface EntityScanState {
   rebuildIndex: (root: string) => Promise<void>;
   resolveChanged: (root: string, change: ChangedEntity, decision: "same" | "new") => Promise<void>;
   removeMissing: (root: string, ulid: string) => Promise<void>;
+  /** Выбрать правильный тип для ULID с разными type в href (T3e-2). */
+  resolveTypeConflict: (root: string, ulid: string, chosenType: string) => Promise<void>;
   clear: (root: string) => void;
 }
 
@@ -184,6 +186,36 @@ export const useEntityScanStore = create<EntityScanState>((set, get) => ({
     const entries = index.entries.filter((e) => e.ulid !== ulid);
     if (entries.length !== index.entries.length) {
       await writeEntitiesIndex(index, entries);
+    }
+    await get().scan(root);
+  },
+
+  resolveTypeConflict: async (root, ulid, chosenType) => {
+    // 1) href в открытых вкладках: vas-entity:<wrong>:<ULID> → <chosenType>
+    const tabs = useEditorStore.getState().tabs;
+    for (const tab of tabs) {
+      if (!tab.content.includes(ulid)) continue;
+      const re = new RegExp(`vas-entity:([a-z_]+):(${ulid})`, "gi");
+      const next = tab.content.replace(re, (match, wrongType: string) =>
+        wrongType.toLowerCase() === chosenType.toLowerCase()
+          ? match
+          : `vas-entity:${chosenType.toLowerCase()}:${ulid}`,
+      );
+      if (next === tab.content) continue;
+      const editor = getEditor(tab.path);
+      if (editor != null) {
+        editor.replace(next); // change → store → dirty (паттерн restoreUrls)
+      } else {
+        // вкладка без зарегистрированного editor (монтирование/тест) — стор
+        useEditorStore.getState().updateContent(tab.path, next);
+      }
+    }
+    // 2) индекс: type записи → выбранный
+    const index = await ensureEntitiesIndex(root);
+    const entry = index.entries.find((e) => e.ulid === ulid);
+    if (entry != null && entry.type !== chosenType.toLowerCase()) {
+      entry.type = chosenType.toLowerCase();
+      await writeEntitiesIndex(index, index.entries);
     }
     await get().scan(root);
   },

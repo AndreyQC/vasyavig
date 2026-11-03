@@ -6,7 +6,7 @@
  * тестов. Скан ничего не пишет — только отчёт (B-6).
  */
 
-import {parseEntityLinks} from "./agent/masking/vasEntityMarkup";
+import {collectMarkedEntities, parseEntityLinks} from "./agent/masking/vasEntityMarkup";
 import {expandEntityForms} from "./agent/masking/declension";
 import type {EntitiesIndexFile} from "./entitiesIndex";
 
@@ -26,6 +26,8 @@ export interface EntitiesScan {
   docs: number;
   /** Вхождения по ULID (порядок первого вхождения). */
   byUlid: Map<string, EntityOccurrence[]>;
+  /** Один ULID с разными type в href (T3e-1). */
+  typeConflicts: Array<{ulid: string; types: string[]}>;
 }
 
 export interface ChangedEntity {
@@ -62,6 +64,8 @@ export interface EntitiesDiff {
   changed: ChangedEntity[];
   missing: MissingEntity[];
   unknownKnown: UnknownKnown[];
+  /** Один ULID с разными type в href — решение пользователя (T3e-2). */
+  typeConflicts: Array<{ulid: string; types: string[]}>;
 }
 
 const MD_RE = /\.md$/i;
@@ -85,20 +89,36 @@ export function listMarkdownFiles(
   return out;
 }
 
-/** Скан списка документов: разметка → вхождения per-ULID. */
+/** Скан списка документов: разметка → вхождения per-ULID + конфликты типов. */
 export async function scanMarkdownContents(
   root: string,
   files: readonly {path: string; content: string}[],
 ): Promise<EntitiesScan> {
   const byUlid = new Map<string, EntityOccurrence[]>();
+  const conflictTypes = new Map<string, Set<string>>();
   for (const file of files) {
-    for (const span of parseEntityLinks(file.content)) {
+    const spans = parseEntityLinks(file.content);
+    for (const span of spans) {
       const list = byUlid.get(span.ulid) ?? [];
       list.push({doc: file.path, start: span.start, end: span.end, value: span.value, type: span.type});
       byUlid.set(span.ulid, list);
     }
+    // T3e-1: один ULID с разными type в href — ошибка разметки
+    for (const conflict of collectMarkedEntities(spans).typeConflicts) {
+      const set = conflictTypes.get(conflict.ulid) ?? new Set<string>();
+      for (const type of conflict.types) set.add(type);
+      conflictTypes.set(conflict.ulid, set);
+    }
   }
-  return {root, docs: files.length, byUlid};
+  return {
+    root,
+    docs: files.length,
+    byUlid,
+    typeConflicts: [...conflictTypes.entries()].map(([ulid, types]) => ({
+      ulid,
+      types: [...types].sort(),
+    })),
+  };
 }
 
 /**
@@ -180,7 +200,7 @@ export function diffEntitiesScan(
     }
   }
 
-  return {changed, missing, unknownKnown};
+  return {changed, missing, unknownKnown, typeConflicts: scan.typeConflicts};
 }
 
 /**

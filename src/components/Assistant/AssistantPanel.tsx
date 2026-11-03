@@ -6,6 +6,7 @@ import {
   Envelope,
   FileArrowRight,
   Gear,
+  ListCheck,
   Sparkles,
   Xmark,
 } from "@gravity-ui/icons";
@@ -23,6 +24,7 @@ import {FindingsList} from "./FindingsList";
 import {ProposalCard} from "./ProposalCard";
 import {EmailResultCard} from "./EmailResultCard";
 import {MaskingPreview} from "./MaskingPreview";
+import {AuditViewerModal} from "./AuditViewerModal";
 import "./Assistant.css";
 
 /**
@@ -40,6 +42,7 @@ export function AssistantPanel() {
   const reload = useConfigStore((s) => s.reload);
   const setPanelOpen = useAssistantStore((s) => s.setPanelOpen);
   const openSettings = useAssistantStore((s) => s.openSettings);
+  const openAudit = useAssistantStore((s) => s.openAudit);
 
   const activeTab = useEditorStore((s) => s.tabs.find((item) => item.path === s.activePath) ?? null);
   const findings = useAgentStore((s) => s.findings);
@@ -100,6 +103,13 @@ export function AssistantPanel() {
             <Text variant="subheader-2">{t("assistant.title")}</Text>
           </div>
           <div className="assistant-panel__actions">
+            <Tooltip content={t("assistant.audit")}>
+              <span>
+                <Button view="flat" size="s" onClick={openAudit}>
+                  <Icon data={ListCheck} size={16} />
+                </Button>
+              </span>
+            </Tooltip>
             <Tooltip content={t("assistant.settings")}>
               <span>
                 <Button view="flat" size="s" onClick={() => openSettings()}>
@@ -298,6 +308,7 @@ export function AssistantPanel() {
       </div>
 
       <ModelSettingsModal />
+      <AuditViewerModal />
     </div>
   );
 }
