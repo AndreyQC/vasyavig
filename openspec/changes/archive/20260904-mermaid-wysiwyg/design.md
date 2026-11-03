@@ -3,7 +3,7 @@
 > Дата: 2026-09-04. Мотивация — `proposal.md`; требования —
 > `specs/mermaid-wysiwyg/spec.md`. Решения пользователя: скоуп «рендер +
 > модалка», тема — следовать приложению. Наработки gramax —
-> `_docs_/GRAMAX_RESEARCH_RESULT.md` §2.
+> `harness_docs/GRAMAX_RESEARCH_RESULT.md` §2.
 
 ## Context
 

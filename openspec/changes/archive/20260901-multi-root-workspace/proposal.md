@@ -1,7 +1,7 @@
 # Proposal: multi-root workspace с цветами папок
 
 > Дата: 2026-09-01 | Статус: draft
-> Контекст: чекпойнт `_docs_/_checkpoints_/20260831_002_checkpoint.md`, обсуждение в сессии.
+> Контекст: чекпойнт `harness_docs/harness_checkpoints/20260831_002_checkpoint.md`, обсуждение в сессии.
 
 ## Why
 

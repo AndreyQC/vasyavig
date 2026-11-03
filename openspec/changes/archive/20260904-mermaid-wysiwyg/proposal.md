@@ -1,9 +1,9 @@
 # Proposal: mermaid-диаграммы в редакторе WYSIWYG
 
 > Дата: 2026-09-04 | Статус: draft
-> Контекст: чекпойнт `_docs_/_checkpoints_/20260903_002_checkpoint.md`, беклог
-> `_docs_/roadmap.md` («Mermaid в WYSIWYG»), исследование грамакс
-> `_docs_/GRAMAX_RESEARCH_RESULT.md` §2, решения пользователя 2026-09-04
+> Контекст: чекпойнт `harness_docs/harness_checkpoints/20260903_002_checkpoint.md`, беклог
+> `harness_docs/roadmap.md` («Mermaid в WYSIWYG»), исследование грамакс
+> `harness_docs/GRAMAX_RESEARCH_RESULT.md` §2, решения пользователя 2026-09-04
 > (скоуп: рендер + модалка; тема — следовать приложению).
 
 ## Why

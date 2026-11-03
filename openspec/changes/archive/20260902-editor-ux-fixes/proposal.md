@@ -1,9 +1,9 @@
 # Proposal: editor UX — широкие таблицы, стабильность layout, preview-вкладки
 
 > Дата: 2026-09-02 | Статус: draft
-> Контекст: чекпойнт `_docs_/_checkpoints_/20260902_001_checkpoint.md`; жалобы
-> пользователя — сессия 2026-09-02; `_docs_/roadmap.md` беклог (баг панелей),
-> `_docs_/USER_IDEA.md` п. 4.
+> Контекст: чекпойнт `harness_docs/harness_checkpoints/20260902_001_checkpoint.md`; жалобы
+> пользователя — сессия 2026-09-02; `harness_docs/roadmap.md` беклог (баг панелей),
+> `harness_docs/USER_IDEA.md` п. 4.
 
 ## Why
 
