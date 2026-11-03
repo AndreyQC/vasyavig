@@ -40,3 +40,19 @@ export function maskText(
   out += text.slice(cursor);
   return {text: out, prefix: registry.prefix.open, count: spans.length, stats};
 }
+
+/**
+ * Правила и словарь алиасов для промпта (D9): модель видит «алиас → тип»,
+ * никогда «алиас → значение». Требование сохранять плейсхолдеры дословно —
+ * §3.9 п.4.
+ */
+export function maskingPromptNote(registry: RunRegistry): string {
+  const records = registry.allRecords();
+  if (records.length === 0) return "";
+  return [
+    "Чувствительные значения в документе заменены плейсхолдерами.",
+    "Правила: сохраняйте плейсхолдеры дословно — не переводите, не перефразируйте и не сокращайте их; в replacement используйте плейсхолдеры ровно как в документе.",
+    "Словарь плейсхолдеров (плейсхолдер — тип):",
+    ...records.map((record) => `${registry.aliasOf(record)} — ${record.type.toLowerCase()}`),
+  ].join("\n");
+}

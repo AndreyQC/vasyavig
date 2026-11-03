@@ -37,6 +37,17 @@ export interface AuditEntryInput {
   hash?: string;
   proposalKind?: "replace" | "insert" | "create";
   findings?: number;
+  /**
+   * Маскирование (Phase 8.5 T1): только метаданные — режим, факт подтверждения
+   * и счётчики по типам. Значения сущностей не передаются (D8).
+   */
+  masking?: {
+    mode: "off" | "preview";
+    /** До T1b подтверждения нет — "none" (R2 плана 20261104_001). */
+    confirmation: "none";
+    entities: number;
+    counts: Record<string, number>;
+  };
 }
 
 export interface AuditEntry extends AuditEntryInput {
@@ -116,6 +127,20 @@ function sanitize(input: AuditEntryInput, id: string, timestamp: string): AuditE
   if (input.proposalKind) entry.proposalKind = input.proposalKind;
   if (typeof input.findings === "number" && Number.isFinite(input.findings)) {
     entry.findings = Math.max(0, Math.trunc(input.findings));
+  }
+  if (input.masking) {
+    const counts: Record<string, number> = {};
+    for (const [type, count] of Object.entries(input.masking.counts)) {
+      if (typeof count === "number" && Number.isFinite(count) && count > 0) {
+        counts[type] = Math.trunc(count);
+      }
+    }
+    entry.masking = {
+      mode: input.masking.mode === "preview" ? "preview" : "off",
+      confirmation: "none",
+      entities: Math.max(0, Math.trunc(input.masking.entities) || 0),
+      counts,
+    };
   }
   return entry;
 }

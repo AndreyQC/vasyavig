@@ -47,6 +47,9 @@ import {
   type ModelVerdict,
 } from "../lib/agent/recipes/checkDocument";
 import {buildContextPack} from "../lib/agent/context";
+import {maskText, maskingPromptNote} from "../lib/agent/masking/mask";
+import {RunRegistry} from "../lib/agent/masking/registry";
+import {missingAliasIds, scanUnknownAliases, unmaskText} from "../lib/agent/masking/unmask";
 import {cancelChatRun, runChat, type ChatMessage} from "../lib/agent/provider";
 import {executeTool, type ToolCallResult} from "../lib/agent/tools";
 import {defaultToolDeps, proposalApplyDeps} from "../lib/agent/tools/deps";
@@ -248,6 +251,16 @@ export const useAgentStore = create<AgentState>((set, get) => {
           runId,
           path: check.path,
           findings: check.findings.length,
+          ...(maskingMeta
+            ? {
+                masking: {
+                  mode: maskingMeta.mode,
+                  confirmation: "none" as const,
+                  entities: maskingMeta.entities,
+                  counts: maskingMeta.counts,
+                },
+              }
+            : {}),
         },
         auditOptions(),
       );
@@ -256,6 +269,14 @@ export const useAgentStore = create<AgentState>((set, get) => {
     const finish = (notice: ModelNotice) => {
       set({modelRunning: false, modelNotice: notice});
     };
+
+    // Маскирование (Phase 8.5 T1c, план 20261104_001): контекст уходит модели
+    // с алиасами `[[VAS_<TYPE>_<ULID>]]` вместо секретов; unmask — в вердиктах.
+    // Таблица соответствий — только в памяти (D8); в audit — счётчики (R2).
+    const maskingSettings = config.config.app.assistant.masking;
+    const maskingOn = maskingSettings.mode !== "off";
+    let registry: RunRegistry | null = null;
+    let maskingMeta: {mode: "off" | "preview"; entities: number; counts: Record<string, number>} | null = null;
 
     try {
       const targets = new Map<string, ModelFixTarget>();
@@ -266,14 +287,34 @@ export const useAgentStore = create<AgentState>((set, get) => {
       }
 
       const selection = currentSelection();
+      let content = tab.content;
+      let selectionInput =
+        selection && selection.path === tab.path && selection.text !== ""
+          ? {text: selection.text, from: selection.from, to: selection.to}
+          : null;
+      let maskingNote: string | undefined;
+      if (maskingOn) {
+        registry = new RunRegistry(tab.content);
+        const maskDoc = maskText(tab.content, registry, maskingSettings.detectors);
+        content = maskDoc.text;
+        if (selectionInput) {
+          const maskSelection = maskText(selectionInput.text, registry, maskingSettings.detectors);
+          selectionInput = {...selectionInput, text: maskSelection.text};
+        }
+        maskingNote = maskingPromptNote(registry) || undefined;
+        maskingMeta = {
+          mode: maskingSettings.mode === "preview" ? "preview" : "off",
+          entities: registry.size,
+          counts: Object.fromEntries(
+            Object.entries(maskDoc.stats).filter(([, count]) => typeof count === "number"),
+          ),
+        };
+      }
       const pack = buildContextPack({
         docId,
         name: tab.name,
-        content: tab.content,
-        selection:
-          selection && selection.path === tab.path && selection.text !== ""
-            ? {text: selection.text, from: selection.from, to: selection.to}
-            : null,
+        content,
+        selection: selectionInput,
         settings: config.config.app.assistant.context,
       });
       const messages = buildCheckMessages({
@@ -281,7 +322,9 @@ export const useAgentStore = create<AgentState>((set, get) => {
         document: pack.document?.content ?? "(документ не включён в контекст настройками)",
         selection: pack.selection?.text ?? "",
         items: buildFindingItems(check.findings, targets, proposedIds),
+        maskingNote,
       });
+      const promptUserText = messages[1]?.content ?? "";
 
       const ask = (msgs: readonly ChatMessage[]) =>
         runChat({
@@ -331,10 +374,43 @@ export const useAgentStore = create<AgentState>((set, get) => {
         return;
       }
 
+      // Валидация маскирования (§3.9 п.5): неизвестный алиас — модель
+      // выдумала идентификатор, replacements могут нести мусор → все вердикты
+      // отбрасываются. Потерянные алиасы — предупреждение, apply не блокируем:
+      // replacement проверяется по oldText/baseHash независимо.
+      const unknownAliases = registry ? scanUnknownAliases(chat.text, registry) : [];
+      if (unknownAliases.length > 0) {
+        auditModelStage("error");
+        finish({
+          kind: "error",
+          key: "assistant.modelStage.maskUnknown",
+          params: {count: unknownAliases.length},
+        });
+        return;
+      }
+      const activeRegistry = registry;
+      const verdicts = activeRegistry
+        ? parsed.verdicts.map((verdict) => ({
+            ...verdict,
+            replacement:
+              verdict.replacement !== undefined
+                ? unmaskText(verdict.replacement, activeRegistry).text
+                : undefined,
+            rationale:
+              verdict.rationale !== undefined
+                ? unmaskText(verdict.rationale, activeRegistry).text
+                : undefined,
+          }))
+        : parsed.verdicts;
+      const lostAliases =
+        registry && maskingOn
+          ? missingAliasIds(promptUserText, chat.text, registry).length
+          : 0;
+
       let fixes = 0;
       let dropped = 0;
       let notes = 0;
-      for (const verdict of parsed.verdicts) {
+      for (const verdict of verdicts) {
         if (verdict.rationale) notes++;
         if (verdict.action !== "fix" || verdict.replacement === undefined) continue;
         const target = targets.get(verdict.findingId);
@@ -357,17 +433,19 @@ export const useAgentStore = create<AgentState>((set, get) => {
         else dropped++;
       }
 
-      set({verdicts: parsed.verdicts});
+      set({verdicts});
       auditModelStage("ok");
       finish({
         kind: "info",
         key:
-          parsed.verdicts.length === 0
-            ? "assistant.modelStage.empty"
-            : dropped > 0
-              ? "assistant.modelStage.okWithDropped"
-              : "assistant.modelStage.ok",
-        params: {fixes, notes, dropped},
+          lostAliases > 0 && verdicts.length > 0
+            ? "assistant.modelStage.maskLost"
+            : verdicts.length === 0
+              ? "assistant.modelStage.empty"
+              : dropped > 0
+                ? "assistant.modelStage.okWithDropped"
+                : "assistant.modelStage.ok",
+        params: {fixes, notes, dropped, lost: lostAliases},
       });
     } catch (e) {
       auditModelStage("error");

@@ -47,6 +47,7 @@ const {useConfigStore} = await import("./configStore");
 const provider = await import("../lib/agent/provider");
 const {auditLog} = await import("../lib/agent/audit");
 const {collectFindings} = await import("../lib/agent/findings");
+const {resetUlidMonotonic} = await import("../lib/agent/masking/ulid");
 
 const runChatMock = vi.mocked(provider.runChat);
 const cancelChatRunMock = vi.mocked(provider.cancelChatRun);
@@ -552,5 +553,151 @@ describe("рецепт письма HTML (8.4)", () => {
 
     expect(useAgentStore.getState().lastError).toBeTruthy();
     expect(useAgentStore.getState().emailResult).toBeNull();
+  });
+});
+
+describe("маскирование (8.5 T1c)", () => {
+  const MASK_DOC =
+    LEGACY_DOC +
+    "\nСвязь: ivanov@example.com, тел. +7 (495) 123-45-67.\nAPI_TOKEN=super-secret-value-123\n";
+
+  async function anchorsFindingIdIn(doc: string): Promise<string> {
+    const findings = await collectFindings({content: doc, path: PATH});
+    const anchor = findings.find((item) => item.rule === "anchors" && item.line === 12);
+    expect(anchor).toBeTruthy();
+    return anchor?.id ?? "";
+  }
+
+  function enableMasking(): void {
+    const config = structuredClone(useConfigStore.getState().config);
+    config.app.assistant.masking.mode = "preview";
+    useConfigStore.setState({config});
+  }
+
+  it("маскирование on: секреты не уходят в промпт, replacement размаскирован, audit — счётчики", async () => {
+    resetUlidMonotonic();
+    openText(MASK_DOC);
+    enableModel();
+    enableMasking();
+    const anchorId = await anchorsFindingIdIn(MASK_DOC);
+    let capturedPrompt = "";
+    runChatMock.mockImplementation(async (req) => {
+      capturedPrompt = JSON.stringify(req.messages);
+      const alias = capturedPrompt.match(/\[\[VAS_EMAIL_[0-9A-HJKMNP-TV-Z]{26}\]\]/)?.[0] ?? "";
+      return chatOk(
+        JSON.stringify({
+          verdicts: [
+            {
+              findingId: anchorId,
+              action: "fix",
+              replacement: `razdel-${alias}`,
+              rationale: `см. ${alias}`,
+            },
+          ],
+        }),
+      );
+    });
+
+    await useAgentStore.getState().runCheckDocument();
+
+    expect(capturedPrompt).not.toContain("ivanov@example.com");
+    expect(capturedPrompt).not.toContain("super-secret-value-123");
+    expect(capturedPrompt).not.toContain("+7 (495) 123-45-67");
+    expect(capturedPrompt).toContain("[[VAS_EMAIL_");
+    expect(capturedPrompt).toContain("Словарь плейсхолдеров");
+
+    const state = useAgentStore.getState();
+    const modelProposal = state.proposals.find(
+      (item): item is ReplaceP => item.kind === "replace" && item.newText.includes("razdel-"),
+    );
+    expect(modelProposal?.newText).toContain("razdel-ivanov@example.com"); // unmask
+    expect(state.verdicts[0]?.rationale).toContain("ivanov@example.com");
+    // EMAIL-алиас модель эхом вернула, а PHONE/SECRET — нет → потеряны (2 из 3).
+    expect(state.modelNotice?.key).toBe("assistant.modelStage.maskLost");
+    expect(state.modelNotice?.kind).toBe("info");
+    expect(state.modelNotice?.params).toMatchObject({lost: 2});
+
+    const runEntry = auditLog.list().find((entry) => entry.operation === "run");
+    expect(runEntry?.masking?.mode).toBe("preview");
+    expect(runEntry?.masking?.confirmation).toBe("none");
+    expect(runEntry?.masking?.entities).toBeGreaterThan(0);
+    expect(Object.keys(runEntry?.masking?.counts ?? {})).toContain("EMAIL");
+    expect(JSON.stringify(runEntry?.masking)).not.toContain("ivanov@example.com");
+  });
+
+  it("маскирование: неизвестный плейсхолдер в ответе — вердикты отброшены", async () => {
+    resetUlidMonotonic();
+    openText(MASK_DOC);
+    enableModel();
+    enableMasking();
+    const anchorId = await anchorsFindingIdIn(MASK_DOC);
+    runChatMock.mockResolvedValue(
+      chatOk(
+        JSON.stringify({
+          verdicts: [
+            {
+              findingId: anchorId,
+              action: "fix",
+              replacement: "razdel-[[VAS_SECRET_01AAAAAAAAAAAAAAAAAAAAAAAA]]",
+            },
+          ],
+        }),
+      ),
+    );
+
+    await useAgentStore.getState().runCheckDocument();
+
+    const state = useAgentStore.getState();
+    expect(state.modelNotice?.key).toBe("assistant.modelStage.maskUnknown");
+    expect(state.modelNotice?.kind).toBe("error");
+    expect(state.proposals).toHaveLength(3); // только детерминированные
+    const runEntry = auditLog.list().find((entry) => entry.operation === "run");
+    expect(runEntry?.result).toBe("error");
+  });
+
+  it("маскирование: потерянные плейсхолдеры — предупреждение, замены применяются", async () => {
+    resetUlidMonotonic();
+    openText(MASK_DOC);
+    enableModel();
+    enableMasking();
+    const anchorId = await anchorsFindingIdIn(MASK_DOC);
+    runChatMock.mockResolvedValue(
+      chatOk(
+        JSON.stringify({
+          verdicts: [{findingId: anchorId, action: "explain", rationale: "якорь корректен"}],
+        }),
+      ),
+    );
+
+    await useAgentStore.getState().runCheckDocument();
+
+    const state = useAgentStore.getState();
+    expect(state.modelNotice?.key).toBe("assistant.modelStage.maskLost");
+    expect(state.modelNotice?.kind).toBe("info");
+    expect(state.modelNotice?.params).toMatchObject({lost: 3});
+    expect(state.verdicts).toHaveLength(1);
+    const runEntry = auditLog.list().find((entry) => entry.operation === "run");
+    expect(runEntry?.result).toBe("ok");
+  });
+
+  it("маскирование off (дефолт): промпт без изменений", async () => {
+    openText(MASK_DOC);
+    enableModel();
+    const anchorId = await anchorsFindingIdIn(MASK_DOC);
+    runChatMock.mockResolvedValue(
+      chatOk(
+        JSON.stringify({
+          verdicts: [{findingId: anchorId, action: "explain", rationale: "ok"}],
+        }),
+      ),
+    );
+
+    await useAgentStore.getState().runCheckDocument();
+
+    const prompt = JSON.stringify(runChatMock.mock.calls[0][0].messages);
+    expect(prompt).toContain("ivanov@example.com"); // без маскирования текст как есть
+    const runEntry = auditLog.list().find((entry) => entry.operation === "run");
+    expect(runEntry?.masking).toBeUndefined();
+    expect(useAgentStore.getState().modelNotice?.key).toBe("assistant.modelStage.ok");
   });
 });

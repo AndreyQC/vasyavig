@@ -253,7 +253,9 @@
       "okWithDropped": "Model: {{fixes}} fixes, {{notes}} explanations, {{dropped}} dropped.",
       "empty": "The model proposed no changes.",
       "invalid": "Model response failed validation: {{errors}}",
-      "error": "Model error: {{error}}"
+      "error": "Model error: {{error}}",
+      "maskLost": "Model: {{fixes}} fixes, {{notes}} explanations; lost placeholders: {{lost}}.",
+      "maskUnknown": "Masking: the model response contains unknown placeholders ({{count}}) — verdicts dropped, document unchanged."
     },
     "email": {
       "title": "HTML email",

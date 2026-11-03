@@ -108,12 +108,17 @@ export interface CheckMessagesInput {
   /** Выделение или пустая строка. */
   selection?: string;
   items: readonly FindingPromptItem[];
+  /** Правила и словарь плейсхолдеров маскирования (T1c); пусто — без маскирования. */
+  maskingNote?: string;
 }
 
 export function buildCheckMessages(input: CheckMessagesInput): ChatMessage[] {
   const parts: string[] = [`Документ: ${input.docName}`, "", input.document];
   if (input.selection && input.selection.trim() !== "") {
     parts.push("", "Выделение в документе:", input.selection);
+  }
+  if (input.maskingNote) {
+    parts.push("", input.maskingNote);
   }
   parts.push(
     "",
