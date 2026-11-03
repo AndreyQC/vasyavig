@@ -142,7 +142,8 @@ export function createDefaultConfig(): VasyavigConfig {
           chunking: "headings",
         },
         writes: {requireConfirmation: true},
-        masking: {mode: "preview", detectors: ["secrets", "email", "phone"]},
+        // T1 (план 20261104_001, R1/D5): до превью отправки (T1b) — off.
+        masking: {mode: "off", detectors: ["secrets", "email", "phone"]},
         audit: {enabled: true, retainRuns: 50},
       },
     },
@@ -446,7 +447,9 @@ function parseAssistant(value: unknown): AssistantSettings {
       ),
     },
     masking: {
-      mode: readEnum(masking.mode, "app.assistant.masking.mode", MASKING_MODES, "preview"),
+      // T1 (план 20261104_001, R1/D5): до превью отправки (T1b) маскирование
+      // выключено по умолчанию; вернём "preview" вместе с UI подтверждения.
+      mode: readEnum(masking.mode, "app.assistant.masking.mode", MASKING_MODES, "off"),
       detectors: parseMaskingDetectors(masking.detectors),
     },
     audit: {

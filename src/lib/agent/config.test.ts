@@ -86,7 +86,7 @@ describe("config defaults", () => {
     expect(config.llm.request).toEqual({timeoutMs: 60000, retries: 2, retryBackoffMs: 500});
     expect(config.app.editor).toEqual({spellcheck: "ru+en", defaultMode: "wysiwyg", fontSize: 14});
     expect(config.app.assistant.masking).toEqual({
-      mode: "preview",
+      mode: "off",
       detectors: ["secrets", "email", "phone"],
     });
   });
