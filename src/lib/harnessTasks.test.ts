@@ -11,19 +11,17 @@ import type {HarnessIndexEntry} from "./harnessIndex";
 
 const REPO = "C:/repos/lm_hrdo_2";
 
-const MANIFEST = `{
-  "manifest": 1,
-  "kind": "harness",
-  "vocabularies": {
-    "task": {
-      "types": ["tracker", "backlog"],
-      "kinds": ["daily-task", "external-tracker-task"],
-      "statuses": [
-        {"value": "done", "label": {"ru": "Выполнена", "en": "Done"}, "color": "green", "aliases": ["Выполнена"]}
-      ]
-    }
-  }
-}`;
+/** Секция vocabularies.task в harness.yaml (T3c HY-3; схема бывшего манифеста). */
+const HARNESS_YAML = `vocabularies:
+  task:
+    types: [tracker, backlog]
+    kinds: [daily-task, external-tracker-task]
+    statuses:
+      - value: done
+        label: {ru: Выполнена, en: Done}
+        color: green
+        aliases: [Выполнена]
+`;
 
 const entry = (over: Partial<HarnessIndexEntry>): HarnessIndexEntry => ({
   ulid: "01M43R3ZGSNXQ0KSMZ9JSZEZ5W",
@@ -67,8 +65,8 @@ describe("canonicalStatus", () => {
 });
 
 describe("parseTaskVocabulary", () => {
-  it("валидный манифест замещает дефолт по полям", () => {
-    const vocab = parseTaskVocabulary(MANIFEST);
+  it("валидный harness.yaml замещает дефолт по полям", () => {
+    const vocab = parseTaskVocabulary(HARNESS_YAML);
     expect(vocab?.types).toEqual(["tracker", "backlog"]);
     expect(vocab?.kinds).toEqual(["daily-task", "external-tracker-task"]);
     expect(vocab?.statuses).toHaveLength(1);
@@ -79,18 +77,19 @@ describe("parseTaskVocabulary", () => {
     const broken = parseTaskVocabulary('{"vocabularies": {"task": {"types": "tracker", "statuses": [{"nope": 1}]}}}');
     expect(broken?.types).toEqual(DEFAULT_TASK_VOCABULARY.types);
     expect(broken?.statuses).toEqual(DEFAULT_TASK_VOCABULARY.statuses);
-    expect(parseTaskVocabulary("не json")).toBeNull();
+    expect(parseTaskVocabulary("не yaml: [битый")).toBeNull();
+    expect(parseTaskVocabulary("просто строка")).toBeNull();
     expect(parseTaskVocabulary("{}")).toBeNull();
   });
 });
 
 describe("loadTaskVocabulary", () => {
-  it("манифест на месте — словарь из него", async () => {
-    const vocab = await loadTaskVocabulary(REPO, probeOf({[`${REPO}/harness_manifest.json`]: MANIFEST}));
+  it("harness.yaml на месте — словарь из него", async () => {
+    const vocab = await loadTaskVocabulary(REPO, probeOf({[`${REPO}/harness.yaml`]: HARNESS_YAML}));
     expect(vocab.types).toEqual(["tracker", "backlog"]);
   });
 
-  it("манифеста нет — встроенный дефолт", async () => {
+  it("harness.yaml нет — встроенный дефолт", async () => {
     const vocab = await loadTaskVocabulary(REPO, probeOf({}));
     expect(vocab).toEqual(DEFAULT_TASK_VOCABULARY);
   });

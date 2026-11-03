@@ -17,6 +17,7 @@ const {readFile} = await import("../hooks/useTauriFS");
 const REPO = "C:/repos/lm_hrdo_2";
 const ROOT_KEY = "c:/repos/lm_hrdo_2";
 const INDEX_PATH = `${REPO}/${HARNESS_INDEX_REL}`;
+const YAML_PATH = `${REPO}/harness.yaml`;
 const PLAN = "01M43R3ZGSNXQ0KSMZ9JSZEZ5W";
 const RES = "01M43R3ZGSNXQ0KSMZ9JSZEZ5X";
 
@@ -54,7 +55,7 @@ describe("harnessGraphStore", () => {
     useHarnessGraphStore.getState().reset();
     useHarnessStore.setState({indexes: {}, version: 0});
     resetHarnessCaches();
-    mockFiles({[INDEX_PATH]: JSONL});
+    mockFiles({[YAML_PATH]: "{project: {id: lm_hrdo_2}}", [INDEX_PATH]: JSONL});
   });
 
   it("ensureGraph: панель сама тянет реестр и строит граф", async () => {

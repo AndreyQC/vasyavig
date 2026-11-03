@@ -73,18 +73,25 @@ describe("ancestorDirs", () => {
 });
 
 describe("findHarnessIndex", () => {
-  it("находит ближайший индекс; кандидаты идут снизу вверх", async () => {
+  it("якорь harness.yaml + реестр под ним; пробы yaml идут снизу вверх", async () => {
     const candidates: string[] = [];
     const probe = async (candidate: string) => {
       candidates.push(candidate);
+      if (candidate === "C:/repos/lm/harness.yaml") return "project:\n  id: lm\n";
       return candidate === `C:/repos/lm/${HARNESS_INDEX_REL}` ? "{}" : null;
     };
     const found = await findHarnessIndex("C:/repos/lm/harness_docs/harness_tasks", probe);
     expect(found?.repoRoot).toBe("C:/repos/lm");
-    expect(candidates[0]).toBe("C:/repos/lm/harness_docs/harness_tasks/harness_docs/harness_index/documents.jsonl");
+    expect(found?.content).toBe("{}");
+    // первый кандидат — якорь от самого каталога (HY-1: сначала корень, потом реестр)
+    expect(candidates[0]).toBe("C:/repos/lm/harness_docs/harness_tasks/harness.yaml");
     expect(candidates).toContain(`C:/repos/lm/${HARNESS_INDEX_REL}`);
   });
-  it("нигде нет индекса -> null", async () => {
+  it("якорь есть, реестра нет -> null (репо распознан, ULID-функции отключены)", async () => {
+    const probe = async (p: string) => (p === "/repo/harness.yaml" ? "project: x\n" : null);
+    expect(await findHarnessIndex("/repo/sub", probe)).toBeNull();
+  });
+  it("нигде нет якоря -> null", async () => {
     expect(await findHarnessIndex("C:/plain/dir", async () => null)).toBeNull();
   });
 });
@@ -137,31 +144,31 @@ describe("linkifyUlidsInElement", () => {
 });
 
 describe("isHarnessRepoDir", () => {
-  it("манифест в корне — репозиторий", async () => {
-    const probe = async (p: string) => (p === "/repo/harness_manifest.json" ? '{"kind":"harness"}' : null);
+  it("harness.yaml в корне — репозиторий (единственный якорь, HY-1)", async () => {
+    const probe = async (p: string) => (p === "/repo/harness.yaml" ? "project:\n  id: x\n" : null);
     expect(await isHarnessRepoDir("/repo", probe)).toBe(true);
   });
 
-  it("реестр в корне — репозиторий", async () => {
-    const probe = async (p: string) => (p === `/repo/${HARNESS_INDEX_REL}` ? "{}" : null);
-    expect(await isHarnessRepoDir("/repo", probe)).toBe(true);
-  });
-
-  it("битый манифест (не JSON) — не репозиторий", async () => {
-    const probe = async (p: string) => (p === "/repo/harness_manifest.json" ? "не json" : null);
+  it("битый harness.yaml (не YAML-объект) — не репозиторий", async () => {
+    const probe = async (p: string) => (p === "/repo/harness.yaml" ? "[битый" : null);
     expect(await isHarnessRepoDir("/repo", probe)).toBe(false);
   });
 
-  it("ни манифеста, ни реестра — не репозиторий", async () => {
+  it("реестр без якоря — НЕ репозиторий (T3c: один якорь)", async () => {
+    const probe = async (p: string) => (p === `/repo/${HARNESS_INDEX_REL}` ? "{}" : null);
+    expect(await isHarnessRepoDir("/repo", probe)).toBe(false);
+  });
+
+  it("ни yaml, ни реестра — не репозиторий", async () => {
     expect(await isHarnessRepoDir("/repo", async () => null)).toBe(false);
   });
 });
 
 describe("treeContainsHarnessRepo", () => {
-  it("реестр или манифест в поддереве — найдено", () => {
+  it("harness.yaml в поддереве — найдено", () => {
     const tree = [
       {path: "/repo/docs/a.md", children: null},
-      {path: `/repo/${HARNESS_INDEX_REL}`, children: null},
+      {path: "/repo/harness.yaml", children: null},
     ];
     expect(treeContainsHarnessRepo(tree)).toBe(true);
     expect(treeContainsHarnessRepo([{path: "/repo/docs/a.md", children: null}])).toBe(false);
@@ -171,7 +178,7 @@ describe("treeContainsHarnessRepo", () => {
     const tree = [
       {
         path: "/repo/sub",
-        children: [{path: "/repo/sub/harness_manifest.json", children: null}],
+        children: [{path: "/repo/sub/harness.yaml", children: null}],
       },
     ];
     expect(treeContainsHarnessRepo(tree)).toBe(true);

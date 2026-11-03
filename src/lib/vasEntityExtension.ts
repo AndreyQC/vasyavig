@@ -12,7 +12,6 @@ import type {Node as PMNode} from "prosemirror-model";
 import type {EditorView as PMEditorView} from "prosemirror-view";
 import type {Extension} from "@gravity-ui/markdown-editor";
 import {buildVasEntityHref, parseVasEntityHref} from "./agent/masking/vasEntityLink";
-import type {EntityType} from "./agent/masking/types";
 
 const LINK_MARK_NAME = "link";
 
@@ -93,7 +92,7 @@ export function vasEntityExtension(path: string): Extension {
  * Пометить текущее выделение WYSIWYG как сущность (D11). false — нет view,
  * пустое выделение или пересечение со ссылкой (вложенные ссылки невозможны).
  */
-export function markPmSelectionAsEntity(path: string, type: EntityType, ulid: string): boolean {
+export function markPmSelectionAsEntity(path: string, type: string, ulid: string): boolean {
   const view = pmViews.get(path);
   if (!view) return false;
   const {from, to} = view.state.selection;
@@ -118,7 +117,7 @@ export function unmarkPmEntityAtDom(path: string, el: HTMLElement): boolean {
   const ulid = el.getAttribute("data-vas-entity");
   const type = el.getAttribute("data-vas-type");
   if (!ulid || !type) return false;
-  if (!parseVasEntityHref(buildVasEntityHref(type.toUpperCase() as EntityType, ulid))) return false;
+  if (!parseVasEntityHref(buildVasEntityHref(type, ulid))) return false;
   try {
     const from = view.posAtDOM(el, 0);
     const to = view.posAtDOM(el, el.childNodes.length);
@@ -136,7 +135,7 @@ import {getEditor} from "./editorRegistry";
  * Обёртка текущего выделения сущностью в активном режиме редактора (D11):
  * WYSIWYG — link-марка через PM-view, Markup — CM-транзакция (смещения raw).
  */
-export function markSelectionAsEntity(path: string, type: EntityType, ulid: string): boolean {
+export function markSelectionAsEntity(path: string, type: string, ulid: string): boolean {
   const editor = getEditor(path);
   if (!editor) return false;
   editor.focus();

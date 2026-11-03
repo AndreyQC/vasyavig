@@ -51,7 +51,9 @@ import {maskText, maskingPromptNote} from "../lib/agent/masking/mask";
 import {RunRegistry, type ExistingResolver} from "../lib/agent/masking/registry";
 import type {EntityType} from "../lib/agent/masking/types";
 import {parseEntityLinks} from "../lib/agent/masking/vasEntityMarkup";
+import {applyDomainDictionary} from "../lib/agent/masking/ner";
 import {ensureEntitiesIndex, matchEntityEntry} from "../lib/entitiesIndex";
+import {ensureEntityTypes, systemTypeOfToken} from "../lib/entityTypes";
 import {missingAliasIds, scanUnknownAliases, unmaskText} from "../lib/agent/masking/unmask";
 import {cancelChatRun, runChat, type ChatMessage} from "../lib/agent/provider";
 import {executeTool, type ToolCallResult} from "../lib/agent/tools";
@@ -517,10 +519,13 @@ export const useAgentStore = create<AgentState>((set, get) => {
         // T3 (план 20261105_001, T3-5): разметка `vas-entity:` даёт постоянные
         // ULID; значения без разметки сверяются со словарём identities
         // (entities.jsonl) — известное получает тот же ULID (связность между
-        // документами), новое — per-run (R3).
+        // документами), новое — per-run (R3). T3c: справочник типов и доменный
+        // словарь NER — из harness.yaml (HY-5).
         const entitySpans = parseEntityLinks(tab.content);
         let resolver: ExistingResolver | undefined;
         try {
+          await ensureEntityTypes(getParentDir(tab.path));
+          applyDomainDictionary();
           const index = await ensureEntitiesIndex(getParentDir(tab.path));
           resolver = (value, type) => matchEntityEntry(index.entries, value, type)?.ulid ?? null;
         } catch {
@@ -528,7 +533,10 @@ export const useAgentStore = create<AgentState>((set, get) => {
         }
         registry = new RunRegistry(tab.content, resolver);
         for (const span of entitySpans) {
-          registry.registerExisting(span.ulid, span.type, span.value);
+          const systemType = systemTypeOfToken(span.type);
+          if (systemType != null) {
+            registry.registerExisting(span.ulid, systemType, span.value);
+          }
         }
         const maskDoc = maskText(tab.content, registry, maskingSettings.detectors, entitySpans);
         content = maskDoc.text;

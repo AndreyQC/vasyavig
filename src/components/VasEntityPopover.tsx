@@ -6,6 +6,7 @@ import i18n from "../lib/i18n";
 import {getParentDir} from "../lib/utils";
 import {unmarkEntityAtDom} from "../lib/vasEntityExtension";
 import {ensureEntitiesIndex, type EntityIndexEntry} from "../lib/entitiesIndex";
+import {customTypeLabel, isMaskingTypeToken} from "../lib/entityTypes";
 
 /**
  * Поповер чипа сущности `vas-entity:` (Phase 8.5, T3; план 20261105_001,
@@ -125,7 +126,11 @@ export function VasEntityPopover() {
 
   if (!target || !pos) return null;
 
+  // Алиас показывается только у маскируемых типов (кастомные — для графов)
+  const masking = isMaskingTypeToken(target.type);
   const alias = `[[VAS_${target.type.toUpperCase()}_${target.ulid}]]`;
+  const typeLabel =
+    customTypeLabel(target.type, i18n.language) ?? i18n.t(`assistant.entityType.${target.type}`);
   const unmark = () => {
     unmarkEntityAtDom(target.path, target.el);
     hide();
@@ -134,7 +139,7 @@ export function VasEntityPopover() {
   return createPortal(
     <div ref={popoverRef} className="vas-entity-popover" style={{left: pos.left, top: pos.top}}>
       <div className="vas-entity-popover__row">
-        <Label theme="info">{i18n.t(`assistant.entityType.${target.type}`)}</Label>
+        <Label theme="info">{typeLabel}</Label>
         <span className="vas-entity-popover__value">{target.value}</span>
       </div>
       {canonical != null && canonical !== target.value && (
@@ -142,7 +147,7 @@ export function VasEntityPopover() {
           {i18n.t("entity.canonical")}: {canonical}
         </div>
       )}
-      <div className="vas-entity-popover__row vas-entity-popover__mono">{alias}</div>
+      {masking && <div className="vas-entity-popover__row vas-entity-popover__mono">{alias}</div>}
       <div className="vas-entity-popover__actions">
         <Button size="s" view="flat" onClick={unmark}>
           <Xmark width={12} height={12} />

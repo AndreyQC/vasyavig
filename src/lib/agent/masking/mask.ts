@@ -6,6 +6,7 @@
  */
 
 import {detectText, mergeSpans} from "./detectors";
+import {isMaskingTypeToken, systemTypeOfToken} from "../../entityTypes";
 import {RunRegistry} from "./registry";
 import type {DetectorId, EntityType} from "./types";
 import type {EntityLinkSpan} from "./vasEntityMarkup";
@@ -44,13 +45,17 @@ export function maskText(
   detectors: readonly DetectorId[],
   entitySpans: readonly EntityLinkSpan[] = [],
 ): MaskResult {
-  const spans: MaskSpan[] = entitySpans.map((link) => ({
-    start: link.start,
-    end: link.end,
-    type: link.type,
-    value: link.value,
-    ulid: link.ulid,
-  }));
+  // HY-5: маскируются только типы со включённым masking (кастомные типы —
+  // для графов, их ссылки проходят в промпт как есть, href не чувствителен).
+  const spans: MaskSpan[] = entitySpans
+    .filter((link) => isMaskingTypeToken(link.type))
+    .map((link) => ({
+      start: link.start,
+      end: link.end,
+      type: systemTypeOfToken(link.type) as EntityType,
+      value: link.value,
+      ulid: link.ulid,
+    }));
   spans.push(...detectText(text, detectors));
   const merged = mergeSpans(spans);
   const stats: Partial<Record<EntityType, number>> = {};

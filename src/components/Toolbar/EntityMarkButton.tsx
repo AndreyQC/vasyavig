@@ -8,37 +8,32 @@ import {useSelectionStore} from "../../store/selectionStore";
 import {getParentDir} from "../../lib/utils";
 import {markSelectionAsEntity} from "../../lib/vasEntityExtension";
 import {ensureEntitiesIndex, matchEntityEntry, type EntityIndexEntry} from "../../lib/entitiesIndex";
+import {customTypeLabel, ensureEntityTypes, type EntityTypeDef} from "../../lib/entityTypes";
 import {generateUlid} from "../../lib/agent/masking/ulid";
-import type {EntityType} from "../../lib/agent/masking/types";
-
-const ENTITY_TYPES: readonly EntityType[] = [
-  "PERSON",
-  "ORG",
-  "LOC",
-  "SECRET",
-  "EMAIL",
-  "PHONE",
-  "URL_CRED",
-];
 
 /**
- * Кнопка «Сущность» в тулбаре (Phase 8.5, T3; план 20261105_001, T3-9):
- * ручная разметка выделения — первичный путь (D11). Выделение → тип →
- * обёртка в `[выделенное](vas-entity:<type>:<ULID>)`. Значение известно
- * словарю identities — ULID переиспользуется (склонения связываются),
- * иначе генерируется новый.
+ * Кнопка «Сущность» в тулбаре (Phase 8.5, T3/T3c; планы 20261105_001/002,
+ * T3-9/HY-5): ручная разметка выделения — первичный путь (D11). Выделение →
+ * тип (справочник harness.yaml: система + кастомные) → обёртка в
+ * `[выделенное](vas-entity:<type>:<ULID>)`. Значение известно словарю
+ * identities — ULID переиспользуется, иначе генерируется новый.
  */
 export function EntityMarkButton({path}: {path: string}) {
-  const {t} = useTranslation();
+  const {t, i18n} = useTranslation();
   const toaster = useToaster();
   const kind = useEditorStore((s) => s.tabs.find((tab) => tab.path === path)?.kind);
   const selPath = useSelectionStore((s) => s.path);
   const selText = useSelectionStore((s) => s.text);
+  const [typeDefs, setTypeDefs] = useState<EntityTypeDef[]>([]);
   const [indexEntries, setIndexEntries] = useState<EntityIndexEntry[]>([]);
 
   useEffect(() => {
     let alive = true;
-    void ensureEntitiesIndex(getParentDir(path)).then((file) => {
+    const dir = getParentDir(path);
+    void ensureEntityTypes(dir).then((config) => {
+      if (alive) setTypeDefs(config.defs);
+    });
+    void ensureEntitiesIndex(dir).then((file) => {
       if (alive) setIndexEntries(file.entries);
     });
     return () => {
@@ -49,10 +44,13 @@ export function EntityMarkButton({path}: {path: string}) {
   if (kind !== "markdown") return null;
   const hasSelection = selPath === path && selText !== "";
 
-  const mark = (type: EntityType) => {
+  const label = (token: string): string =>
+    customTypeLabel(token, i18n.language) ?? t(`assistant.entityType.${token}`);
+
+  const mark = (token: string) => {
     const known = matchEntityEntry(indexEntries, selText);
     const ulid = known?.ulid ?? generateUlid();
-    const ok = markSelectionAsEntity(path, type, ulid);
+    const ok = markSelectionAsEntity(path, token, ulid);
     if (!ok) {
       toaster.add({name: "entity-mark", content: t("entity.intersection"), autoHiding: 4000});
       return;
@@ -80,9 +78,9 @@ export function EntityMarkButton({path}: {path: string}) {
                 <>
                   <div className="entity-mark-panel__value">{selText}</div>
                   <div className="entity-mark-panel__types">
-                    {ENTITY_TYPES.map((type) => (
-                      <Button key={type} size="s" view="flat" onClick={() => mark(type)}>
-                        {t(`assistant.entityType.${type.toLowerCase()}`)}
+                    {typeDefs.map((def) => (
+                      <Button key={def.token} size="s" view="flat" onClick={() => mark(def.token)}>
+                        {label(def.token)}
                       </Button>
                     ))}
                   </div>

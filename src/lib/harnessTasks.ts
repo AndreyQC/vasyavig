@@ -4,13 +4,14 @@
  * файлов (task-yaml конверт). Доступ — через сменный интерфейс TaskSource
  * (D3): сейчас IndexTaskSource (реестр + файлы), позже — источник на БД без
  * изменений UI и стора. Словарь задач (types/kinds/statuses) читается из
- * манифеста репозитория `harness_docs/manifest.json` (§3), при его отсутствии или
+ * `harness.yaml` (секция `vocabularies.task`, T3c HY-3), при отсутствии или
  * повреждении — встроенный дефолт.
  */
 
+import {parseDocument} from "yaml";
 import {
   defaultReadProbe,
-  HARNESS_MANIFEST_REL,
+  HARNESS_YAML_REL,
   type HarnessIndexEntry,
   type ReadProbe,
 } from "./harnessIndex";
@@ -118,16 +119,19 @@ function asStringArray(value: unknown): string[] | null {
 }
 
 /**
- * Разобрать манифест: валидные поля замещают дефолт по отдельности; битые
- * или отсутствующие — остаются дефолтными. null — манифест не JSON.
+ * Разобрать harness.yaml (HY-3): словарь — секция `vocabularies.task`, схема
+ * прежняя (как была в манифесте). Валидные поля замещают дефолт по
+ * отдельности; битые или отсутствующие — остаются дефолтными.
+ * null — не YAML-объект.
  */
 export function parseTaskVocabulary(text: string): TaskVocabulary | null {
   let raw: unknown;
   try {
-    raw = JSON.parse(text);
+    raw = parseDocument(text, {uniqueKeys: true}).toJS();
   } catch {
     return null;
   }
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return null;
   const task = (raw as {vocabularies?: {task?: unknown}})?.vocabularies?.task;
   if (typeof task !== "object" || task === null) return null;
   const t = task as Record<string, unknown>;
@@ -161,13 +165,13 @@ export function parseTaskVocabulary(text: string): TaskVocabulary | null {
   };
 }
 
-/** Словарь репозитория: манифест, иначе (нет/битый) — встроенный дефолт. */
+/** Словарь репозитория: harness.yaml, иначе (нет/битый) — встроенный дефолт. */
 export async function loadTaskVocabulary(
   repoRoot: string,
   probe: ReadProbe = defaultReadProbe,
 ): Promise<TaskVocabulary> {
   const root = repoRoot.replace(/\\/g, "/").replace(/\/+$/, "");
-  const text = await probe(`${root}/${HARNESS_MANIFEST_REL}`);
+  const text = await probe(`${root}/${HARNESS_YAML_REL}`);
   if (text == null) return DEFAULT_TASK_VOCABULARY;
   return parseTaskVocabulary(text) ?? DEFAULT_TASK_VOCABULARY;
 }

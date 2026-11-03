@@ -17,16 +17,20 @@ const {readFile} = await import("../hooks/useTauriFS");
 const REPO = "C:/repos/lm_hrdo_2";
 const ROOT_KEY = "c:/repos/lm_hrdo_2";
 const INDEX_PATH = `${REPO}/${HARNESS_INDEX_REL}`;
-const MANIFEST_PATH = `${REPO}/harness_manifest.json`;
+const YAML_PATH = `${REPO}/harness.yaml`;
 const T1 = `${REPO}/docs/11_tracker/T-1.md`;
 const T2 = `${REPO}/docs/11_tracker/T-2.md`;
 const PLAN = `${REPO}/harness_docs/harness_plans/plan_a.md`;
 
-const MANIFEST = `{
-  "vocabularies": {"task": {"types": ["tracker"], "statuses": [
-    {"value": "done", "label": {"ru": "Выполнена", "en": "Done"}, "color": "green", "aliases": ["Выполнена"]}
-  ]}}
-}`;
+const HARNESS_YAML = `vocabularies:
+  task:
+    types: [tracker]
+    statuses:
+      - value: done
+        label: {ru: Выполнена, en: Done}
+        color: green
+        aliases: [Выполнена]
+`;
 
 const envelope = (status: string) =>
   `<!-- [<[task-yaml]]\nkind: external-tracker-task\nstatus: ${status}\ntask: ""\ntracker: T-1\npriority: ""\nassignee: Иванов\n[[task-yaml]>] -->\n# T-1`;
@@ -77,7 +81,7 @@ describe("harnessTasksStore", () => {
 
   it("ensureTasks: кандидаты реестра + подробности из файлов; без task-yaml и не-задачи исключаются", async () => {
     mockFiles({
-      [MANIFEST_PATH]: MANIFEST,
+      [YAML_PATH]: HARNESS_YAML,
       [T1]: envelope("Выполнена"),
       [T2]: "просто документ без конверта",
       [PLAN]: envelope("open"),
@@ -89,18 +93,19 @@ describe("harnessTasksStore", () => {
     // тип plan отфильтрован словарём (types: [tracker]), T-2 — без конверта
     expect(root.rows).toHaveLength(1);
     expect(root.rows[0].ref.path).toBe("docs/11_tracker/T-1.md");
-    // статус из файла приведён к канону словаря манифеста
+    // статус из файла приведён к канону словаря harness.yaml
     expect(root.rows[0].statusCanonical).toBe("done");
     expect(root.vocab.statuses).toHaveLength(1);
   });
 
-  it("ensureTasks: манифеста нет — встроенный дефолт", async () => {
+  it("ensureTasks: секции vocabularies нет в harness.yaml — встроенный дефолт", async () => {
     mockFiles({
+      [YAML_PATH]: "{project: {id: lm_hrdo_2}}", // якорь есть, словаря нет
       [INDEX_PATH]: JSONL,
       [T1]: envelope("done"),
     });
-    // манифеста нет — словарь дефолтный (types: tracker+backlog), но задачи
-    // из реестра видны: дашборд сам тянет реестр
+    // словарь дефолтный (types: tracker+backlog), но задачи из реестра видны:
+    // дашборд сам тянет реестр (T3c HY-3: дефолт при отсутствии секции)
     useHarnessStore.setState({indexes: {}, version: 0});
     await useHarnessTasksStore.getState().ensureTasks(REPO);
     const root = useHarnessTasksStore.getState().roots[ROOT_KEY];
@@ -114,7 +119,7 @@ describe("harnessTasksStore", () => {
     useHarnessStore.setState({indexes: {}, version: 0});
     mockFiles({
       [INDEX_PATH]: JSONL,
-      [MANIFEST_PATH]: MANIFEST,
+      [YAML_PATH]: HARNESS_YAML,
       [T1]: envelope("done"),
       [T2]: envelope("open"),
     });

@@ -14,7 +14,7 @@
  */
 
 import {readFile, writeFile} from "../hooks/useTauriFS";
-import {findHarnessIndex} from "./harnessIndex";
+import {defaultReadProbe, findHarnessRoot} from "./harnessIndex";
 import type {EntityType} from "./agent/masking/types";
 import {collectMarkedEntities, parseEntityLinks} from "./agent/masking/vasEntityMarkup";
 
@@ -140,17 +140,17 @@ function joinPath(dir: string, name: string): string {
 }
 
 /**
- * Индекс сущностей для каталога: harness-репо — подъёмом до
- * `harness_docs/harness_index/entities.jsonl` (как documents.jsonl), обычная
- * папка — файл рядом с workspace (каталогом). Кэш в памяти на путь.
+ * Индекс сущностей для каталога: harness-репо — по якорю `harness.yaml`
+ * (HY-1) → `harness_docs/harness_index/entities.jsonl`, обычная папка — файл
+ * рядом с workspace (каталогом). Кэш в памяти на путь.
  */
 export async function ensureEntitiesIndex(dir: string): Promise<EntitiesIndexFile> {
   const key = normalizeDir(dir);
   const cached = cache.get(key);
   if (cached) return cached;
 
-  const harness = await findHarnessIndex(key);
-  const path = harness ? joinPath(harness.repoRoot, HARNESS_ENTITIES_REL) : joinPath(key, ENTITIES_FILE_NAME);
+  const root = await findHarnessRoot(key, defaultReadProbe);
+  const path = root != null ? joinPath(root, HARNESS_ENTITIES_REL) : joinPath(key, ENTITIES_FILE_NAME);
   let entries: EntityIndexEntry[] = [];
   try {
     const text = await readFile(path);

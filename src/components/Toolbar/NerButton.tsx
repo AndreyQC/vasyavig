@@ -11,6 +11,7 @@ import {buildVasEntityHref} from "../../lib/agent/masking/vasEntityLink";
 import {generateUlid} from "../../lib/agent/masking/ulid";
 import type {EntityType} from "../../lib/agent/masking/types";
 import {ensureEntitiesIndex, matchEntityEntry, type EntityIndexEntry} from "../../lib/entitiesIndex";
+import {customTypeLabel, ensureEntityTypes} from "../../lib/entityTypes";
 
 /**
  * Кнопка «NER» в тулбаре markdown-вкладок (T2 + T3; план 20261105_001,
@@ -22,14 +23,16 @@ import {ensureEntitiesIndex, matchEntityEntry, type EntityIndexEntry} from "../.
  * (паттерн restoreUrls), работают в обоих режимах.
  */
 export function NerButton({path}: {path: string}) {
-  const {t} = useTranslation();
+  const {t, i18n} = useTranslation();
   const content = useEditorStore((s) => s.tabs.find((tab) => tab.path === path)?.content ?? "");
   const spans = useNerSpans(path, content);
   const [indexEntries, setIndexEntries] = useState<EntityIndexEntry[]>([]);
 
   useEffect(() => {
     let alive = true;
-    void ensureEntitiesIndex(getParentDir(path)).then((file) => {
+    const dir = getParentDir(path);
+    void ensureEntityTypes(dir); // справочник для подписей типов (HY-5)
+    void ensureEntitiesIndex(dir).then((file) => {
       if (alive) setIndexEntries(file.entries);
     });
     return () => {
@@ -66,11 +69,15 @@ export function NerButton({path}: {path: string}) {
     editor.replace(text);
   };
 
-  const markSuggestion = (span: {start: number; end: number; value: string; type: EntityType}, known: EntityIndexEntry | null) => {
-    const type = known != null ? known.type.toUpperCase() as EntityType : span.type;
+  const markSuggestion = (
+    span: {start: number; end: number; value: string; type: EntityType},
+    known: EntityIndexEntry | null,
+  ) => {
+    // HY-5: токен типа — из известной записи (идентичность важнее догадки NER)
+    const token = known?.type ?? span.type.toLowerCase();
     const ulid = known?.ulid ?? generateUlid();
     applyEdits([
-      {start: span.start, end: span.end, insert: `[${span.value}](${buildVasEntityHref(type, ulid)})`},
+      {start: span.start, end: span.end, insert: `[${span.value}](${buildVasEntityHref(token, ulid)})`},
     ]);
   };
 
@@ -80,7 +87,7 @@ export function NerButton({path}: {path: string}) {
       .map(({span, known}) => ({
         start: span.start,
         end: span.end,
-        insert: `[${span.value}](${buildVasEntityHref((known as EntityIndexEntry).type.toUpperCase() as EntityType, (known as EntityIndexEntry).ulid)})`,
+        insert: `[${span.value}](${buildVasEntityHref((known as EntityIndexEntry).type, (known as EntityIndexEntry).ulid)})`,
       }));
     applyEdits(edits);
   };
@@ -92,6 +99,10 @@ export function NerButton({path}: {path: string}) {
   };
 
   const markedCount = markedSpans.length;
+
+  /** Подпись типа: кастом — из harness.yaml, системный — i18n (HY-5). */
+  const typeLabel = (token: string): string =>
+    customTypeLabel(token, i18n.language) ?? t(`assistant.entityType.${token}`);
 
   return (
     <Tooltip content={t("tools.nerTooltip")}>
@@ -120,8 +131,8 @@ export function NerButton({path}: {path: string}) {
                           className="ner-panel__item"
                           onClick={() => goTo(span.start)}
                         >
-                          <span className={`ner-panel__type ner-panel__type--${span.type.toLowerCase()}`}>
-                            {t(`assistant.entityType.${span.type.toLowerCase()}`)}
+                          <span className={`ner-panel__type ner-panel__type--${span.type}`}>
+                            {typeLabel(span.type)}
                           </span>
                           <span className="ner-panel__value">{span.value}</span>
                           <span className="ner-panel__line">{t("ner.line", {line: lineOfOffset(content, span.start) + 1})}</span>
@@ -161,7 +172,7 @@ export function NerButton({path}: {path: string}) {
                           onClick={() => goTo(span.start)}
                         >
                           <span className={`ner-panel__type ner-panel__type--${span.type.toLowerCase()}`}>
-                            {t(`assistant.entityType.${span.type.toLowerCase()}`)}
+                            {typeLabel(span.type.toLowerCase())}
                           </span>
                           <span className="ner-panel__value">{span.value}</span>
                           {known != null && known.canonical !== span.value && (

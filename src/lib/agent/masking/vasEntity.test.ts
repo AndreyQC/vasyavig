@@ -4,7 +4,7 @@
  * маскирования (постоянные ULID, склонения, canonical).
  */
 
-import {describe, expect, it} from "vitest";
+import {beforeEach, describe, expect, it} from "vitest";
 import {buildVasEntityHref, parseVasEntityHref} from "./vasEntityLink";
 import {
   collectMarkedEntities,
@@ -21,15 +21,18 @@ import {
   serializeEntitiesJsonl,
   type EntityIndexEntry,
 } from "../../entitiesIndex";
+import {resetEntityTypes, systemTypeOfToken} from "../../entityTypes";
 
 /** Правдоподобные ULID (окно таймстемпа ≥ 2020). */
 const P_ULID = "01JBBCCCCDDDDDDDDDDDDDDDDD";
 const O_ULID = "01JHKMMMMMMMMMMMMMMMMMMMMM";
 
+beforeEach(resetEntityTypes);
+
 describe("vasEntityLink: parse/build", () => {
-  it("разбирает валидный href и собирает обратно", () => {
+  it("разбирает валидный href и собирает обратно (токен lowercase, HY-5)", () => {
     expect(parseVasEntityHref(`vas-entity:person:${P_ULID}`)).toEqual({
-      type: "PERSON",
+      type: "person",
       ulid: P_ULID,
     });
     expect(buildVasEntityHref("PERSON", P_ULID.toLowerCase())).toBe(
@@ -55,7 +58,7 @@ describe("vasEntityMarkup: parseEntityLinks", () => {
     const first = spans[0] as EntityLinkSpan;
     expect(md.slice(first.start, first.end)).toBe(`[Иванову И. И.](vas-entity:person:${P_ULID})`);
     expect(first.value).toBe("Иванову И. И.");
-    expect(first.type).toBe("PERSON");
+    expect(first.type).toBe("person");
     expect(first.ulid).toBe(P_ULID);
   });
 
@@ -85,11 +88,11 @@ describe("vasEntityMarkup: parseEntityLinks", () => {
         `[Иванов И.](vas-entity:org:${P_ULID})`,
     );
     const {records, typeConflicts} = collectMarkedEntities(spans);
-    const person = records.find((r) => r.type === "PERSON");
+    const person = records.find((r) => r.type === "person");
     expect(person?.canonical).toBe("Иванову И. И.");
     // формы собираются по ULID: конфликтный org-вариант того же ULID тоже в формах
     expect(person?.forms).toEqual(["Иванов И.", "Иванов Иван Иваныч", "Иванову И. И."]);
-    expect(typeConflicts).toEqual([{ulid: P_ULID, types: ["PERSON", "ORG"]}]);
+    expect(typeConflicts).toEqual([{ulid: P_ULID, types: ["person", "org"]}]);
   });
 });
 
@@ -146,7 +149,10 @@ describe("mask/registry: разметка и постоянные ULID (T3-5)", 
   it("размеченное — постоянный алиас из href; склонения дают один алиас", () => {
     const registry = new RunRegistry(MARKED);
     const spans = parseEntityLinks(MARKED);
-    for (const span of spans) registry.registerExisting(span.ulid, span.type, span.value);
+    for (const span of spans) {
+      const systemType = systemTypeOfToken(span.type);
+      if (systemType != null) registry.registerExisting(span.ulid, systemType, span.value);
+    }
     const result = maskText(MARKED, registry, [], spans);
     const aliases = result.text.match(/\[\[VAS_PERSON_[0-9A-HJKMNP-TV-Z]{26}\]\]/g) ?? [];
     expect(new Set(aliases).size).toBe(1);
@@ -160,7 +166,10 @@ describe("mask/registry: разметка и постоянные ULID (T3-5)", 
   it("unmask подставляет canonical (первая форма)", () => {
     const registry = new RunRegistry(MARKED);
     const spans = parseEntityLinks(MARKED);
-    for (const span of spans) registry.registerExisting(span.ulid, span.type, span.value);
+    for (const span of spans) {
+      const systemType = systemTypeOfToken(span.type);
+      if (systemType != null) registry.registerExisting(span.ulid, systemType, span.value);
+    }
     const masked = maskText(MARKED, registry, [], spans);
     const restored = unmaskText(masked.text, registry);
     expect(restored.unknown).toEqual([]);
@@ -184,7 +193,10 @@ describe("mask/registry: разметка и постоянные ULID (T3-5)", 
     const DOC = `связь [ivanov@example.com](vas-entity:email:${P_ULID}) по делу`;
     const registry = new RunRegistry(DOC);
     const spans = parseEntityLinks(DOC);
-    for (const span of spans) registry.registerExisting(span.ulid, span.type, span.value);
+    for (const span of spans) {
+      const systemType = systemTypeOfToken(span.type);
+      if (systemType != null) registry.registerExisting(span.ulid, systemType, span.value);
+    }
     const result = maskText(DOC, registry, ["email"], spans);
     expect(result.text).toContain(`[[VAS_EMAIL_${P_ULID}]]`);
     expect(result.text).not.toContain("example.com");

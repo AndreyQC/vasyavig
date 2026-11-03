@@ -6,7 +6,6 @@
  * ULID может покрывать разные грамматические формы (склонения, T3-2).
  */
 
-import type {EntityType} from "./types";
 import {parseVasEntityHref} from "./vasEntityLink";
 
 export interface EntityLinkSpan {
@@ -15,7 +14,8 @@ export interface EntityLinkSpan {
   /** Конец `)` включительно. */
   end: number;
   ulid: string;
-  type: EntityType;
+  /** lowercase-токен типа: системный или кастомный (T3c, HY-5). */
+  type: string;
   /** Текст ссылки как в документе — может быть склонением канонической формы. */
   value: string;
 }
@@ -68,7 +68,8 @@ export function parseEntityLinks(markdown: string): EntityLinkSpan[] {
 /** Запись сущности из разметки: каноническая форма + все формы (T3-2/T3-3). */
 export interface MarkedEntityRecord {
   ulid: string;
-  type: EntityType;
+  /** lowercase-токен типа (системный или кастомный). */
+  type: string;
   /** Первое вхождение в порядке документа — детерминированная каноническая форма. */
   canonical: string;
   /** Уникальные тексты ссылок (склонения), sorted. */
@@ -78,13 +79,13 @@ export interface MarkedEntityRecord {
 export interface MarkedEntitiesResult {
   records: MarkedEntityRecord[];
   /** Один ULID с разными type в href — не блокирует, флаг для панели (T3b). */
-  typeConflicts: Array<{ulid: string; types: EntityType[]}>;
+  typeConflicts: Array<{ulid: string; types: string[]}>;
 }
 
 /** Свести спаны в записи по ULID: canonical = первое вхождение (T3-2). */
 export function collectMarkedEntities(spans: readonly EntityLinkSpan[]): MarkedEntitiesResult {
   const order: string[] = [];
-  const byUlid = new Map<string, {type: EntityType; types: Set<EntityType>; canonical: string; forms: Set<string>}>();
+  const byUlid = new Map<string, {type: string; types: Set<string>; canonical: string; forms: Set<string>}>();
   for (const span of spans) {
     let entry = byUlid.get(span.ulid);
     if (!entry) {

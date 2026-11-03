@@ -8,6 +8,7 @@
  * Резолвинг — полный ULID или уникальный префикс (как `make doc-find`).
  */
 
+import {parseDocument} from "yaml";
 import {readFile} from "../hooks/useTauriFS";
 import {findUlidMatches} from "./harnessEnvelope";
 
@@ -27,12 +28,12 @@ export interface HarnessIndexEntry {
 export const HARNESS_INDEX_REL = "harness_docs/harness_index/documents.jsonl";
 
 /**
- * Манифест harness-репозитория («визитная карточка», план 20261027_005 §3) —
- * в корне репо. Пока манифест не обязателен: репо распознаётся реестром ИЛИ
- * манифестом (см. isHarnessRepoDir); словари дашборда задач читаются из
- * манифеста. snake_case — конвенция имён файлов репозиториев.
+ * Единственный якорь harness-репозитория (T3c, план 20261105_002, HY-1):
+ * `harness.yaml` в корне репо — per-repo конфигурация харнеса. Манифест
+ * `harness_manifest.json` больше не читается (HY-2); `documents.jsonl` —
+ * внутренность репо (реестр документов), не признак.
  */
-export const HARNESS_MANIFEST_REL = "harness_manifest.json";
+export const HARNESS_YAML_REL = "harness.yaml";
 
 /** Парсинг JSONL: пустые и битые строки пропускаются (реестр не должен ронять просмотр). */
 export function parseDocumentsJsonl(text: string): HarnessIndexEntry[] {
@@ -122,25 +123,40 @@ export const defaultReadProbe: ReadProbe = async (candidate) => {
 };
 
 export interface FoundHarnessIndex {
-  /** Корень репозитория harness (каталог, содержащий `harness_docs`). */
+  /** Корень репозитория harness (каталог с `harness.yaml`). */
   repoRoot: string;
   content: string;
 }
 
 /**
- * Поиск реестра подъёмом от каталога: первый найденный
- * `<предок>/harness_docs/harness_index/documents.jsonl` выигрывает (ближайший репозиторий).
+ * Корень harness-репо подъёмом от каталога: ближайший предок с валидным
+ * `harness.yaml` (HY-1). null — якоря нет.
+ */
+export async function findHarnessRoot(
+  dir: string,
+  probe: ReadProbe = defaultReadProbe,
+): Promise<string | null> {
+  for (const ancestor of ancestorDirs(dir)) {
+    const text = await probe(`${ancestor}/${HARNESS_YAML_REL}`);
+    if (text != null && isHarnessYamlShape(text)) return ancestor;
+  }
+  return null;
+}
+
+/**
+ * Поиск реестра: якорь `harness.yaml` (ближайший предок) + реестр
+ * `harness_docs/harness_index/documents.jsonl` под ним. Репо с якорем, но
+ * без реестра → null (репо распознан, ULID-функции отключены).
  */
 export async function findHarnessIndex(
   dir: string,
   probe: ReadProbe = defaultReadProbe,
 ): Promise<FoundHarnessIndex | null> {
-  for (const ancestor of ancestorDirs(dir)) {
-    const candidate = `${ancestor}/${HARNESS_INDEX_REL}`;
-    const content = await probe(candidate);
-    if (content != null) return {repoRoot: ancestor, content};
-  }
-  return null;
+  const root = await findHarnessRoot(dir, probe);
+  if (root == null) return null;
+  const content = await probe(`${root}/${HARNESS_INDEX_REL}`);
+  if (content == null) return null;
+  return {repoRoot: root, content};
 }
 
 /** Нормализованный путь реестра по корню репо (для инвалидации по watcher-событию). */
@@ -149,40 +165,39 @@ export function harnessIndexPath(repoRoot: string): string {
 }
 
 /**
- * Единый предикат «каталог является harness-репо» (план 20261027_005, D8):
- * распознаём по реестру ИЛИ манифесту. Когда манифест станет обязательным
- * в harness-репо, предикат переносится на него в этой одной точке —
- * потребители (флаг корня, дашборд) не меняются.
+ * Единый предикат «каталог является harness-репо» (HY-1): только валидный
+ * `harness.yaml` в этом каталоге. Потребители (флаг корня, дашборд) не меняются.
  */
 export async function isHarnessRepoDir(
   dir: string,
   probe: ReadProbe = defaultReadProbe,
 ): Promise<boolean> {
   const root = dir.replace(/\\/g, "/").replace(/\/+$/, "");
-  const manifest = await probe(`${root}/${HARNESS_MANIFEST_REL}`);
-  if (manifest != null && isManifestShape(manifest)) return true;
-  return (await probe(`${root}/${HARNESS_INDEX_REL}`)) != null;
+  const text = await probe(`${root}/${HARNESS_YAML_REL}`);
+  return text != null && isHarnessYamlShape(text);
 }
 
-/** Манифест-«визитная карточка» — читаемый JSON-объект; битый манифест не маркер. */
-function isManifestShape(text: string): boolean {
+/** Якорь — читаемый YAML-объект; битый/пустой harness.yaml не маркер. */
+export function isHarnessYamlShape(text: string): boolean {
   try {
-    const raw: unknown = JSON.parse(text);
-    return typeof raw === "object" && raw !== null;
+    const doc = parseDocument(text);
+    if (doc.errors.length > 0) return false;
+    const value = doc.toJS();
+    return typeof value === "object" && value !== null && !Array.isArray(value);
   } catch {
     return false;
   }
 }
 
 /**
- * Поддерево содержит harness-репо: узел дерева — реестр или манифест
- * (файл `harness_docs`-системы). Для пометки корня-родителя, содержащего репо
- * (план 20261027_005, D9b), без новых чтений диска.
+ * Поддерево содержит harness-репо: узел дерева — якорь `harness.yaml`
+ * (план 20261027_005, D9b; HY-1). Для пометки корня-родителя, содержащего
+ * репо, без новых чтений диска.
  */
 export function treeContainsHarnessRepo(nodes: readonly FileNodeLike[]): boolean {
   for (const node of nodes) {
     const p = node.path.replace(/\\/g, "/").toLowerCase();
-    if (p.endsWith(`/${HARNESS_MANIFEST_REL}`) || p.endsWith(`/${HARNESS_INDEX_REL}`)) return true;
+    if (p.endsWith(`/${HARNESS_YAML_REL}`)) return true;
     if (node.children && treeContainsHarnessRepo(node.children)) return true;
   }
   return false;
@@ -195,14 +210,13 @@ export interface FileNodeLike {
 }
 
 /**
- * Корни harness-репозиториев внутри уже загруженного дерева: по найденному
- * реестру `harness_docs/harness_index/documents.jsonl` восстанавливается корень репо
- * (каталог над `harness_docs`). Нужно, когда в workspace добавлен родительский
+ * Корни harness-репозиториев внутри уже загруженного дерева: по якорю
+ * `harness.yaml` (HY-1). Нужно, когда в workspace добавлен родительский
  * каталог, а сам репозиторий лежит во вложенной папке.
  */
 export function collectHarnessRepoRoots(nodes: readonly FileNodeLike[]): string[] {
   const out: string[] = [];
-  const suffix = `/${HARNESS_INDEX_REL}`;
+  const suffix = `/${HARNESS_YAML_REL}`;
   const walk = (list: readonly FileNodeLike[]) => {
     for (const node of list) {
       const p = node.path.replace(/\\/g, "/");

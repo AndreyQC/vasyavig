@@ -31,15 +31,21 @@ const {readFile} = await import("../hooks/useTauriFS");
 const ULID_A = "01M43R3ZGSNXQ0KSMZ9JSZEZ5W";
 const REPO = "C:/repos/lm_hrdo_2";
 const INDEX_PATH = `${REPO}/${HARNESS_INDEX_REL}`;
+const YAML_PATH = `${REPO}/harness.yaml`;
 const JSONL = `${JSON.stringify({ulid: ULID_A, path: "harness_docs/harness_tasks/a_plan.md", title: "План А", type: "plan"})}\n`;
 
 const initialHarness = useHarnessStore.getState();
 const initialFile = useFileStore.getState();
 
-/** readFile отдаёт содержимое только для пути индекса репозитория REPO. */
+/**
+ * readFile отдаёт якорь harness.yaml и реестр репозитория REPO (T3c HY-1:
+ * распознавание по якорю; реестр — только под якорем).
+ */
 function mockIndexReader() {
   (readFile as ReturnType<typeof vi.fn>).mockImplementation(async (path: string) => {
-    if (path.replace(/\\/g, "/").toLowerCase() === INDEX_PATH.toLowerCase()) return JSONL;
+    const norm = path.replace(/\\/g, "/").toLowerCase();
+    if (norm === YAML_PATH.toLowerCase()) return "project:\n  id: lm_hrdo_2\n";
+    if (norm === INDEX_PATH.toLowerCase()) return JSONL;
     throw new Error("not found");
   });
 }

@@ -9,7 +9,6 @@ import {RangeSetBuilder, type Extension as CM6Extension} from "@codemirror/state
 import {Decoration, EditorView, ViewPlugin, type DecorationSet, type ViewUpdate} from "@codemirror/view";
 import {parseEntityLinks} from "./agent/masking/vasEntityMarkup";
 import {buildVasEntityHref, parseVasEntityHref} from "./agent/masking/vasEntityLink";
-import type {EntityType} from "./agent/masking/types";
 
 const cmViews = new Map<string, EditorView>();
 
@@ -71,7 +70,7 @@ export function vasEntityMarkupExtension(path: string): CM6Extension[] {
  * Пометить текущее выделение Markup как сущность (D11). false — нет view,
  * пустое выделение или пересечение со ссылкой-сущностью/обычной ссылкой.
  */
-export function markCmSelectionAsEntity(path: string, type: EntityType, ulid: string): boolean {
+export function markCmSelectionAsEntity(path: string, type: string, ulid: string): boolean {
   const view = cmViews.get(path);
   if (!view) return false;
   const sel = view.state.selection.main;
@@ -96,7 +95,7 @@ export function unmarkCmEntityAtDom(path: string, el: HTMLElement): boolean {
   const ulid = el.getAttribute("data-vas-entity");
   const type = el.getAttribute("data-vas-type");
   if (!ulid || !type) return false;
-  if (!parseVasEntityHref(buildVasEntityHref(type.toUpperCase() as EntityType, ulid))) return false;
+  if (!parseVasEntityHref(buildVasEntityHref(type, ulid))) return false;
   let pos: number;
   try {
     pos = view.posAtDOM(el);

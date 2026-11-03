@@ -10,6 +10,7 @@
 import nlp from "ru-compromise";
 import {getMiddlenameGender} from "lvovich";
 import {mergeSpans} from "./detectors";
+import {currentEntityTypes} from "../../entityTypes";
 import type {DetectorSpan, EntityType} from "./types";
 
 /** Кириллические границы: lookaround вместо `\b` (по кириллице он не работает). */
@@ -140,6 +141,11 @@ function compromiseSpans(text: string): DetectorSpan[] {
         continue;
       }
       flushPerson();
+      if (tags.includes("Organization")) {
+        // Доменный словарь (addWords): бренды без юр. формы (HY-5)
+        spans.push({start, end, value: text.slice(start, end), type: "ORG", detector: "ner"});
+        continue;
+      }
       if (tags.includes("City") || tags.includes("Country")) {
         spans.push({start, end, value: text.slice(start, end), type: "LOC", detector: "ner"});
       }
@@ -153,4 +159,27 @@ function compromiseSpans(text: string): DetectorSpan[] {
 export function detectNer(text: string): DetectorSpan[] {
   if (text.trim() === "") return [];
   return mergeSpans([...ruleSpans(text), ...compromiseSpans(text)]);
+}
+
+/** Тег ru-compromise для типа доменного словаря (спайк §6: addWords). */
+const DICTIONARY_TAGS: Readonly<Record<string, string>> = {
+  org: "Organization",
+  person: "Person",
+  loc: "City",
+};
+
+let dictionaryApplied = new Set<string>();
+
+/**
+ * Подключить доменный словарь NER из справочника `harness.yaml` (HY-5):
+ * `Газпром: org` → `nlp.addWords({'Газпром': 'Organization'})`. Идемпотентно
+ * (слово добавляется один раз); вызывается перед NER-прогонами.
+ */
+export function applyDomainDictionary(): void {
+  for (const {word, type} of currentEntityTypes().dictionary) {
+    const tag = DICTIONARY_TAGS[type];
+    if (tag == null || dictionaryApplied.has(word)) continue;
+    nlp.addWords({[word]: tag});
+    dictionaryApplied.add(word);
+  }
 }
