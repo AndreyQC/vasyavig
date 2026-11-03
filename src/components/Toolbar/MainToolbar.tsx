@@ -8,6 +8,7 @@ import {isConfigFileName} from "../../lib/agent/config";
 import {ModeSwitcher} from "./ModeSwitcher";
 import {HarnessLinksButton} from "./HarnessLinksButton";
 import {NerButton} from "./NerButton";
+import {EntityMarkButton} from "./EntityMarkButton";
 
 interface Props {
   path: string;
@@ -50,6 +51,7 @@ export function MainToolbar({path}: Props) {
             </Tooltip>
             <HarnessLinksButton path={path} />
             <NerButton path={path} />
+            <EntityMarkButton path={path} />
             <Tooltip content={t("tools.mermaidTooltip")}>
               <span>
                 <Button view="flat" onClick={insertMermaid}>

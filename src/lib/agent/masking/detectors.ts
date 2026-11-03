@@ -127,11 +127,11 @@ export function detectText(text: string, detectors: readonly DetectorId[]): Dete
 }
 
 /** Слияние пересекающихся спанов: сортировка по началу, затем по длине по убыванию. */
-export function mergeSpans(spans: DetectorSpan[]): DetectorSpan[] {
+export function mergeSpans<T extends {start: number; end: number}>(spans: T[]): T[] {
   const sorted = [...spans].sort(
     (a, b) => a.start - b.start || b.end - b.start - (a.end - a.start),
   );
-  const out: DetectorSpan[] = [];
+  const out: T[] = [];
   let lastEnd = -1;
   for (const span of sorted) {
     if (span.start >= lastEnd) {

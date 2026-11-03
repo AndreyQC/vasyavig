@@ -48,8 +48,10 @@ import {
 } from "../lib/agent/recipes/checkDocument";
 import {buildContextPack} from "../lib/agent/context";
 import {maskText, maskingPromptNote} from "../lib/agent/masking/mask";
-import {RunRegistry} from "../lib/agent/masking/registry";
+import {RunRegistry, type ExistingResolver} from "../lib/agent/masking/registry";
 import type {EntityType} from "../lib/agent/masking/types";
+import {parseEntityLinks} from "../lib/agent/masking/vasEntityMarkup";
+import {ensureEntitiesIndex, matchEntityEntry} from "../lib/entitiesIndex";
 import {missingAliasIds, scanUnknownAliases, unmaskText} from "../lib/agent/masking/unmask";
 import {cancelChatRun, runChat, type ChatMessage} from "../lib/agent/provider";
 import {executeTool, type ToolCallResult} from "../lib/agent/tools";
@@ -480,7 +482,7 @@ export const useAgentStore = create<AgentState>((set, get) => {
    * вместо секретов, unmask — в вердиктах; таблица соответствий — только в
    * памяти (D8), в audit — счётчики (R2).
    */
-  const prepareModelStage = (
+  const prepareModelStage = async (
     check: CheckDocumentResult,
     tab: {path: string; name: string; content: string},
     docId: string,
@@ -489,7 +491,7 @@ export const useAgentStore = create<AgentState>((set, get) => {
     const config = useConfigStore.getState();
     const model = config.models[config.selectedModel];
     // Модель не настроена — модельной стадии нет (как и до T1b).
-    if (!model) return Promise.resolve();
+    if (!model) return;
 
     try {
       const maskingSettings = config.config.app.assistant.masking;
@@ -512,11 +514,32 @@ export const useAgentStore = create<AgentState>((set, get) => {
           : null;
       let maskingNote: string | undefined;
       if (maskingOn) {
-        registry = new RunRegistry(tab.content);
-        const maskDoc = maskText(tab.content, registry, maskingSettings.detectors);
+        // T3 (план 20261105_001, T3-5): разметка `vas-entity:` даёт постоянные
+        // ULID; значения без разметки сверяются со словарём identities
+        // (entities.jsonl) — известное получает тот же ULID (связность между
+        // документами), новое — per-run (R3).
+        const entitySpans = parseEntityLinks(tab.content);
+        let resolver: ExistingResolver | undefined;
+        try {
+          const index = await ensureEntitiesIndex(getParentDir(tab.path));
+          resolver = (value, type) => matchEntityEntry(index.entries, value, type)?.ulid ?? null;
+        } catch {
+          resolver = undefined; // индекс недоступен — только per-run ULID
+        }
+        registry = new RunRegistry(tab.content, resolver);
+        for (const span of entitySpans) {
+          registry.registerExisting(span.ulid, span.type, span.value);
+        }
+        const maskDoc = maskText(tab.content, registry, maskingSettings.detectors, entitySpans);
         content = maskDoc.text;
         if (selectionInput) {
-          const maskSelection = maskText(selectionInput.text, registry, maskingSettings.detectors);
+          const selSpans = parseEntityLinks(selectionInput.text);
+          const maskSelection = maskText(
+            selectionInput.text,
+            registry,
+            maskingSettings.detectors,
+            selSpans,
+          );
           selectionInput = {...selectionInput, text: maskSelection.text};
         }
         maskingNote = maskingPromptNote(registry) || undefined;
@@ -583,7 +606,7 @@ export const useAgentStore = create<AgentState>((set, get) => {
           },
           modelNotice: null,
         });
-        return Promise.resolve();
+        return;
       }
 
       return sendModelStage(pending, "none");

@@ -1,37 +1,97 @@
-import {useMemo} from "react";
+import {useEffect, useMemo, useState} from "react";
 import {Button, Icon, Popover, Tooltip} from "@gravity-ui/uikit";
 import {PersonMagnifier} from "@gravity-ui/icons";
 import {useTranslation} from "react-i18next";
 import {useEditorStore} from "../../store/editorStore";
 import {getEditor} from "../../lib/editorRegistry";
+import {getParentDir} from "../../lib/utils";
 import {lineOfOffset, useNerSpans} from "../../hooks/useNerSpans";
+import {parseEntityLinks} from "../../lib/agent/masking/vasEntityMarkup";
+import {buildVasEntityHref} from "../../lib/agent/masking/vasEntityLink";
+import {generateUlid} from "../../lib/agent/masking/ulid";
+import type {EntityType} from "../../lib/agent/masking/types";
+import {ensureEntitiesIndex, matchEntityEntry, type EntityIndexEntry} from "../../lib/entitiesIndex";
 
 /**
- * Кнопка «NER» в тулбаре markdown-вкладок (Phase 8.5, T2; требование
- * пользователя 2026-11-04): общее количество найденных NER-сущностей на
- * кнопке, дропдаун со списком вхождений (тип · значение · строка), клик —
- * переход к вхождению в документе. Только навигация: скан локальный, ничего
- * не отправляется; маскирование при отправке — отдельный контур (превью T1b).
+ * Кнопка «NER» в тулбаре markdown-вкладок (T2 + T3; план 20261105_001,
+ * T3-10): дропдаун с двумя секциями. «Размечено» — чип-ссылки `vas-entity:`
+ * из документа (кнопка «Снять»); «Предложения» — NER-спаны вне разметки:
+ * известные словарю identities сущности помечены бейджем эталона и
+ * размечаются существующим ULID, новые — свежим ULID. «Разметить все
+ * известные» — одним bulk-редактом. Правки — через editor.replace()
+ * (паттерн restoreUrls), работают в обоих режимах.
  */
 export function NerButton({path}: {path: string}) {
   const {t} = useTranslation();
   const content = useEditorStore((s) => s.tabs.find((tab) => tab.path === path)?.content ?? "");
   const spans = useNerSpans(path, content);
+  const [indexEntries, setIndexEntries] = useState<EntityIndexEntry[]>([]);
 
-  const items = useMemo(
+  useEffect(() => {
+    let alive = true;
+    void ensureEntitiesIndex(getParentDir(path)).then((file) => {
+      if (alive) setIndexEntries(file.entries);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [path]);
+
+  const markedSpans = useMemo(() => parseEntityLinks(content), [content]);
+
+  /** Предложения: NER-спаны, не накрытые существующей разметкой. */
+  const suggestions = useMemo(
     () =>
-      spans.map((span) => ({
-        ...span,
-        line: lineOfOffset(content, span.start) + 1, // 1-based для отображения
-      })),
-    [spans, content],
+      spans.filter(
+        (span) =>
+          !markedSpans.some((marked) => span.start < marked.end && marked.start < span.end),
+      ),
+    [spans, markedSpans],
   );
+
+  const knownSuggestions = useMemo(
+    () => suggestions.map((span) => ({span, known: matchEntityEntry(indexEntries, span.value)})),
+    [suggestions, indexEntries],
+  );
+  const knownCount = knownSuggestions.filter((item) => item.known != null).length;
+
+  /** Пакет raw-правок в контент вкладки через editor.replace(). */
+  const applyEdits = (edits: Array<{start: number; end: number; insert: string}>) => {
+    const editor = getEditor(path);
+    if (!editor || edits.length === 0) return;
+    let text = content;
+    for (const edit of [...edits].sort((a, b) => b.start - a.start)) {
+      text = text.slice(0, edit.start) + edit.insert + text.slice(edit.end);
+    }
+    editor.replace(text);
+  };
+
+  const markSuggestion = (span: {start: number; end: number; value: string; type: EntityType}, known: EntityIndexEntry | null) => {
+    const type = known != null ? known.type.toUpperCase() as EntityType : span.type;
+    const ulid = known?.ulid ?? generateUlid();
+    applyEdits([
+      {start: span.start, end: span.end, insert: `[${span.value}](${buildVasEntityHref(type, ulid)})`},
+    ]);
+  };
+
+  const markAllKnown = () => {
+    const edits = knownSuggestions
+      .filter((item) => item.known != null)
+      .map(({span, known}) => ({
+        start: span.start,
+        end: span.end,
+        insert: `[${span.value}](${buildVasEntityHref((known as EntityIndexEntry).type.toUpperCase() as EntityType, (known as EntityIndexEntry).ulid)})`,
+      }));
+    applyEdits(edits);
+  };
 
   const goTo = (offset: number) => {
     const editor = getEditor(path);
     if (!editor) return;
     editor.moveCursor({line: lineOfOffset(content, offset)});
   };
+
+  const markedCount = markedSpans.length;
 
   return (
     <Tooltip content={t("tools.nerTooltip")}>
@@ -43,25 +103,82 @@ export function NerButton({path}: {path: string}) {
           content={
             <div className="ner-panel">
               <div className="ner-panel__title">{t("ner.title")}</div>
-              {items.length === 0 ? (
-                <div className="ner-panel__empty">{t("ner.empty")}</div>
-              ) : (
-                <div className="ner-panel__list">
-                  {items.map((item, index) => (
-                    <button
-                      type="button"
-                      key={`${item.start}-${index}`}
-                      className="ner-panel__item"
-                      onClick={() => goTo(item.start)}
-                    >
-                      <span className={`ner-panel__type ner-panel__type--${item.type.toLowerCase()}`}>
-                        {t(`assistant.entityType.${item.type.toLowerCase()}`)}
-                      </span>
-                      <span className="ner-panel__value">{item.value}</span>
-                      <span className="ner-panel__line">{t("ner.line", {line: item.line})}</span>
-                    </button>
-                  ))}
+
+              {markedCount > 0 && (
+                <div className="ner-panel__section">
+                  <div className="ner-panel__section-title">
+                    {t("entity.markedSection")} · {markedCount}
+                  </div>
+                  <div className="ner-panel__list">
+                    {markedSpans.map((span, index) => (
+                      <div
+                        key={`${span.start}-${index}`}
+                        className="ner-panel__row"
+                      >
+                        <button
+                          type="button"
+                          className="ner-panel__item"
+                          onClick={() => goTo(span.start)}
+                        >
+                          <span className={`ner-panel__type ner-panel__type--${span.type.toLowerCase()}`}>
+                            {t(`assistant.entityType.${span.type.toLowerCase()}`)}
+                          </span>
+                          <span className="ner-panel__value">{span.value}</span>
+                          <span className="ner-panel__line">{t("ner.line", {line: lineOfOffset(content, span.start) + 1})}</span>
+                        </button>
+                        <Button
+                          size="xs"
+                          view="flat"
+                          onClick={() => applyEdits([{start: span.start, end: span.end, insert: span.value}])}
+                        >
+                          {t("entity.unmark")}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
+              )}
+
+              {knownSuggestions.length > 0 ? (
+                <div className="ner-panel__section">
+                  <div className="ner-panel__section-title">
+                    {t("entity.suggestionsSection")} · {knownSuggestions.length}
+                    {knownCount > 0 && (
+                      <Button size="xs" view="flat" onClick={markAllKnown}>
+                        {t("entity.markAllKnown")}
+                      </Button>
+                    )}
+                  </div>
+                  <div className="ner-panel__list">
+                    {knownSuggestions.map(({span, known}, index) => (
+                      <div
+                        key={`${span.start}-${index}`}
+                        className="ner-panel__row"
+                      >
+                        <button
+                          type="button"
+                          className="ner-panel__item"
+                          onClick={() => goTo(span.start)}
+                        >
+                          <span className={`ner-panel__type ner-panel__type--${span.type.toLowerCase()}`}>
+                            {t(`assistant.entityType.${span.type.toLowerCase()}`)}
+                          </span>
+                          <span className="ner-panel__value">{span.value}</span>
+                          {known != null && known.canonical !== span.value && (
+                            <span className="ner-panel__line">
+                              {t("entity.known")}: {known.canonical}
+                            </span>
+                          )}
+                        </button>
+                        <Button size="xs" view="outlined" onClick={() => markSuggestion(span, known)}>
+                          {t("entity.markAction")}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                markedCount === 0 && <div className="ner-panel__empty">{t("ner.empty")}</div>
               )}
             </div>
           }
@@ -69,7 +186,7 @@ export function NerButton({path}: {path: string}) {
           <Button view="flat">
             <Icon data={PersonMagnifier} />
             {t("tools.ner")}
-            <span className="harness-links-panel__count">{items.length}</span>
+            <span className="harness-links-panel__count">{spans.length + markedCount}</span>
           </Button>
         </Popover>
       </span>

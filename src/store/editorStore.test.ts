@@ -6,6 +6,12 @@ vi.mock("../hooks/useTauriFS", () => ({
   writeFile: vi.fn(async () => {}),
 }));
 
+// T3: инкремент словаря сущностей — отдельный контур (vasEntity.test);
+// здесь изолируем, чтобы не менять счётчик writeFile в кейсах сохранения.
+vi.mock("../lib/entitiesIndex", () => ({
+  updateEntitiesIndexForContent: vi.fn(async () => {}),
+}));
+
 const {writeFile} = await import("../hooks/useTauriFS");
 
 const initialState = useEditorStore.getState();

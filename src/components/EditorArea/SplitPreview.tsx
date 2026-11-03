@@ -6,7 +6,7 @@ import {useThemeValue} from "@gravity-ui/uikit";
 import {resolveImageDisplayUrl} from "../../lib/resolveImageSrc";
 import {parseHarnessEnvelope, stripHiddenEnvelopes} from "../../lib/harnessEnvelope";
 import {linkifyUlidsInElement, type UlidLinkMeta} from "../../lib/harnessIndex";
-import {linkifyUlidLinksInElement, PREVIEW_SAFE_URI_RE, PREVIEW_TRANSFORM_OPTIONS} from "../../lib/previewLinks";
+import {linkifyUlidLinksInElement, linkifyVasEntityLinksInElement, PREVIEW_SAFE_URI_RE, PREVIEW_TRANSFORM_OPTIONS} from "../../lib/previewLinks";
 import {buildEnvelopeLinkChips} from "../../lib/harnessLinks";
 import {HarnessLinkChips} from "../HarnessLinkChips";
 import {openUlidTarget, useHarnessStore} from "../../store/harnessStore";
@@ -77,6 +77,8 @@ export function SplitPreview({content, basePath, rootPath, fileName, fallbackKin
         i18n.t("harness.ulidUnknownTooltip"),
         basePath,
       );
+      // чипы сущностей `vas-entity:` (T3): href снимается, остаётся бейдж-чип
+      linkifyVasEntityLinksInElement(doc.body);
       // ULID-линкификация (D3): один DOM-проход до sanitize, data-атрибуты DOMPurify пропускает
       linkifyUlidsInElement(doc.body, lookup, i18n.t("harness.ulidUnknownTooltip"), basePath);
       return DOMPurify.sanitize(doc.body.innerHTML, {

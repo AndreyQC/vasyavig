@@ -1,6 +1,7 @@
 import {create} from "zustand";
-import {getExtension, getFileName, isMdYfmSwap, remapPath, type FileKind} from "../lib/utils";
+import {getExtension, getFileName, getParentDir, isMdYfmSwap, remapPath, type FileKind} from "../lib/utils";
 import {saveFileDialog, writeFile} from "../hooks/useTauriFS";
+import {updateEntitiesIndexForContent} from "../lib/entitiesIndex";
 import {useUiStore} from "./uiStore";
 import {useSelectionStore} from "./selectionStore";
 
@@ -171,6 +172,11 @@ export const useEditorStore = create<EditorState>((set, get) => {
           t.path === path ? {...t, savedContent: t.content, dirty: false} : t,
         ),
       }));
+      // T3 (план 20261105_001, T3-11): инкремент словаря сущностей разметкой
+      // сохранённого документа; сбой не ломает сохранение (индекс — кэш).
+      if (tab.kind === "markdown") {
+        void updateEntitiesIndexForContent(getParentDir(path), tab.content);
+      }
       return null;
     },
 

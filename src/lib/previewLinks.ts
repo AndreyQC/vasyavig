@@ -9,9 +9,10 @@
 import type transform from "@diplodoc/transform";
 import type {UlidLinkMeta} from "./harnessIndex";
 import {parseUlidHref} from "./harnessUlidLink";
+import {parseVasEntityHref} from "./agent/masking/vasEntityLink";
 
 /** Дефолтные схемы sanitize-html + `asset` (изображения) + `harness-ulid`
- *  (ссылки) + legacy `harness_ulid`/`ulid`. */
+ *  (ссылки) + legacy `harness_ulid`/`ulid` + `vas-entity` (сущности, T3). */
 export const PREVIEW_ALLOWED_SCHEMES = [
   "http",
   "https",
@@ -23,6 +24,7 @@ export const PREVIEW_ALLOWED_SCHEMES = [
   "harness-ulid",
   "harness_ulid",
   "ulid",
+  "vas-entity",
 ];
 
 /** Параметры transform — тип взят у функции; `allowedSchemes` есть в
@@ -34,9 +36,9 @@ export const PREVIEW_TRANSFORM_OPTIONS = {
   sanitizeOptions: {allowedSchemes: PREVIEW_ALLOWED_SCHEMES},
 } as unknown as PreviewTransformOptions;
 
-/** Дефолтный URI-регексп DOMPurify + схемы `asset` и `ulid`. */
+/** Дефолтный URI-регексп DOMPurify + схемы `asset`, `ulid` и `vas-entity`. */
 export const PREVIEW_SAFE_URI_RE =
-  /^(?:(?:(?:f|ht)tps?|asset|harness-ulid|harness_ulid|ulid|mailto|tel|callto|sms|cid|xmpp):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i;
+  /^(?:(?:(?:f|ht)tps?|asset|harness-ulid|harness_ulid|ulid|vas-entity|mailto|tel|callto|sms|cid|xmpp):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i;
 
 /**
  * DOM-проход по ссылкам `harness_ulid:` (и legacy `ulid:`): href снимается
@@ -67,5 +69,24 @@ export function linkifyUlidLinksInElement(
     }
     if (parsed.anchor) link.setAttribute("data-anchor", parsed.anchor);
     if (dir) link.setAttribute("data-ulid-dir", dir);
+  });
+}
+
+/**
+ * DOM-проход по ссылкам `vas-entity:<type>:<ULID>` (T3-8): href снимается
+ * (мёртвая схема не должна уходить в WebView), чип получает класс и
+ * data-атрибуты — как в редакторах, работает и поповер VasEntityPopover.
+ */
+export function linkifyVasEntityLinksInElement(root: ParentNode): void {
+  root.querySelectorAll?.("a[href]").forEach((node) => {
+    const link = node as HTMLAnchorElement;
+    const href = link.getAttribute("href") ?? "";
+    if (!href.toLowerCase().startsWith("vas-entity:")) return;
+    const parsed = parseVasEntityHref(href);
+    if (!parsed) return;
+    link.removeAttribute("href");
+    link.classList.add("vas-entity-link");
+    link.setAttribute("data-vas-entity", parsed.ulid);
+    link.setAttribute("data-vas-type", parsed.type.toLowerCase());
   });
 }

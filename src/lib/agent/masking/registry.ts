@@ -36,15 +36,39 @@ export function choosePrefix(text: string): PrefixCandidate {
   return PREFIX_CANDIDATES[PREFIX_CANDIDATES.length - 1];
 }
 
+/**
+ * Резолвер постоянных сущностей (T3, R3): значение известно индексу
+ * `entities.jsonl` (размечено в другом документе) -> его ULID, иначе null.
+ * Вызывается до генерации per-run ULID; тип обязан совпадать.
+ */
+export type ExistingResolver = (value: string, type: EntityType) => string | null;
+
 export class RunRegistry {
   /** Активный префикс алиасов (выбран по тексту документа, R9). */
   readonly prefix: PrefixCandidate;
 
   private readonly byKey = new Map<string, string>();
   private readonly records = new Map<string, EntityRecord>();
+  private readonly resolveExisting: ExistingResolver | null;
 
-  constructor(text: string) {
+  constructor(text: string, resolveExisting?: ExistingResolver) {
     this.prefix = choosePrefix(text);
+    this.resolveExisting = resolveExisting ?? null;
+  }
+
+  /**
+   * Постоянная сущность с фиксированным ULID — из разметки документа или
+   * индекса (T3, R3). Повторный вызов с тем же ULID возвращает первую запись:
+   * её value — каноническая форма (склонения дают один ULID, T3-2).
+   */
+  registerExisting(ulid: string, type: EntityType, value: string): EntityRecord {
+    const known = this.records.get(ulid);
+    if (known != null) return known;
+    const record: EntityRecord = {ulid, type, value};
+    this.records.set(ulid, record);
+    const key = `${type}\u0000${value}`;
+    if (!this.byKey.has(key)) this.byKey.set(key, ulid);
+    return record;
   }
 
   /** Сущность по значению и типу; повторный вызов возвращает ту же запись. */
@@ -54,6 +78,10 @@ export class RunRegistry {
     if (existing != null) {
       const record = this.records.get(existing);
       if (record != null) return record;
+    }
+    if (this.resolveExisting != null) {
+      const ulid = this.resolveExisting(value, type);
+      if (ulid != null && ulid !== "") return this.registerExisting(ulid, type, value);
     }
     const record: EntityRecord = {ulid: generateUlid(), type, value};
     this.byKey.set(key, record.ulid);

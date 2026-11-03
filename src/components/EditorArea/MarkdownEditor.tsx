@@ -11,6 +11,8 @@ import {imageSrcExtension} from "../../lib/imageSrcExtension";
 import {mermaidWysiwygExtension} from "../../lib/mermaidWysiwygExtension";
 import {harnessUlidExtension} from "../../lib/harnessUlidExtension";
 import {harnessUlidMarkupExtension} from "../../lib/harnessUlidMarkupExtension";
+import {vasEntityExtension} from "../../lib/vasEntityExtension";
+import {vasEntityMarkupExtension} from "../../lib/vasEntityMarkupExtension";
 import {cursorPosExtension, cursorPosMarkupExtension} from "../../lib/cursorPosExtension";
 import {
   selectionMarkupExtension,
@@ -48,6 +50,8 @@ export function MarkdownEditor({path, initialContent}: Props) {
           harnessUlidMarkupExtension(path),
           cursorPosMarkupExtension(),
           selectionMarkupExtension(path),
+          // сущности vas-entity: чипы + команды разметки (T3)
+          vasEntityMarkupExtension(path),
         ],
       },
       wysiwygConfig: {
@@ -68,6 +72,8 @@ export function MarkdownEditor({path, initialContent}: Props) {
           cursorPosExtension(),
           // выделение для get_selection / контекст-чипов (Phase 8.2)
           selectionPmExtension(path),
+          // сущности vas-entity: чипы + команды разметки (T3)
+          vasEntityExtension(path),
         ),
       },
     },

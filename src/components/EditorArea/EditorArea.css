@@ -333,6 +333,125 @@
   color: var(--g-color-text-secondary);
 }
 
+/* Чипы сущностей vas-entity (T3): WYSIWYG-декорации, Markup, превью. */
+.vas-entity-link {
+  padding: 0 3px;
+  border-radius: var(--g-border-radius-s);
+  background: var(--g-color-base-info-light, rgba(51, 130, 240, 0.1));
+  border-bottom: 1px dotted var(--g-color-text-info);
+}
+
+.vas-entity-link::after {
+  content: attr(data-vas-type);
+  margin-left: 4px;
+  padding: 0 4px;
+  border-radius: var(--g-border-radius-s);
+  background: var(--g-color-base-generic);
+  font-size: 10px;
+  line-height: 14px;
+  color: var(--g-color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+/* Поповер чипа сущности (паттерн HarnessUlidPopover). */
+.vas-entity-popover {
+  position: fixed;
+  z-index: var(--g-popup-z-index, 1000);
+  display: flex;
+  flex-direction: column;
+  gap: var(--g-spacing-2);
+  min-width: 220px;
+  max-width: 420px;
+  padding: var(--g-spacing-3);
+  background: var(--g-color-base-float, var(--g-color-base-background));
+  border-radius: var(--g-border-radius-m);
+  box-shadow: var(--g-shadow-m, 0 2px 12px rgba(0, 0, 0, 0.2));
+}
+
+.vas-entity-popover__row {
+  display: flex;
+  align-items: center;
+  gap: var(--g-spacing-2);
+  min-width: 0;
+}
+
+.vas-entity-popover__value {
+  overflow-wrap: anywhere;
+}
+
+.vas-entity-popover__muted {
+  color: var(--g-color-text-hint);
+  font-size: var(--g-text-body-3-font-size);
+}
+
+.vas-entity-popover__mono {
+  font-family: var(--g-font-family-monospace, monospace);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.vas-entity-popover__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Панель ручной разметки (кнопка "Сущность"). */
+.entity-mark-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--g-spacing-2);
+  max-width: 420px;
+  padding: var(--g-spacing-3);
+  background: var(--g-color-base-float, var(--g-color-base-background));
+  border-radius: var(--g-border-radius-m);
+}
+
+.entity-mark-panel__title {
+  font-size: var(--g-text-body-2-font-size);
+  color: var(--g-color-text-hint);
+}
+
+.entity-mark-panel__value {
+  font-family: var(--g-font-family-monospace, monospace);
+  font-size: var(--g-text-body-2-font-size);
+  overflow-wrap: anywhere;
+}
+
+.entity-mark-panel__types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--g-spacing-1);
+}
+
+/* Секции NER-панели (T3): размечено / предложения. */
+.ner-panel__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--g-spacing-1);
+}
+
+.ner-panel__section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--g-spacing-2);
+  font-size: var(--g-text-body-3-font-size);
+  color: var(--g-color-text-hint);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.ner-panel__row {
+  display: flex;
+  align-items: center;
+  gap: var(--g-spacing-1);
+}
+
+.ner-panel__row > .ner-panel__item {
+  flex: 1;
+  min-width: 0;
+}
+
 /* кнопка "NER" в тулбаре (T2): поповер с вхождениями и переходом к строке */
 .ner-panel {
   display: flex;

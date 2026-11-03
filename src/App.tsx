@@ -30,6 +30,7 @@ import {MermaidModal} from "./components/Modals/MermaidModal";
 import {ErrorToasts} from "./components/ErrorToasts";
 import {NoticeToasts} from "./components/NoticeToasts";
 import {HarnessUlidPopover} from "./components/HarnessUlidPopover";
+import {VasEntityPopover} from "./components/VasEntityPopover";
 import {AssistantPanel} from "./components/Assistant/AssistantPanel";
 import {useEditorStore} from "./store/editorStore";
 import {useFileStore} from "./store/fileStore";
@@ -178,6 +179,7 @@ function App() {
         <ErrorToasts />
         <NoticeToasts />
         <HarnessUlidPopover />
+        <VasEntityPopover />
       </ErrorBoundary>
     </Layout>
   );

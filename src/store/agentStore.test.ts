@@ -773,6 +773,46 @@ describe("маскирование (8.5 T1c/T1b)", () => {
     expect(preview?.maskedText).toContain("[[VAS_PERSON_");
   });
 
+  it("vas-entity (T3): размеченное маскируется постоянным ULID, unmask — каноническая форма", async () => {
+    resetUlidMonotonic();
+    const entityUlid = "01JBBCCCCDDDDDDDDDDDDDDDDD";
+    const doc =
+      LEGACY_DOC +
+      `\nПоручено [Иванову И. И.](vas-entity:person:${entityUlid}) и [Ивановым И. И.](vas-entity:person:${entityUlid}) отчёт.\n`;
+    openText(doc);
+    enableModel();
+    enableMasking();
+    const anchorId = await anchorsFindingIdIn(doc);
+    runChatMock.mockImplementation(async () =>
+      chatOk(
+        JSON.stringify({
+          verdicts: [{findingId: anchorId, action: "explain", rationale: `см. [[VAS_PERSON_${entityUlid}]]`}],
+        }),
+      ),
+    );
+
+    await useAgentStore.getState().runCheckDocument();
+
+    const preview = useAgentStore.getState().maskPreview;
+    expect(preview).not.toBeNull();
+    expect(preview?.maskedText).not.toContain("Иванову");
+    expect(preview?.maskedText).not.toContain("Ивановым");
+    expect(preview?.maskedText).not.toContain("vas-entity");
+    // склонения: оба вхождения — один постоянный алиас
+    const aliasCount = preview?.maskedText.split(`[[VAS_PERSON_${entityUlid}]]`).length ?? 0;
+    expect(aliasCount - 1).toBe(2);
+    const entity = preview?.entities.find((item) => item.value === "Иванову И. И.");
+    expect(entity?.alias).toBe(`[[VAS_PERSON_${entityUlid}]]`);
+
+    await useAgentStore.getState().confirmMaskedSend();
+
+    const state = useAgentStore.getState();
+    expect(state.verdicts[0]?.rationale).toContain("Иванову И. И."); // canonical — первая форма
+    const runEntry = auditLog.list().find((entry) => entry.operation === "run");
+    expect(runEntry?.masking?.confirmation).toBe("confirmed");
+    expect(JSON.stringify(runEntry?.masking)).not.toContain("Иванову");
+  });
+
   it("cancel: модель не вызывается, notice previewCancelled, audit без run", async () => {
     resetUlidMonotonic();
     openText(MASK_DOC);

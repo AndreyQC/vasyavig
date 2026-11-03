@@ -1,13 +1,14 @@
 /**
- * Маскирование текста (Phase 8.5, T1; план 20261104_001): детекторы → спаны →
- * алиасы реестра. Чистая функция, содержимое документа не покидает модуль:
- * наружу — маскированный текст и счётчики по типам (в audit значения не
- * попадают, D8).
+ * Маскирование текста (Phase 8.5, T1/T3; планы 20261104_001, 20261105_001):
+ * спаны разметки `vas-entity:` (постоянные ULID) + детекторы → алиасы
+ * реестра. Чистая функция, содержимое документа не покидает модуль: наружу —
+ * маскированный текст и счётчики по типам (в audit значения не попадают, D8).
  */
 
-import {detectText} from "./detectors";
+import {detectText, mergeSpans} from "./detectors";
 import {RunRegistry} from "./registry";
 import type {DetectorId, EntityType} from "./types";
+import type {EntityLinkSpan} from "./vasEntityMarkup";
 
 export interface MaskResult {
   /** Маскированный текст (алиасы вместо значений). */
@@ -20,25 +21,53 @@ export interface MaskResult {
   stats: Partial<Record<EntityType, number>>;
 }
 
-/** Заменить все найденные чувствительные значения алиасами реестра. */
+/** Внутренний спан маскирования: источник — разметка (ulid) или детектор. */
+interface MaskSpan {
+  start: number;
+  end: number;
+  type: EntityType;
+  value: string;
+  /** ULID из разметки: алиас постоянный (T3-5); нет — реестр решает сам. */
+  ulid?: string;
+}
+
+/**
+ * Заменить чувствительные значения алиасами реестра. Разметка `vas-entity:`
+ * первична (T3-5): её спаны получают постоянные ULID; детекторы работают по
+ * неразмеченному тексту (resolver может дать постоянный ULID из индекса,
+ * остальное — per-run, R3). Пересечения — longest-wins (R8): конструкция
+ * ссылки длиннее значения детектора внутри неё.
+ */
 export function maskText(
   text: string,
   registry: RunRegistry,
   detectors: readonly DetectorId[],
+  entitySpans: readonly EntityLinkSpan[] = [],
 ): MaskResult {
-  const spans = detectText(text, detectors);
+  const spans: MaskSpan[] = entitySpans.map((link) => ({
+    start: link.start,
+    end: link.end,
+    type: link.type,
+    value: link.value,
+    ulid: link.ulid,
+  }));
+  spans.push(...detectText(text, detectors));
+  const merged = mergeSpans(spans);
   const stats: Partial<Record<EntityType, number>> = {};
   let out = "";
   let cursor = 0;
-  for (const span of spans) {
-    const record = registry.createOrGet(span.value, span.type);
+  for (const span of merged) {
+    const record =
+      span.ulid != null
+        ? (registry.recordFor(span.ulid) ?? registry.registerExisting(span.ulid, span.type, span.value))
+        : registry.createOrGet(span.value, span.type);
     out += text.slice(cursor, span.start);
     out += registry.aliasOf(record);
     cursor = span.end;
-    stats[span.type] = (stats[span.type] ?? 0) + 1;
+    stats[record.type] = (stats[record.type] ?? 0) + 1;
   }
   out += text.slice(cursor);
-  return {text: out, prefix: registry.prefix.open, count: spans.length, stats};
+  return {text: out, prefix: registry.prefix.open, count: merged.length, stats};
 }
 
 /**
