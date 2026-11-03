@@ -8,7 +8,10 @@ Rename harness documentation directories and rewrite references.
 
 - Переименование каталогов: git mv (вне этого скрипта), порядок в ранбуке.
 - Перезапись ссылок: во всех текстовых файлах под root, кроме skip-каталогов
-  (.git, src, node_modules, dist, vendor, ...), Taskfile.yml и самого скрипта.
+  (.git, node_modules, dist, vendor, src-tauri, ...), Taskfile.yml, файлов из
+  SKIP_GLOBS и самого скрипта.
+- Разделители путей: «/», «\» и «\\» (экранированные строки в TS/JSON) —
+  составные пути вида `_docs_/_tasks_` переписываются для всех трёх форм.
 - Fenced-блоки переписываются наравне с телом: живые инструкции (команды
   make/ls) тоже лежат в фенсах; от порчи карту уберегает self-skip.
 - Байт-точная запись: перезаписываются только файлы с реальными заменами,
@@ -20,29 +23,44 @@ Usage:
 """
 
 import argparse
+import fnmatch
 import sys
 from pathlib import Path
 
 # Порядок важен: сначала длинные префиксы, catch-all _docs_ — последним.
-RENAME_MAP = [
-    (b"_docs_/_checkpoints_", b"harness_docs/harness_checkpoints"),
-    (b"_docs_/_tasks_", b"harness_docs/harness_tasks"),
-    (b"_docs_/_plans_", b"harness_docs/harness_plans"),
-    (b"_docs_/_domains_", b"harness_docs/harness_domains"),
-    (b"_docs_/_phases_", b"harness_docs/harness_phases"),
-    (b"_docs_/_sessions_", b"harness_docs/harness_sessions"),
-    (b"_docs_/_index", b"harness_docs/harness_index"),
+# Разделители: «/» (posix), «\» (windows/markdown), «\\» (экранированные
+# строки в TS/JSON — в исходнике два байта «\\»).
+_SEPARATORS = (b"/", b"\\", b"\\\\")
+_SUBDIRS = (b"checkpoints", b"tasks", b"plans", b"domains", b"phases", b"sessions")
+
+
+def _build_rename_map() -> list[tuple[bytes, bytes]]:
+    pairs: list[tuple[bytes, bytes]] = []
+    for sep in _SEPARATORS:
+        for sub in _SUBDIRS:
+            pairs.append(
+                (b"_docs_" + sep + b"_" + sub + b"_", b"harness_docs" + sep + b"harness_" + sub)
+            )
+        pairs.append((b"_docs_" + sep + b"_index", b"harness_docs" + sep + b"harness_index"))
     # опечаточный вариант без закрывающего подчёркивания (исторический мусор)
-    (b"_docs/_checkpoints_", b"harness_docs/harness_checkpoints"),
-    (b"_docs_", b"harness_docs"),
-    (b"_archives_", b"harness_archives"),
-]
+    pairs.append((b"_docs/_checkpoints_", b"harness_docs/harness_checkpoints"))
+    # catch-all — последним
+    pairs.append((b"_docs_", b"harness_docs"))
+    pairs.append((b"_archives_", b"harness_archives"))
+    return pairs
+
+
+RENAME_MAP = _build_rename_map()
 
 SKIP_DIRS = {
-    ".git", "node_modules", "src", "dist", "build", "vendor", "targets",
+    ".git", "node_modules", "dist", "build", "vendor", "targets", "src-tauri",
     ".venv", "__pycache__", ".idea", ".vscode", "output", "logs",
 }
 SKIP_FILES = {"Taskfile.yml"}
+# Файлы, которые переписывать нельзя:
+# - ранбук переименования: в командах старые пути — это сам объект переименования;
+# - исторический скрипт первой миграции: его таблица соответствий — артефакт v1.
+SKIP_GLOBS = ("20261103_001_harness-dir-rename_plan.md", "rename_docs_dirs.py")
 
 
 def is_text(data: bytes) -> bool:
@@ -88,6 +106,8 @@ def main() -> int:
         if any(part in SKIP_DIRS for part in rel.parts[:-1]):
             continue
         if rel.name in SKIP_FILES or path.name in SKIP_FILES:
+            continue
+        if any(fnmatch.fnmatch(rel.name, g) for g in SKIP_GLOBS):
             continue
         if path == self_path:
             continue
