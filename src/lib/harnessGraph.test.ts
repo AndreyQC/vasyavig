@@ -24,15 +24,15 @@ const entry = (over: Partial<HarnessIndexEntry> & {ulid: string; path: string}):
  */
 function fixture(): HarnessIndexEntry[] {
   return [
-    entry({ulid: "PLAN", path: "_docs_/_plans_/a.md", title: "План A", type: "plan", related: ["RES"]}),
+    entry({ulid: "PLAN", path: "harness_docs/harness_plans/a.md", title: "План A", type: "plan", related: ["RES"]}),
     entry({
       ulid: "RES",
-      path: "_docs_/_tasks_/a_result.md",
+      path: "harness_docs/harness_tasks/a_result.md",
       title: "Результат A",
       type: "result",
       basedOn: ["PLAN"],
     }),
-    entry({ulid: "PLAN2", path: "_docs_/_plans_/b.md", title: "План B", type: "plan"}),
+    entry({ulid: "PLAN2", path: "harness_docs/harness_plans/b.md", title: "План B", type: "plan"}),
     entry({ulid: "ISO", path: "docs/iso.md", title: "", type: "doc"}),
   ];
 }
@@ -87,7 +87,7 @@ describe("buildDocumentGraph", () => {
 
   it("поиск по пути реестра", () => {
     const graph = buildDocumentGraph(fixture());
-    expect(graph.byPath["_docs_/_plans_/a.md"]).toBe("PLAN");
+    expect(graph.byPath["harness_docs/harness_plans/a.md"]).toBe("PLAN");
   });
 });
 

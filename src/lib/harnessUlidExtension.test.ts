@@ -85,11 +85,11 @@ function decoInfos(set: ReturnType<typeof buildUlidDecorations>) {
 
 describe("buildUlidDecorations", () => {
   it("известный ULID -> ulid-link с data-ulid и aria-label «title · type»", () => {
-    const set = buildUlidDecorations(docOf(`см. ${ULID_A} далее`), "C:/repo/_docs_");
+    const set = buildUlidDecorations(docOf(`см. ${ULID_A} далее`), "C:/repo/harness_docs");
     const [deco] = decoInfos(set);
     expect(deco.attrs.class).toBe("ulid-link");
     expect(deco.attrs["data-ulid"]).toBe(ULID_A);
-    expect(deco.attrs["data-ulid-dir"]).toBe("C:/repo/_docs_");
+    expect(deco.attrs["data-ulid-dir"]).toBe("C:/repo/harness_docs");
     expect(deco.attrs["aria-label"]).toBe("План А · plan");
     expect(deco.attrs.title).toBeUndefined();
     // текст параграфа начинается с pos+1: «см. » = 4 символа
@@ -98,7 +98,7 @@ describe("buildUlidDecorations", () => {
   });
 
   it("неизвестный ULID -> ulid-unknown без data-ulid", () => {
-    const [deco] = decoInfos(buildUlidDecorations(docOf(ULID_B), "C:/repo/_docs_"));
+    const [deco] = decoInfos(buildUlidDecorations(docOf(ULID_B), "C:/repo/harness_docs"));
     expect(deco.attrs.class).toBe("ulid-unknown");
     expect(deco.attrs["aria-label"]).toBe("harness.ulidUnknownTooltip");
     expect(deco.attrs["data-ulid"]).toBeUndefined();
@@ -153,7 +153,7 @@ describe("buildUlidDecorations", () => {
 describe("harnessUlidExtension", () => {
   it("регистрирует один плагин в builder", () => {
     const factories: unknown[] = [];
-    harnessUlidExtension("C:/repo/_docs_/a.md")({
+    harnessUlidExtension("C:/repo/harness_docs/a.md")({
       addPlugin: (factory: unknown) => {
         factories.push(factory);
       },

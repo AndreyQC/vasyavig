@@ -23,7 +23,7 @@ const RES = "01M43R3ZGSNXQ0KSMZ9JSZEZ5X";
 const JSONL = [
   JSON.stringify({
     ulid: PLAN,
-    path: "_docs_/_plans_/a.md",
+    path: "harness_docs/harness_plans/a.md",
     title: "План A",
     type: "plan",
     project: "lm_hrdo_2",
@@ -31,7 +31,7 @@ const JSONL = [
   }),
   JSON.stringify({
     ulid: RES,
-    path: "_docs_/_tasks_/a_result.md",
+    path: "harness_docs/harness_tasks/a_result.md",
     title: "Результат A",
     type: "result",
     project: "lm_hrdo_2",
@@ -96,7 +96,7 @@ describe("harnessGraphStore", () => {
     await useHarnessGraphStore.getState().ensureGraph(REPO);
     const node = useHarnessGraphStore
       .getState()
-      .findByPath(REPO, `${REPO}\\_docs_\\_tasks_\\a_result.md`);
+      .findByPath(REPO, `${REPO}\\harness_docs\\harness_tasks\\a_result.md`);
     expect(node?.ulid).toBe(RES);
     expect(node?.title).toBe("Результат A");
   });

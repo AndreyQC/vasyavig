@@ -17,7 +17,7 @@ const ULID_A = "01M43R3ZGSNXQ0KSMZ9JSZEZ5W";
 const ULID_B = "01M43R3YYCBWXD01XW1RXPM575";
 
 const JSONL = [
-  JSON.stringify({ulid: ULID_A, path: "_docs_/_tasks_/2026-10-04/a_plan.md", title: "План А", type: "plan"}),
+  JSON.stringify({ulid: ULID_A, path: "harness_docs/harness_tasks/2026-10-04/a_plan.md", title: "План А", type: "plan"}),
   JSON.stringify({ulid: ULID_B, path: "docs/README.md", title: "Readme", type: "doc", based_on: [ULID_A]}),
   "{битая строка",
   JSON.stringify({ulid: "no-path"}),
@@ -28,7 +28,7 @@ describe("parseDocumentsJsonl", () => {
   it("читает записи, пропускает пустые/битые/неполные строки, маппит based_on", () => {
     const entries = parseDocumentsJsonl(JSONL);
     expect(entries).toHaveLength(2);
-    expect(entries[0]).toMatchObject({ulid: ULID_A, path: "_docs_/_tasks_/2026-10-04/a_plan.md", type: "plan"});
+    expect(entries[0]).toMatchObject({ulid: ULID_A, path: "harness_docs/harness_tasks/2026-10-04/a_plan.md", type: "plan"});
     expect(entries[1].basedOn).toEqual([ULID_A]);
   });
 });
@@ -59,9 +59,9 @@ describe("resolveUlid", () => {
 
 describe("ancestorDirs", () => {
   it("поднимается от каталога к корню диска, нормализуя разделители", () => {
-    expect(ancestorDirs("C:\\repos\\lm\\_docs_\\_tasks_")).toEqual([
-      "C:/repos/lm/_docs_/_tasks_",
-      "C:/repos/lm/_docs_",
+    expect(ancestorDirs("C:\\repos\\lm\\harness_docs\\harness_tasks")).toEqual([
+      "C:/repos/lm/harness_docs/harness_tasks",
+      "C:/repos/lm/harness_docs",
       "C:/repos/lm",
       "C:/repos",
       "C:",
@@ -79,9 +79,9 @@ describe("findHarnessIndex", () => {
       candidates.push(candidate);
       return candidate === `C:/repos/lm/${HARNESS_INDEX_REL}` ? "{}" : null;
     };
-    const found = await findHarnessIndex("C:/repos/lm/_docs_/_tasks_", probe);
+    const found = await findHarnessIndex("C:/repos/lm/harness_docs/harness_tasks", probe);
     expect(found?.repoRoot).toBe("C:/repos/lm");
-    expect(candidates[0]).toBe("C:/repos/lm/_docs_/_tasks_/_docs_/_index/documents.jsonl");
+    expect(candidates[0]).toBe("C:/repos/lm/harness_docs/harness_tasks/harness_docs/harness_index/documents.jsonl");
     expect(candidates).toContain(`C:/repos/lm/${HARNESS_INDEX_REL}`);
   });
   it("нигде нет индекса -> null", async () => {

@@ -100,7 +100,7 @@ describe("createIndexTaskSource", () => {
   const entries: HarnessIndexEntry[] = [
     entry({ulid: "01M43R3ZGSNXQ0KSMZ9JSZEZ5W", path: "docs/11_tracker/T-1.md", type: "tracker", title: "Трекер-задача", updated: "2026-10-20"}),
     entry({ulid: "01M43R3ZGSNXQ0KSMZ9JSZEZ5X", path: "docs/02_doc.md", type: "doc", title: "Не задача"}),
-    entry({ulid: "01M43R3ZGSNXQ0KSMZ9JSZEZ5Y", path: "_docs_/_plans_/b.md", type: "backlog", title: "Бэклог"}),
+    entry({ulid: "01M43R3ZGSNXQ0KSMZ9JSZEZ5Y", path: "harness_docs/harness_plans/b.md", type: "backlog", title: "Бэклог"}),
   ];
 
   const taskFile = (status: string) =>

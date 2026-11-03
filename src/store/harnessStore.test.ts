@@ -31,7 +31,7 @@ const {readFile} = await import("../hooks/useTauriFS");
 const ULID_A = "01M43R3ZGSNXQ0KSMZ9JSZEZ5W";
 const REPO = "C:/repos/lm_hrdo_2";
 const INDEX_PATH = `${REPO}/${HARNESS_INDEX_REL}`;
-const JSONL = `${JSON.stringify({ulid: ULID_A, path: "_docs_/_tasks_/a_plan.md", title: "План А", type: "plan"})}\n`;
+const JSONL = `${JSON.stringify({ulid: ULID_A, path: "harness_docs/harness_tasks/a_plan.md", title: "План А", type: "plan"})}\n`;
 
 const initialHarness = useHarnessStore.getState();
 const initialFile = useFileStore.getState();
@@ -54,22 +54,22 @@ beforeEach(() => {
 
 describe("harnessStore.ensureIndex / resolveFor", () => {
   it("загружает реестр по каталогу внутри репо и резолвит полный ULID и префикс", async () => {
-    await useHarnessStore.getState().ensureIndex(`${REPO}/_docs_/_tasks_`);
+    await useHarnessStore.getState().ensureIndex(`${REPO}/harness_docs/harness_tasks`);
     const store = useHarnessStore.getState();
     expect(store.version).toBe(1);
 
-    const found = store.resolveFor(`${REPO}/_docs_/_tasks_`, ULID_A);
+    const found = store.resolveFor(`${REPO}/harness_docs/harness_tasks`, ULID_A);
     expect(found).toMatchObject({status: "found", repoRoot: REPO, entry: {title: "План А"}});
 
-    expect(store.resolveFor(`${REPO}/_docs_/_tasks_`, "01M43R3ZG").status).toBe("found");
-    expect(store.resolveFor(`${REPO}/_docs_/_tasks_`, "01M5RK385592V1WEET1786GDFN").status).toBe("unknown");
+    expect(store.resolveFor(`${REPO}/harness_docs/harness_tasks`, "01M43R3ZG").status).toBe("found");
+    expect(store.resolveFor(`${REPO}/harness_docs/harness_tasks`, "01M5RK385592V1WEET1786GDFN").status).toBe("unknown");
   });
 
   it("повторное ensureIndex того же репо не перезагружает индекс (version не растёт)", async () => {
     await useHarnessStore.getState().ensureIndex(`${REPO}/docs`);
     const version = useHarnessStore.getState().version;
     expect(version).toBe(1);
-    await useHarnessStore.getState().ensureIndex(`${REPO}/_docs_/_tasks_`);
+    await useHarnessStore.getState().ensureIndex(`${REPO}/harness_docs/harness_tasks`);
     expect(useHarnessStore.getState().version).toBe(version);
   });
 
@@ -108,7 +108,7 @@ describe("openUlidTarget", () => {
     useFileStore.setState({openFile});
     await useHarnessStore.getState().ensureIndex(`${REPO}/docs`);
     await openUlidTarget(`${REPO}/docs`, ULID_A);
-    expect(openFile).toHaveBeenCalledWith(`${REPO}/_docs_/_tasks_/a_plan.md`);
+    expect(openFile).toHaveBeenCalledWith(`${REPO}/harness_docs/harness_tasks/a_plan.md`);
   });
 
   it("unknown -> уведомление, openFile не вызывается", async () => {

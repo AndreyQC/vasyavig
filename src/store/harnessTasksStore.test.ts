@@ -20,7 +20,7 @@ const INDEX_PATH = `${REPO}/${HARNESS_INDEX_REL}`;
 const MANIFEST_PATH = `${REPO}/harness_manifest.json`;
 const T1 = `${REPO}/docs/11_tracker/T-1.md`;
 const T2 = `${REPO}/docs/11_tracker/T-2.md`;
-const PLAN = `${REPO}/_docs_/_plans_/plan_a.md`;
+const PLAN = `${REPO}/harness_docs/harness_plans/plan_a.md`;
 
 const MANIFEST = `{
   "vocabularies": {"task": {"types": ["tracker"], "statuses": [
@@ -34,7 +34,7 @@ const envelope = (status: string) =>
 const JSONL = [
   JSON.stringify({ulid: "01M43R3ZGSNXQ0KSMZ9JSZEZ5W", path: "docs/11_tracker/T-1.md", title: "Т-1", type: "tracker", updated: "2026-10-20"}),
   JSON.stringify({ulid: "01M43R3ZGSNXQ0KSMZ9JSZEZ5X", path: "docs/11_tracker/T-2.md", title: "Т-2", type: "tracker", updated: "2026-10-21"}),
-  JSON.stringify({ulid: "01M43R3ZGSNXQ0KSMZ9JSZEZ5Y", path: "_docs_/_plans_/plan_a.md", title: "План", type: "plan"}),
+  JSON.stringify({ulid: "01M43R3ZGSNXQ0KSMZ9JSZEZ5Y", path: "harness_docs/harness_plans/plan_a.md", title: "План", type: "plan"}),
 ].join("\n");
 
 const mockedReadFile = vi.mocked(readFile);
@@ -52,7 +52,7 @@ function seedRegistry() {
   const byUlid = {
     "01M43R3ZGSNXQ0KSMZ9JSZEZ5W": {ulid: "01M43R3ZGSNXQ0KSMZ9JSZEZ5W", path: "docs/11_tracker/T-1.md", title: "Т-1", type: "tracker", updated: "2026-10-20", related: [], basedOn: []},
     "01M43R3ZGSNXQ0KSMZ9JSZEZ5X": {ulid: "01M43R3ZGSNXQ0KSMZ9JSZEZ5X", path: "docs/11_tracker/T-2.md", title: "Т-2", type: "tracker", updated: "2026-10-21", related: [], basedOn: []},
-    "01M43R3ZGSNXQ0KSMZ9JSZEZ5Y": {ulid: "01M43R3ZGSNXQ0KSMZ9JSZEZ5Y", path: "_docs_/_plans_/plan_a.md", title: "План", type: "plan", related: [], basedOn: []},
+    "01M43R3ZGSNXQ0KSMZ9JSZEZ5Y": {ulid: "01M43R3ZGSNXQ0KSMZ9JSZEZ5Y", path: "harness_docs/harness_plans/plan_a.md", title: "План", type: "plan", related: [], basedOn: []},
   };
   useHarnessStore.setState({
     indexes: {

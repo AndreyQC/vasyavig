@@ -173,7 +173,7 @@
       "unknownHint": "Refresh the registry: make doc-index"
     },
     "tasks": {
-      "noRepo": "Open a harness repository directory (harness_manifest.json or _docs_/_index/documents.jsonl registry)",
+      "noRepo": "Open a harness repository directory (harness_manifest.json or harness_docs/harness_index/documents.jsonl registry)",
       "statusAll": "All statuses",
       "statusNone": "No status",
       "kindAll": "All kinds",
@@ -194,7 +194,7 @@
       "dirOut": "direct",
       "dirIn": "reverse",
       "dirBoth": "mutual",
-      "noRepo": "Open a harness repository directory (harness_manifest.json or _docs_/_index/documents.jsonl registry)",
+      "noRepo": "Open a harness repository directory (harness_manifest.json or harness_docs/harness_index/documents.jsonl registry)",
       "noRepoHint": "The panel is built from the document registry — rebuild it: make doc-index",
       "allProjects": "All projects",
       "allTypes": "All types",

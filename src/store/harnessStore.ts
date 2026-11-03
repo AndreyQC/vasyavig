@@ -38,7 +38,7 @@ interface HarnessState {
   version: number;
   /** Загрузить реестр для каталога файла (лениво, при открытии markdown-вкладки). */
   ensureIndex(dir: string): Promise<void>;
-  /** Событие watcher: путь == <root>/_docs_/_index/documents.jsonl — перечитать реестр. */
+  /** Событие watcher: путь == <root>/harness_docs/harness_index/documents.jsonl — перечитать реестр. */
   invalidatePath(path: string): void;
   /** Резолв ULID в записи реестра репозитория, которому принадлежит каталог. */
   resolveFor(dir: string, ulid: string):

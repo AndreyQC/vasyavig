@@ -10,7 +10,7 @@ import {
 
 const ULID = "01M43R3ZGSNXQ0KSMZ9JSZEZ5W";
 const ANCHOR = "01M5B8R7MQJZKD1NMQ7M9KZ1F0";
-const DIR = "C:/repo/_docs_";
+const DIR = "C:/repo/harness_docs";
 
 const lookup = (ulid: string) =>
   ulid === ULID ? {title: "План А", type: "plan"} : null;

@@ -73,7 +73,7 @@ describe("findMarkupUlidRanges", () => {
 
 function decoSpecs(text: string) {
   const state = stateOf(text);
-  const set = buildMarkupDecorations(state, "C:/repo/_docs_");
+  const set = buildMarkupDecorations(state, "C:/repo/harness_docs");
   const specs: Array<{from: number; to: number; cls: string; attrs: Record<string, string>}> = [];
   set.between(0, state.doc.length, (from, to, value) => {
     const spec = (value as unknown as {spec: {class?: string; attributes?: Record<string, string>}}).spec;
@@ -87,7 +87,7 @@ describe("buildMarkupDecorations", () => {
     const [spec] = decoSpecs(`[файл](harness-ulid:${ULID_A})`);
     expect(spec.cls).toBe("ulid-link");
     expect(spec.attrs["data-ulid"]).toBe(ULID_A);
-    expect(spec.attrs["data-ulid-dir"]).toBe("C:/repo/_docs_");
+    expect(spec.attrs["data-ulid-dir"]).toBe("C:/repo/harness_docs");
     expect(spec.attrs["aria-label"]).toBe("План А · plan");
   });
 

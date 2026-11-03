@@ -173,7 +173,7 @@
       "unknownHint": "Обновите реестр: make doc-index"
     },
     "tasks": {
-      "noRepo": "Откройте каталог harness-репозитория (файл harness_manifest.json или реестр _docs_/_index/documents.jsonl)",
+      "noRepo": "Откройте каталог harness-репозитория (файл harness_manifest.json или реестр harness_docs/harness_index/documents.jsonl)",
       "statusAll": "Все статусы",
       "statusNone": "Без статуса",
       "kindAll": "Все типы",
@@ -194,7 +194,7 @@
       "dirOut": "прямая",
       "dirIn": "обратная",
       "dirBoth": "взаимная",
-      "noRepo": "Откройте каталог harness-репозитория (манифест harness_manifest.json или реестр _docs_/_index/documents.jsonl)",
+      "noRepo": "Откройте каталог harness-репозитория (манифест harness_manifest.json или реестр harness_docs/harness_index/documents.jsonl)",
       "noRepoHint": "Панель строится по реестру документов — пересоберите его: make doc-index",
       "allProjects": "Все проекты",
       "allTypes": "Все типы",

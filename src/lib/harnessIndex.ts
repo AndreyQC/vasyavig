@@ -1,5 +1,5 @@
 /**
- * Реестр документов harness-репозитория `_docs_/_index/documents.jsonl`
+ * Реестр документов harness-репозитория `harness_docs/harness_index/documents.jsonl`
  * (openspec task 20261025_001, план D4/D5).
  *
  * JSONL: `{"ulid","path","project","title","type","created","updated",
@@ -24,7 +24,7 @@ export interface HarnessIndexEntry {
   basedOn?: string[];
 }
 
-export const HARNESS_INDEX_REL = "_docs_/_index/documents.jsonl";
+export const HARNESS_INDEX_REL = "harness_docs/harness_index/documents.jsonl";
 
 /**
  * Манифест harness-репозитория («визитная карточка», план 20261027_005 §3) —
@@ -122,14 +122,14 @@ export const defaultReadProbe: ReadProbe = async (candidate) => {
 };
 
 export interface FoundHarnessIndex {
-  /** Корень репозитория harness (каталог, содержащий `_docs_`). */
+  /** Корень репозитория harness (каталог, содержащий `harness_docs`). */
   repoRoot: string;
   content: string;
 }
 
 /**
  * Поиск реестра подъёмом от каталога: первый найденный
- * `<предок>/_docs_/_index/documents.jsonl` выигрывает (ближайший репозиторий).
+ * `<предок>/harness_docs/harness_index/documents.jsonl` выигрывает (ближайший репозиторий).
  */
 export async function findHarnessIndex(
   dir: string,
@@ -176,7 +176,7 @@ function isManifestShape(text: string): boolean {
 
 /**
  * Поддерево содержит harness-репо: узел дерева — реестр или манифест
- * (файл `_docs_`-системы). Для пометки корня-родителя, содержащего репо
+ * (файл `harness_docs`-системы). Для пометки корня-родителя, содержащего репо
  * (план 20261027_005, D9b), без новых чтений диска.
  */
 export function treeContainsHarnessRepo(nodes: readonly FileNodeLike[]): boolean {
@@ -196,8 +196,8 @@ export interface FileNodeLike {
 
 /**
  * Корни harness-репозиториев внутри уже загруженного дерева: по найденному
- * реестру `_docs_/_index/documents.jsonl` восстанавливается корень репо
- * (каталог над `_docs_`). Нужно, когда в workspace добавлен родительский
+ * реестру `harness_docs/harness_index/documents.jsonl` восстанавливается корень репо
+ * (каталог над `harness_docs`). Нужно, когда в workspace добавлен родительский
  * каталог, а сам репозиторий лежит во вложенной папке.
  */
 export function collectHarnessRepoRoots(nodes: readonly FileNodeLike[]): string[] {
