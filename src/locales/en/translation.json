@@ -255,7 +255,32 @@
       "invalid": "Model response failed validation: {{errors}}",
       "error": "Model error: {{error}}",
       "maskLost": "Model: {{fixes}} fixes, {{notes}} explanations; lost placeholders: {{lost}}.",
-      "maskUnknown": "Masking: the model response contains unknown placeholders ({{count}}) — verdicts dropped, document unchanged."
+      "maskUnknown": "Masking: the model response contains unknown placeholders ({{count}}) — verdicts dropped, document unchanged.",
+      "previewCancelled": "Send cancelled — the model was not called, the document is unchanged.",
+      "previewStale": "The document changed after the preview — check the document again.",
+      "noModel": "No model configured — send cancelled."
+    },
+    "maskPreview": {
+      "title": "Send preview",
+      "hint": "Only placeholders go to the model — values stay on this machine.",
+      "noEntities": "No sensitive values found — the text will be sent as is.",
+      "revealHint": "Click a chip to reveal the original value.",
+      "textTitle": "Masked text",
+      "noDocument": "The document is not included in the context by settings.",
+      "emptyDocument": "(empty document)",
+      "textTruncated": "Showing {{shown}} of {{total}} characters.",
+      "contextTruncated": "The context was truncated by the max_chars limit.",
+      "confirm": "Confirm and send",
+      "cancel": "Cancel"
+    },
+    "entityType": {
+      "person": "Person",
+      "org": "Organization",
+      "loc": "Location",
+      "secret": "Secret",
+      "email": "Email",
+      "phone": "Phone",
+      "url_cred": "URL credentials"
     },
     "email": {
       "title": "HTML email",

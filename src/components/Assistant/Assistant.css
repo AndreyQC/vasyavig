@@ -557,3 +557,116 @@
   flex-wrap: wrap;
   gap: var(--g-spacing-1);
 }
+
+/* === Phase 8.5 T1b: превью отправки ====================================== */
+
+.assistant-mask-preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--g-spacing-2);
+  min-width: 0;
+  padding: var(--g-spacing-2);
+  border: 1px solid var(--g-color-line-warning);
+  border-radius: var(--g-border-radius-m);
+  background: var(--g-color-base-warning-light);
+}
+
+.assistant-mask-preview__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--g-spacing-2);
+}
+
+.assistant-mask-preview__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--g-spacing-1);
+}
+
+.assistant-mask-preview__chip-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Чип алиаса: тип + хвост ULID; клик раскрывает исходное значение. */
+.mask-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--g-spacing-1);
+  padding: 1px var(--g-spacing-2);
+  border: 1px solid var(--g-color-line-generic);
+  border-radius: var(--g-border-radius-s);
+  background: var(--g-color-base-background);
+  color: inherit;
+  font: inherit;
+  font-size: 11px;
+  line-height: 18px;
+  cursor: pointer;
+}
+
+.mask-chip:hover {
+  border-color: var(--g-color-line-generic-hover);
+}
+
+.mask-chip--open {
+  border-color: var(--g-color-line-warning);
+}
+
+.mask-chip__type {
+  font-weight: 600;
+}
+
+.mask-chip__tail {
+  color: var(--g-color-text-secondary);
+  font-family: var(--g-font-family-monospace, monospace);
+}
+
+.mask-chip__value {
+  padding: 2px var(--g-spacing-2);
+  border-radius: var(--g-border-radius-s);
+  background: var(--g-color-base-generic);
+  font-family: var(--g-font-family-monospace, monospace);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.assistant-mask-preview__counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--g-spacing-2);
+  color: var(--g-color-text-secondary);
+  font-size: 11px;
+}
+
+.assistant-mask-preview__text-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--g-spacing-1);
+  min-width: 0;
+}
+
+/* Только этот блок скроллится внутри превью (LESSONS_LEARNED §8). */
+.assistant-mask-preview__text {
+  max-height: 220px;
+  margin: 0;
+  padding: var(--g-spacing-2);
+  overflow: auto;
+  overscroll-behavior: contain;
+  border-radius: var(--g-border-radius-s);
+  background: var(--g-color-base-generic-ultralight);
+  font-family: var(--g-font-family-monospace, monospace);
+  font-size: 11px;
+  line-height: 16px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.assistant-mask-preview__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--g-spacing-2);
+}

@@ -49,6 +49,7 @@ import {
 import {buildContextPack} from "../lib/agent/context";
 import {maskText, maskingPromptNote} from "../lib/agent/masking/mask";
 import {RunRegistry} from "../lib/agent/masking/registry";
+import type {EntityType} from "../lib/agent/masking/types";
 import {missingAliasIds, scanUnknownAliases, unmaskText} from "../lib/agent/masking/unmask";
 import {cancelChatRun, runChat, type ChatMessage} from "../lib/agent/provider";
 import {executeTool, type ToolCallResult} from "../lib/agent/tools";
@@ -106,6 +107,40 @@ export interface EmailResult {
   previewPath: string;
 }
 
+/** Сущность в превью отправки (T1b): алиас, тип и исходное значение. */
+export interface MaskPreviewEntity {
+  alias: string;
+  type: EntityType;
+  /** Исходное значение; только в памяти (D8), в audit не попадает. */
+  value: string;
+}
+
+/**
+ * Превью отправки (T1b): что именно уйдёт в модель в режиме `masking.mode:
+ * preview`. Источник — уже собранные контекст-пак и сообщения: подтверждение
+ * отправляет их без повторного маскирования («что показано — то и уйдёт»).
+ */
+export interface ModelStagePreview {
+  docId: string;
+  docPath: string;
+  docName: string;
+  /** Хэш контента на момент превью — защита от устаревшей отправки. */
+  contentHash: string;
+  /** Маскированный текст контекст-пака (после max_chars) — уйдёт в промпт. */
+  maskedText: string;
+  /** Символов контекста в промпте (документ + выделение). */
+  promptChars: number;
+  /** Контекст-пак обрезан по max_chars. */
+  truncated: boolean;
+  /** Документ включён в контекст настройками. */
+  documentIncluded: boolean;
+  entities: MaskPreviewEntity[];
+  /** Счётчики по типам (без значений). */
+  counts: Record<string, number>;
+  /** Findings, по которым пойдёт модельная стадия. */
+  findings: number;
+}
+
 export interface ToolCallLog {
   id: number;
   name: string;
@@ -124,6 +159,8 @@ export interface AgentState {
   modelRunning: boolean;
   /** Итог модельной стадии рецепта (i18n-ключ, без содержимого документов). */
   modelNotice: ModelNotice | null;
+  /** Превью отправки (T1b): маскированный контекст ждёт подтверждения. */
+  maskPreview: ModelStagePreview | null;
   /** Валидированные вердикты модели последнего прогона. */
   verdicts: ModelVerdict[];
   proposals: Proposal[];
@@ -146,6 +183,10 @@ export interface AgentState {
   ) => Promise<ToolCallResult>;
   runCheckDocument: () => Promise<ToolCallResult>;
   cancelCheck: () => void;
+  /** Подтвердить превью и отправить маскированный контекст модели (T1b). */
+  confirmMaskedSend: () => Promise<void>;
+  /** Отменить превью: модель не вызывается, документ не меняется (T1b). */
+  cancelMaskedSend: () => void;
   /** Рецепт «Письмо HTML» (8.4): рендер + тема/preheader + превью. */
   runEmailHtml: () => Promise<void>;
   cancelEmail: () => void;
@@ -157,6 +198,27 @@ export interface AgentState {
 }
 
 let toolCallSeq = 0;
+
+/**
+ * Подготовленная, но ещё не отправленная модельная стадия (T1b). Живёт только
+ * в памяти: маскированный промпт и реестр значений не попадают ни в audit, ни
+ * в React-состояние (D8); сбрасывается на confirm/cancel/reset.
+ */
+interface PendingModelStage {
+  check: CheckDocumentResult;
+  docId: string;
+  docPath: string;
+  /** Цели фиксов, построенные по исходному тексту (до маскирования). */
+  targets: Map<string, ModelFixTarget>;
+  registry: RunRegistry | null;
+  messages: ChatMessage[];
+  promptUserText: string;
+  maskingMeta: {mode: "preview"; entities: number; counts: Record<string, number>} | null;
+  /** Хэш исходного контента на момент превью. */
+  contentHash: string;
+}
+
+let pendingStage: PendingModelStage | null = null;
 
 /** Тема/preheader-fallback: имя документа без расширения. */
 function baseName(name: string): string {
@@ -208,6 +270,7 @@ const initialState = {
   checkRunning: false,
   modelRunning: false,
   modelNotice: null as ModelNotice | null,
+  maskPreview: null as ModelStagePreview | null,
   verdicts: [] as ModelVerdict[],
   proposals: [] as Proposal[],
   toolCalls: [] as ToolCallLog[],
@@ -222,17 +285,14 @@ const initialState = {
 
 export const useAgentStore = create<AgentState>((set, get) => {
   /**
-   * Модельная стадия рецепта (8.3): контекст-пак (D15) + findings -> строгий
-   * JSON. Один repair-retry при невалидном ответе (§6.1 п. 3), затем понятная
-   * ошибка; findings и детерминированные фиксы остаются. Валидированные
-   * fix-вердикты строят proposals через propose_* (policy/бюджеты); audit —
-   * только метаданные (operation "run").
+   * Отправка подготовленной модельной стадии (T1b): модель -> строгий JSON ->
+   * валидация масок -> unmask -> proposals. Вызывается сразу (режим off) или
+   * после подтверждения превью (режим preview); повторного маскирования нет —
+   * отправляются уже собранные сообщения.
    */
-  const runModelStage = async (
-    check: CheckDocumentResult,
-    tab: {path: string; name: string; content: string},
-    docId: string,
-    proposedIds: ReadonlySet<string>,
+  const sendModelStage = async (
+    pending: PendingModelStage,
+    confirmation: "none" | "confirmed",
   ): Promise<void> => {
     set({modelRunning: true});
     const config = useConfigStore.getState();
@@ -240,7 +300,7 @@ export const useAgentStore = create<AgentState>((set, get) => {
     const modelId = config.selectedModel;
     const requestConfig = config.config.llm.request;
     const runId = get().runId ?? undefined;
-    const findingsMap = new Map(check.findings.map((finding) => [finding.id, finding]));
+    const findingsMap = new Map(pending.check.findings.map((finding) => [finding.id, finding]));
 
     const auditModelStage = (result: "ok" | "error" | "cancelled") => {
       recordAudit(
@@ -249,15 +309,15 @@ export const useAgentStore = create<AgentState>((set, get) => {
           result,
           model: modelId,
           runId,
-          path: check.path,
-          findings: check.findings.length,
-          ...(maskingMeta
+          path: pending.check.path,
+          findings: pending.check.findings.length,
+          ...(pending.maskingMeta
             ? {
                 masking: {
-                  mode: maskingMeta.mode,
-                  confirmation: "none" as const,
-                  entities: maskingMeta.entities,
-                  counts: maskingMeta.counts,
+                  mode: pending.maskingMeta.mode,
+                  confirmation,
+                  entities: pending.maskingMeta.entities,
+                  counts: pending.maskingMeta.counts,
                 },
               }
             : {}),
@@ -270,62 +330,15 @@ export const useAgentStore = create<AgentState>((set, get) => {
       set({modelRunning: false, modelNotice: notice});
     };
 
-    // Маскирование (Phase 8.5 T1c, план 20261104_001): контекст уходит модели
-    // с алиасами `[[VAS_<TYPE>_<ULID>]]` вместо секретов; unmask — в вердиктах.
-    // Таблица соответствий — только в памяти (D8); в audit — счётчики (R2).
-    const maskingSettings = config.config.app.assistant.masking;
-    const maskingOn = maskingSettings.mode !== "off";
-    let registry: RunRegistry | null = null;
-    let maskingMeta: {mode: "off" | "preview"; entities: number; counts: Record<string, number>} | null = null;
+    if (!model) {
+      // Модель убрали из конфига между превью и подтверждением.
+      finish({kind: "error", key: "assistant.modelStage.noModel"});
+      return;
+    }
+
+    const messages = pending.messages;
 
     try {
-      const targets = new Map<string, ModelFixTarget>();
-      for (const finding of check.findings) {
-        if (proposedIds.has(finding.id)) continue;
-        const target = fixTargetFor(finding, tab.content);
-        if (target) targets.set(finding.id, target);
-      }
-
-      const selection = currentSelection();
-      let content = tab.content;
-      let selectionInput =
-        selection && selection.path === tab.path && selection.text !== ""
-          ? {text: selection.text, from: selection.from, to: selection.to}
-          : null;
-      let maskingNote: string | undefined;
-      if (maskingOn) {
-        registry = new RunRegistry(tab.content);
-        const maskDoc = maskText(tab.content, registry, maskingSettings.detectors);
-        content = maskDoc.text;
-        if (selectionInput) {
-          const maskSelection = maskText(selectionInput.text, registry, maskingSettings.detectors);
-          selectionInput = {...selectionInput, text: maskSelection.text};
-        }
-        maskingNote = maskingPromptNote(registry) || undefined;
-        maskingMeta = {
-          mode: maskingSettings.mode === "preview" ? "preview" : "off",
-          entities: registry.size,
-          counts: Object.fromEntries(
-            Object.entries(maskDoc.stats).filter(([, count]) => typeof count === "number"),
-          ),
-        };
-      }
-      const pack = buildContextPack({
-        docId,
-        name: tab.name,
-        content,
-        selection: selectionInput,
-        settings: config.config.app.assistant.context,
-      });
-      const messages = buildCheckMessages({
-        docName: tab.name,
-        document: pack.document?.content ?? "(документ не включён в контекст настройками)",
-        selection: pack.selection?.text ?? "",
-        items: buildFindingItems(check.findings, targets, proposedIds),
-        maskingNote,
-      });
-      const promptUserText = messages[1]?.content ?? "";
-
       const ask = (msgs: readonly ChatMessage[]) =>
         runChat({
           model,
@@ -378,7 +391,9 @@ export const useAgentStore = create<AgentState>((set, get) => {
       // выдумала идентификатор, replacements могут нести мусор → все вердикты
       // отбрасываются. Потерянные алиасы — предупреждение, apply не блокируем:
       // replacement проверяется по oldText/baseHash независимо.
-      const unknownAliases = registry ? scanUnknownAliases(chat.text, registry) : [];
+      const unknownAliases = pending.registry
+        ? scanUnknownAliases(chat.text, pending.registry)
+        : [];
       if (unknownAliases.length > 0) {
         auditModelStage("error");
         finish({
@@ -388,7 +403,7 @@ export const useAgentStore = create<AgentState>((set, get) => {
         });
         return;
       }
-      const activeRegistry = registry;
+      const activeRegistry = pending.registry;
       const verdicts = activeRegistry
         ? parsed.verdicts.map((verdict) => ({
             ...verdict,
@@ -403,8 +418,8 @@ export const useAgentStore = create<AgentState>((set, get) => {
           }))
         : parsed.verdicts;
       const lostAliases =
-        registry && maskingOn
-          ? missingAliasIds(promptUserText, chat.text, registry).length
+        pending.registry && pending.maskingMeta
+          ? missingAliasIds(pending.promptUserText, chat.text, pending.registry).length
           : 0;
 
       let fixes = 0;
@@ -413,7 +428,7 @@ export const useAgentStore = create<AgentState>((set, get) => {
       for (const verdict of verdicts) {
         if (verdict.rationale) notes++;
         if (verdict.action !== "fix" || verdict.replacement === undefined) continue;
-        const target = targets.get(verdict.findingId);
+        const target = pending.targets.get(verdict.findingId);
         if (!target) {
           dropped++;
           continue;
@@ -421,7 +436,7 @@ export const useAgentStore = create<AgentState>((set, get) => {
         const proposalResult = await get().runTool(
           "propose_replace",
           {
-            docId,
+            docId: pending.docId,
             oldText: target.oldText,
             newText: target.newTextFor(verdict.replacement),
             expectedCount: 1,
@@ -454,6 +469,135 @@ export const useAgentStore = create<AgentState>((set, get) => {
         key: "assistant.modelStage.error",
         params: {error: e instanceof Error ? e.message : String(e)},
       });
+    }
+  };
+
+  /**
+   * Подготовка модельной стадии рецепта 8.3 (T1b): findings -> маскирование ->
+   * контекст-пак (D15) -> сообщения. В режиме `preview` дальше только превью и
+   * подтверждение (модель не зовётся); в режиме `off` — немедленная отправка.
+   * Маскирование: контекст уходит модели с алиасами `[[VAS_<TYPE>_<ULID>]]`
+   * вместо секретов, unmask — в вердиктах; таблица соответствий — только в
+   * памяти (D8), в audit — счётчики (R2).
+   */
+  const prepareModelStage = (
+    check: CheckDocumentResult,
+    tab: {path: string; name: string; content: string},
+    docId: string,
+    proposedIds: ReadonlySet<string>,
+  ): Promise<void> => {
+    const config = useConfigStore.getState();
+    const model = config.models[config.selectedModel];
+    // Модель не настроена — модельной стадии нет (как и до T1b).
+    if (!model) return Promise.resolve();
+
+    try {
+      const maskingSettings = config.config.app.assistant.masking;
+      const maskingOn = maskingSettings.mode !== "off";
+      let registry: RunRegistry | null = null;
+      let maskingMeta: PendingModelStage["maskingMeta"] = null;
+
+      const targets = new Map<string, ModelFixTarget>();
+      for (const finding of check.findings) {
+        if (proposedIds.has(finding.id)) continue;
+        const target = fixTargetFor(finding, tab.content);
+        if (target) targets.set(finding.id, target);
+      }
+
+      const selection = currentSelection();
+      let content = tab.content;
+      let selectionInput =
+        selection && selection.path === tab.path && selection.text !== ""
+          ? {text: selection.text, from: selection.from, to: selection.to}
+          : null;
+      let maskingNote: string | undefined;
+      if (maskingOn) {
+        registry = new RunRegistry(tab.content);
+        const maskDoc = maskText(tab.content, registry, maskingSettings.detectors);
+        content = maskDoc.text;
+        if (selectionInput) {
+          const maskSelection = maskText(selectionInput.text, registry, maskingSettings.detectors);
+          selectionInput = {...selectionInput, text: maskSelection.text};
+        }
+        maskingNote = maskingPromptNote(registry) || undefined;
+        maskingMeta = {
+          mode: "preview",
+          entities: registry.size,
+          counts: Object.fromEntries(
+            Object.entries(maskDoc.stats).filter(([, count]) => typeof count === "number"),
+          ),
+        };
+      }
+      const pack = buildContextPack({
+        docId,
+        name: tab.name,
+        content,
+        selection: selectionInput,
+        settings: config.config.app.assistant.context,
+      });
+      const messages = buildCheckMessages({
+        docName: tab.name,
+        document: pack.document?.content ?? "(документ не включён в контекст настройками)",
+        selection: pack.selection?.text ?? "",
+        items: buildFindingItems(check.findings, targets, proposedIds),
+        maskingNote,
+      });
+
+      const pending: PendingModelStage = {
+        check,
+        docId,
+        docPath: tab.path,
+        targets,
+        registry,
+        messages,
+        promptUserText: messages[1]?.content ?? "",
+        maskingMeta,
+        contentHash: contentHash(tab.content),
+      };
+
+      if (maskingSettings.mode === "preview") {
+        // T1b: без подтверждения пользователя модель не вызывается — даже
+        // когда сущностей не найдено (превью показывает, что уйдёт).
+        const activeRegistry = registry;
+        pendingStage = pending;
+        set({
+          maskPreview: {
+            docId,
+            docPath: tab.path,
+            docName: tab.name,
+            contentHash: pending.contentHash,
+            maskedText: pack.document?.content ?? "",
+            promptChars: pack.totalChars,
+            truncated: pack.document?.truncated === true || pack.selection?.truncated === true,
+            documentIncluded: pack.document !== null,
+            entities:
+              activeRegistry === null
+                ? []
+                : activeRegistry.allRecords().map((record) => ({
+                    alias: activeRegistry.aliasOf(record),
+                    type: record.type,
+                    value: record.value,
+                  })),
+            counts: maskingMeta?.counts ?? {},
+            findings: check.findings.length,
+          },
+          modelNotice: null,
+        });
+        return Promise.resolve();
+      }
+
+      return sendModelStage(pending, "none");
+    } catch (e) {
+      pendingStage = null;
+      set({
+        maskPreview: null,
+        modelNotice: {
+          kind: "error",
+          key: "assistant.modelStage.error",
+          params: {error: e instanceof Error ? e.message : String(e)},
+        },
+      });
+      return Promise.resolve();
     }
   };
 
@@ -563,7 +707,9 @@ export const useAgentStore = create<AgentState>((set, get) => {
       };
     }
 
-    set({checkRunning: true, lastError: null, modelNotice: null, verdicts: []});
+    // Новый прогон отменяет неподтверждённое превью предыдущего.
+    pendingStage = null;
+    set({checkRunning: true, lastError: null, modelNotice: null, verdicts: [], maskPreview: null});
     const docId = sessionIds().docId(tab.path);
     const result = await get().runTool("check_document", {docId});
     if (!result.ok) {
@@ -607,7 +753,12 @@ export const useAgentStore = create<AgentState>((set, get) => {
     const config = useConfigStore.getState();
     const model = config.models[config.selectedModel] ?? null;
     if (model && check.findings.length > 0) {
-      await runModelStage(check, {path: tab.path, name: tab.name, content: tab.content}, docId, proposedIds);
+      await prepareModelStage(
+        check,
+        {path: tab.path, name: tab.name, content: tab.content},
+        docId,
+        proposedIds,
+      );
     }
 
     set({checkRunning: false, lastError: null});
@@ -617,6 +768,34 @@ export const useAgentStore = create<AgentState>((set, get) => {
   cancelCheck: () => {
     const runId = get().runId;
     if (runId) cancelChatRun(runId);
+  },
+
+  confirmMaskedSend: async () => {
+    const pending = pendingStage;
+    if (pending === null || get().modelRunning) return;
+    // Превью устарело: вкладка закрыта/переключена или текст изменился после
+    // показа — отправка не идёт, документ нужно проверить заново.
+    const tab = useEditorStore.getState().tabs.find((item) => item.path === pending.docPath);
+    if (!tab || contentHash(tab.content) !== pending.contentHash) {
+      pendingStage = null;
+      set({
+        maskPreview: null,
+        modelNotice: {kind: "error", key: "assistant.modelStage.previewStale"},
+      });
+      return;
+    }
+    pendingStage = null;
+    set({maskPreview: null});
+    await sendModelStage(pending, "confirmed");
+  },
+
+  cancelMaskedSend: () => {
+    if (pendingStage === null) return;
+    pendingStage = null;
+    set({
+      maskPreview: null,
+      modelNotice: {kind: "info", key: "assistant.modelStage.previewCancelled"},
+    });
   },
 
   /**
@@ -890,7 +1069,8 @@ export const useAgentStore = create<AgentState>((set, get) => {
       proposals: state.proposals.filter((item) => item.id !== proposalId),
     })),
 
-  clearFindings: () =>
+  clearFindings: () => {
+    pendingStage = null;
     set({
       findings: [],
       findingsDocId: null,
@@ -898,11 +1078,14 @@ export const useAgentStore = create<AgentState>((set, get) => {
       findingsAt: null,
       verdicts: [],
       modelNotice: null,
+      maskPreview: null,
       lastError: null,
-    }),
+    });
+  },
 
   resetSession: () => {
     resetSessionIds();
+    pendingStage = null;
     set({
       ...initialState,
       findings: [],

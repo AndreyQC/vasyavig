@@ -43,8 +43,8 @@ export interface AuditEntryInput {
    */
   masking?: {
     mode: "off" | "preview";
-    /** До T1b подтверждения нет — "none" (R2 плана 20261104_001). */
-    confirmation: "none";
+    /** T1b: "confirmed" — отправка прошла через превью; "none" — без превью. */
+    confirmation: "none" | "confirmed";
     entities: number;
     counts: Record<string, number>;
   };
@@ -137,7 +137,7 @@ function sanitize(input: AuditEntryInput, id: string, timestamp: string): AuditE
     }
     entry.masking = {
       mode: input.masking.mode === "preview" ? "preview" : "off",
-      confirmation: "none",
+      confirmation: input.masking.confirmation === "confirmed" ? "confirmed" : "none",
       entities: Math.max(0, Math.trunc(input.masking.entities) || 0),
       counts,
     };

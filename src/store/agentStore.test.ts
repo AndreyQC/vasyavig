@@ -60,6 +60,11 @@ const PATH = "C:\\ws\\docs\\a.md";
 beforeEach(() => {
   useEditorStore.setState(initialEditor, true);
   useConfigStore.setState(initialConfig, true);
+  // T1b: дефолт конфига — preview. Базовые кейсы работают без маскирования,
+  // группа «маскирование» включает preview сама.
+  const defaultConfig = structuredClone(useConfigStore.getState().config);
+  defaultConfig.app.assistant.masking.mode = "off";
+  useConfigStore.setState({config: defaultConfig});
   useAgentStore.setState(
     {
       ...initialAgent,
@@ -556,7 +561,7 @@ describe("рецепт письма HTML (8.4)", () => {
   });
 });
 
-describe("маскирование (8.5 T1c)", () => {
+describe("маскирование (8.5 T1c/T1b)", () => {
   const MASK_DOC =
     LEGACY_DOC +
     "\nСвязь: ivanov@example.com, тел. +7 (495) 123-45-67.\nAPI_TOKEN=super-secret-value-123\n";
@@ -574,7 +579,35 @@ describe("маскирование (8.5 T1c)", () => {
     useConfigStore.setState({config});
   }
 
-  it("маскирование on: секреты не уходят в промпт, replacement размаскирован, audit — счётчики", async () => {
+  it("preview: модель не вызывается, превью показывает алиасы, значения и маскированный текст", async () => {
+    resetUlidMonotonic();
+    openText(MASK_DOC);
+    enableModel();
+    enableMasking();
+
+    await useAgentStore.getState().runCheckDocument();
+
+    expect(runChatMock).not.toHaveBeenCalled();
+    const state = useAgentStore.getState();
+    expect(state.modelRunning).toBe(false);
+    const preview = state.maskPreview;
+    expect(preview).not.toBeNull();
+    expect(preview?.findings).toBeGreaterThan(0);
+    expect(preview?.entities.map((item) => item.type).sort()).toEqual([
+      "EMAIL",
+      "PHONE",
+      "SECRET",
+    ]);
+    expect(preview?.maskedText).not.toContain("ivanov@example.com");
+    expect(preview?.maskedText).not.toContain("super-secret-value-123");
+    expect(preview?.maskedText).toContain("[[VAS_EMAIL_");
+    expect(preview?.counts).toMatchObject({EMAIL: 1, PHONE: 1, SECRET: 1});
+    // Значения доступны только в памяти превью — для показа по клику (D8).
+    expect(preview?.entities.some((item) => item.value === "ivanov@example.com")).toBe(true);
+    expect(auditLog.list().find((entry) => entry.operation === "run")).toBeUndefined();
+  });
+
+  it("confirm: модель получает маскированный промпт, audit — confirmed, значения размаскированы", async () => {
     resetUlidMonotonic();
     openText(MASK_DOC);
     enableModel();
@@ -599,6 +632,10 @@ describe("маскирование (8.5 T1c)", () => {
     });
 
     await useAgentStore.getState().runCheckDocument();
+    expect(runChatMock).not.toHaveBeenCalled();
+    expect(useAgentStore.getState().maskPreview).not.toBeNull();
+
+    await useAgentStore.getState().confirmMaskedSend();
 
     expect(capturedPrompt).not.toContain("ivanov@example.com");
     expect(capturedPrompt).not.toContain("super-secret-value-123");
@@ -607,6 +644,7 @@ describe("маскирование (8.5 T1c)", () => {
     expect(capturedPrompt).toContain("Словарь плейсхолдеров");
 
     const state = useAgentStore.getState();
+    expect(state.maskPreview).toBeNull();
     const modelProposal = state.proposals.find(
       (item): item is ReplaceP => item.kind === "replace" && item.newText.includes("razdel-"),
     );
@@ -619,13 +657,13 @@ describe("маскирование (8.5 T1c)", () => {
 
     const runEntry = auditLog.list().find((entry) => entry.operation === "run");
     expect(runEntry?.masking?.mode).toBe("preview");
-    expect(runEntry?.masking?.confirmation).toBe("none");
+    expect(runEntry?.masking?.confirmation).toBe("confirmed");
     expect(runEntry?.masking?.entities).toBeGreaterThan(0);
     expect(Object.keys(runEntry?.masking?.counts ?? {})).toContain("EMAIL");
     expect(JSON.stringify(runEntry?.masking)).not.toContain("ivanov@example.com");
   });
 
-  it("маскирование: неизвестный плейсхолдер в ответе — вердикты отброшены", async () => {
+  it("preview: неизвестный плейсхолдер в ответе — вердикты отброшены", async () => {
     resetUlidMonotonic();
     openText(MASK_DOC);
     enableModel();
@@ -646,6 +684,7 @@ describe("маскирование (8.5 T1c)", () => {
     );
 
     await useAgentStore.getState().runCheckDocument();
+    await useAgentStore.getState().confirmMaskedSend();
 
     const state = useAgentStore.getState();
     expect(state.modelNotice?.key).toBe("assistant.modelStage.maskUnknown");
@@ -655,7 +694,7 @@ describe("маскирование (8.5 T1c)", () => {
     expect(runEntry?.result).toBe("error");
   });
 
-  it("маскирование: потерянные плейсхолдеры — предупреждение, замены применяются", async () => {
+  it("preview: потерянные плейсхолдеры — предупреждение, замены применяются", async () => {
     resetUlidMonotonic();
     openText(MASK_DOC);
     enableModel();
@@ -670,6 +709,7 @@ describe("маскирование (8.5 T1c)", () => {
     );
 
     await useAgentStore.getState().runCheckDocument();
+    await useAgentStore.getState().confirmMaskedSend();
 
     const state = useAgentStore.getState();
     expect(state.modelNotice?.key).toBe("assistant.modelStage.maskLost");
@@ -680,7 +720,76 @@ describe("маскирование (8.5 T1c)", () => {
     expect(runEntry?.result).toBe("ok");
   });
 
-  it("маскирование off (дефолт): промпт без изменений", async () => {
+  it("preview без сущностей: превью показывается, confirm отправляет текст как есть", async () => {
+    resetUlidMonotonic();
+    openText(LEGACY_DOC);
+    enableModel();
+    enableMasking();
+    const anchorId = await anchorsFindingIdIn(LEGACY_DOC);
+    runChatMock.mockResolvedValue(
+      chatOk(
+        JSON.stringify({
+          verdicts: [{findingId: anchorId, action: "explain", rationale: "ok"}],
+        }),
+      ),
+    );
+
+    await useAgentStore.getState().runCheckDocument();
+
+    const preview = useAgentStore.getState().maskPreview;
+    expect(preview).not.toBeNull();
+    expect(preview?.entities).toEqual([]);
+    expect(preview?.maskedText).toContain("[текст](#net-razdela)");
+    expect(runChatMock).not.toHaveBeenCalled();
+
+    await useAgentStore.getState().confirmMaskedSend();
+
+    const prompt = JSON.stringify(runChatMock.mock.calls[0][0].messages);
+    expect(prompt).toContain("[текст](#net-razdela)");
+    expect(useAgentStore.getState().modelNotice?.key).toBe("assistant.modelStage.ok");
+    const runEntry = auditLog.list().find((entry) => entry.operation === "run");
+    expect(runEntry?.masking?.confirmation).toBe("confirmed");
+    expect(runEntry?.masking?.entities).toBe(0);
+  });
+
+  it("cancel: модель не вызывается, notice previewCancelled, audit без run", async () => {
+    resetUlidMonotonic();
+    openText(MASK_DOC);
+    enableModel();
+    enableMasking();
+
+    await useAgentStore.getState().runCheckDocument();
+    expect(useAgentStore.getState().maskPreview).not.toBeNull();
+
+    useAgentStore.getState().cancelMaskedSend();
+
+    expect(runChatMock).not.toHaveBeenCalled();
+    const state = useAgentStore.getState();
+    expect(state.maskPreview).toBeNull();
+    expect(state.modelNotice?.key).toBe("assistant.modelStage.previewCancelled");
+    expect(auditLog.list().find((entry) => entry.operation === "run")).toBeUndefined();
+  });
+
+  it("stale: правка документа после превью — отправка не идёт", async () => {
+    resetUlidMonotonic();
+    openText(MASK_DOC);
+    enableModel();
+    enableMasking();
+
+    await useAgentStore.getState().runCheckDocument();
+    expect(useAgentStore.getState().maskPreview).not.toBeNull();
+
+    useEditorStore.getState().updateContent(PATH, MASK_DOC + "ещё строка\n");
+
+    await useAgentStore.getState().confirmMaskedSend();
+
+    expect(runChatMock).not.toHaveBeenCalled();
+    const state = useAgentStore.getState();
+    expect(state.maskPreview).toBeNull();
+    expect(state.modelNotice?.key).toBe("assistant.modelStage.previewStale");
+  });
+
+  it("маскирование off: промпт без изменений, превью нет", async () => {
     openText(MASK_DOC);
     enableModel();
     const anchorId = await anchorsFindingIdIn(MASK_DOC);
@@ -694,6 +803,7 @@ describe("маскирование (8.5 T1c)", () => {
 
     await useAgentStore.getState().runCheckDocument();
 
+    expect(useAgentStore.getState().maskPreview).toBeNull();
     const prompt = JSON.stringify(runChatMock.mock.calls[0][0].messages);
     expect(prompt).toContain("ivanov@example.com"); // без маскирования текст как есть
     const runEntry = auditLog.list().find((entry) => entry.operation === "run");

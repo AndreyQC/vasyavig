@@ -22,6 +22,7 @@ import {ContextChips} from "./ContextChips";
 import {FindingsList} from "./FindingsList";
 import {ProposalCard} from "./ProposalCard";
 import {EmailResultCard} from "./EmailResultCard";
+import {MaskingPreview} from "./MaskingPreview";
 import "./Assistant.css";
 
 /**
@@ -47,6 +48,7 @@ export function AssistantPanel() {
   const checkRunning = useAgentStore((s) => s.checkRunning);
   const modelRunning = useAgentStore((s) => s.modelRunning);
   const modelNotice = useAgentStore((s) => s.modelNotice);
+  const maskPreview = useAgentStore((s) => s.maskPreview);
   const verdicts = useAgentStore((s) => s.verdicts);
   const proposals = useAgentStore((s) => s.proposals);
   const lastError = useAgentStore((s) => s.lastError);
@@ -145,6 +147,8 @@ export function AssistantPanel() {
             {t("assistant.actions.needDocument")}
           </Text>
         )}
+
+        {maskPreview && !modelRunning && <MaskingPreview preview={maskPreview} />}
 
         {modelRunning && (
           <div className="assistant-model-stage">
