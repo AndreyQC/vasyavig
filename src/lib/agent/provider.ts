@@ -138,6 +138,10 @@ interface AttemptState {
   sawDelta: boolean;
   done: boolean;
   errorMessage: string | null;
+  /** finish_reason из choice — причина пустого ответа (T4, D-3). */
+  finishReason: string | null;
+  /** Есть ли reasoning_content (reasoning-модель) — T4, D-3. */
+  hasReasoning: boolean;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -190,6 +194,45 @@ function processSseLine(line: string, onPayload: (payload: string) => void): voi
   if (payload !== "") onPayload(payload);
 }
 
+/**
+ * Метаданные choice: `finish_reason` и наличие `reasoning_content` (T4, D-3).
+ * Нужны, чтобы отличить «модель упёрлась в лимит» / «модель вернула только
+ * рассуждение» от «эндпоинт вернул пустой content».
+ */
+function extractChoiceMeta(value: unknown): {finishReason: string | null; hasReasoning: boolean} {
+  const empty = {finishReason: null, hasReasoning: false};
+  if (!isRecord(value)) return empty;
+  const choices = value.choices;
+  if (!Array.isArray(choices) || choices.length === 0) return empty;
+  const choice = choices[0];
+  if (!isRecord(choice)) return empty;
+  const delta = isRecord(choice.delta) ? choice.delta : null;
+  const message = isRecord(choice.message) ? choice.message : null;
+  const finishReason = typeof choice.finish_reason === "string" ? choice.finish_reason : null;
+  const reasoning = delta?.reasoning_content ?? message?.reasoning_content;
+  return {
+    finishReason,
+    hasReasoning: typeof reasoning === "string" && reasoning.trim() !== "",
+  };
+}
+
+/** Точная причина пустого ответа вместо общего «Ответ модели пуст» (T4, D-3). */
+function describeEmptyResponse(finishReason: string | null, hasReasoning: boolean): string {
+  if (finishReason === "length") {
+    return "Ответ модели пуст: генерация прервана по лимиту токенов (finish_reason: length)";
+  }
+  if (finishReason === "content_filter") {
+    return "Ответ модели пуст: ответ отфильтрован провайдером (finish_reason: content_filter)";
+  }
+  if (hasReasoning) {
+    return "Ответ модели пуст: модель вернула только reasoning_content, без content";
+  }
+  if (finishReason != null && finishReason !== "stop") {
+    return `Ответ модели пуст (finish_reason: ${finishReason})`;
+  }
+  return "Ответ модели пуст: в ответе нет поля content";
+}
+
 function createResponseProcessor(
   streaming: boolean,
   onDelta: ((delta: string) => void) | undefined,
@@ -223,6 +266,9 @@ function createResponseProcessor(
       state.errorMessage = error;
       return;
     }
+    const meta = extractChoiceMeta(parsed);
+    if (meta.finishReason != null) state.finishReason = meta.finishReason;
+    if (meta.hasReasoning) state.hasReasoning = true;
     const content = extractChoiceContent(parsed);
     if (content) emit(content);
   };
@@ -241,8 +287,16 @@ function createResponseProcessor(
       state.errorMessage = error;
       return;
     }
+    const meta = extractChoiceMeta(parsed);
+    if (meta.finishReason != null) state.finishReason = meta.finishReason;
+    if (meta.hasReasoning) state.hasReasoning = true;
     const content = extractChoiceContent(parsed);
-    if (content) emit(content);
+    if (content) {
+      emit(content);
+      return;
+    }
+    // Тело разобралось, но текста нет — сообщаем точную причину (T4, D-3).
+    state.errorMessage = describeEmptyResponse(state.finishReason, state.hasReasoning);
   };
 
   return {
@@ -267,10 +321,15 @@ function createResponseProcessor(
       }
       buffer += decoder.decode();
       const tail = buffer.trim();
-      if (tail === "") return;
-      // Endpoint мог проигнорировать stream и вернуть один JSON.
-      if (tail.startsWith("{")) handleWholeJson(tail);
-      else processSseLine(tail, handlePayload);
+      if (tail !== "") {
+        // Endpoint мог проигнорировать stream и вернуть один JSON.
+        if (tail.startsWith("{")) handleWholeJson(tail);
+        else processSseLine(tail, handlePayload);
+      }
+      // Стрим без текста — та же пустая проблема, но с причиной (T4, D-3).
+      if (state.text === "" && state.errorMessage == null) {
+        state.errorMessage = describeEmptyResponse(state.finishReason, state.hasReasoning);
+      }
     },
   };
 }
@@ -309,9 +368,20 @@ export function createTauriTransport(): ChatTransport {
   return {
     async send(req: ChatTransportRequest): Promise<void> {
       const {Channel, invoke} = await import("@tauri-apps/api/core");
-      const channel = new Channel<{data: number[]}>();
+      const channel = new Channel<{data: number[]; end?: boolean}>();
       let stopped = false;
+      let markEnd: () => void = () => {};
+      // T4, D-4: крупные сообщения канала Tauri доставляет асинхронно
+      // (fetch), поэтому резолв `invoke` ≠ конец данных. Ждём маркер конца
+      // потока от Rust — он приходит после всех чанков (порядок по индексу).
+      const endSeen = new Promise<void>((resolve) => {
+        markEnd = resolve;
+      });
       channel.onmessage = (message) => {
+        if (message?.end) {
+          markEnd();
+          return;
+        }
         if (stopped) return;
         const keepGoing = req.onBytes(new Uint8Array(message.data));
         if (!keepGoing) {
@@ -329,11 +399,20 @@ export function createTauriTransport(): ChatTransport {
           timeoutMs: req.timeoutMs,
           onEvent: channel,
         });
+        await awaitChannelEnd(endSeen);
       } catch (e) {
         throw toTransportError(e);
       }
     },
   };
+}
+
+/**
+ * Ждать маркер конца канала (T4, D-4). Таймаут — страховка: если маркер не
+ * пришёл (старый бинарник, обрыв), лучше закрыть поток, чем висеть.
+ */
+export async function awaitChannelEnd(endSeen: Promise<void>, timeoutMs = 5000): Promise<void> {
+  await Promise.race([endSeen, delay(timeoutMs)]);
 }
 
 let defaultTransport: ChatTransport | null = null;
@@ -376,7 +455,14 @@ export async function runChat(opts: ChatOptions): Promise<ChatResult> {
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       if (runState.cancelled) return cancelledResult("");
       attempts++;
-      const state: AttemptState = {text: "", sawDelta: false, done: false, errorMessage: null};
+      const state: AttemptState = {
+        text: "",
+        sawDelta: false,
+        done: false,
+        errorMessage: null,
+        finishReason: null,
+        hasReasoning: false,
+      };
       const processor = createResponseProcessor(streaming, opts.onDelta, state);
 
       try {

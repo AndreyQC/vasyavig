@@ -4,6 +4,7 @@ import {afterEach, describe, expect, it} from "vitest";
 import type {LlmModelConfig, LlmRequestConfig} from "./config";
 import {
   ChatTransportError,
+  awaitChannelEnd,
   cancelChatRun,
   runChat,
   type ChatTransport,
@@ -374,5 +375,25 @@ describe("provider cancellation", () => {
     expect(result.cancelled).toBe(true);
     expect(result.ok).toBe(false);
     expect(deltas[0]).toBe("first");
+  });
+});
+
+describe("awaitChannelEnd (T4, D-4)", () => {
+  it("возвращается, когда маркер конца пришёл", async () => {
+    let markEnd: () => void = () => {};
+    const endSeen = new Promise<void>((resolve) => {
+      markEnd = resolve;
+    });
+    setTimeout(markEnd, 10);
+    const started = Date.now();
+    await awaitChannelEnd(endSeen, 2000);
+    expect(Date.now() - started).toBeLessThan(1000);
+  });
+
+  it("не зависает, если маркер не пришёл (таймаут)", async () => {
+    const never = new Promise<void>(() => {});
+    const started = Date.now();
+    await awaitChannelEnd(never, 50);
+    expect(Date.now() - started).toBeLessThan(1000);
   });
 });
