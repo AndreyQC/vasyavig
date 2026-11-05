@@ -28,7 +28,14 @@ export interface EntityIndexEntry {
   /** lowercase-форма EntityType (как в href). */
   type: string;
   canonical: string;
+  /** Наблюдаемые в документах тексты (из разметки/скана). */
   forms: string[];
+  /**
+   * Ручные формы сущности (T6-1): кросс-языковые синонимы, «John Smith» ≡
+   * «Иванов Иван Иваныч». Наблюдаемых форм не портят — при merge/scan
+   * сохраняются (раньше терялись). Необязательное поле: в файлах T3 его нет.
+   */
+  aliases?: string[];
 }
 
 /** Разбор JSONL: битые/неполные строки пропускаются. */
@@ -45,11 +52,16 @@ export function parseEntitiesJsonl(text: string): EntityIndexEntry[] {
       if (typeof rec.canonical !== "string" || !Array.isArray(rec.forms)) continue;
       const forms = rec.forms.filter((f): f is string => typeof f === "string");
       if (forms.length === 0) continue;
+      // `aliases` — поле T6-1; в старых файлах отсутствует → пусто (бэкомпат).
+      const aliases = Array.isArray(rec.aliases)
+        ? rec.aliases.filter((a): a is string => typeof a === "string")
+        : [];
       entries.push({
         ulid: rec.ulid,
         type: rec.type,
         canonical: rec.canonical,
         forms: [...new Set([rec.canonical, ...forms])].sort(),
+        aliases: [...new Set(aliases)].sort(),
       });
     } catch {
       // битая строка — пропускаем, файл производный
@@ -62,14 +74,18 @@ export function parseEntitiesJsonl(text: string): EntityIndexEntry[] {
 export function serializeEntitiesJsonl(entries: EntityIndexEntry[]): string {
   return [...entries]
     .sort((a, b) => (a.ulid < b.ulid ? -1 : a.ulid > b.ulid ? 1 : 0))
-    .map((entry) =>
-      JSON.stringify({
+    .map((entry) => {
+      const record: Record<string, unknown> = {
         ulid: entry.ulid,
         type: entry.type,
         canonical: entry.canonical,
         forms: [...new Set([entry.canonical, ...entry.forms])].sort(),
-      }),
-    )
+      };
+      // пустые aliases не пишем — файл остаётся совместимым с T3-форматом.
+      const aliases = [...new Set(entry.aliases ?? [])].sort();
+      if (aliases.length > 0) record.aliases = aliases;
+      return JSON.stringify(record);
+    })
     .join("\n");
 }
 
@@ -82,6 +98,7 @@ export interface MergeEntitiesResult {
 /**
  * Слияние индексов по ULID: canonical и type существующей записи неизменны
  * (первая размеченная форма — решение, T3-2), forms — объединение.
+ * Ручные `aliases` (T6-1) сохраняются: скан/пересборка их не теряет.
  */
 export function mergeEntitiesIndex(
   existing: readonly EntityIndexEntry[],
@@ -89,7 +106,11 @@ export function mergeEntitiesIndex(
 ): MergeEntitiesResult {
   const byUlid = new Map<string, EntityIndexEntry>();
   for (const entry of existing) {
-    byUlid.set(entry.ulid, {...entry, forms: [...new Set([entry.canonical, ...entry.forms])].sort()});
+    byUlid.set(entry.ulid, {
+      ...entry,
+      forms: [...new Set([entry.canonical, ...entry.forms])].sort(),
+      aliases: [...new Set(entry.aliases ?? [])].sort(),
+    });
   }
   const conflicts: Array<{ulid: string; types: string[]}> = [];
   for (const entry of incoming) {
@@ -98,6 +119,7 @@ export function mergeEntitiesIndex(
       byUlid.set(entry.ulid, {
         ...entry,
         forms: [...new Set([entry.canonical, ...entry.forms])].sort(),
+        aliases: [...new Set(entry.aliases ?? [])].sort(),
       });
       continue;
     }
@@ -106,11 +128,16 @@ export function mergeEntitiesIndex(
       if (!conflicts.some((c) => c.ulid === entry.ulid)) conflicts.push({ulid: entry.ulid, types});
     }
     known.forms = [...new Set([...known.forms, entry.canonical, ...entry.forms])].sort();
+    known.aliases = [...new Set([...(known.aliases ?? []), ...(entry.aliases ?? [])])].sort();
   }
   return {entries: [...byUlid.values()], typeConflicts: conflicts};
 }
 
-/** Точное совпадение значения с формой/каноном записи (матчинг склонений). */
+/**
+ * Точное совпадение значения с формой/каноном/алиасом записи (матчинг
+ * склонений). Алиас (ручной, T6-1) проверяется первым — это явное намерение
+ * пользователя, оно сильнее наблюдаемой формы.
+ */
 export function matchEntityEntry(
   entries: readonly EntityIndexEntry[],
   value: string,
@@ -118,6 +145,11 @@ export function matchEntityEntry(
   opts?: {fuzzy?: boolean},
 ): EntityIndexEntry | null {
   const wantType = type?.toLowerCase();
+  // алиас — ручное намерение пользователя (кросс-языковая связка)
+  for (const entry of entries) {
+    if (wantType != null && entry.type !== wantType) continue;
+    if ((entry.aliases ?? []).includes(value)) return entry;
+  }
   // точное — приоритет: наблюдаемые формы важнее сгенерированных
   for (const entry of entries) {
     if (wantType != null && entry.type !== wantType) continue;
