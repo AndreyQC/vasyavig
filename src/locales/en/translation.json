@@ -24,7 +24,8 @@
     "showGraph": "Document graph",
     "createFolder": "New folder",
     "copyPath": "Copy path",
-    "recentWorkspaces": "Recent"
+    "recentWorkspaces": "Recent",
+    "showRegistry": "Registry panel"
   },
   "empty": {
     "hint": "Add a folder to the workspace and pick a Markdown/YFM file",
@@ -457,5 +458,51 @@
   "quickOpen": {
     "placeholder": "File name…",
     "empty": "No matches"
+  },
+  "registry": {
+    "title": "Registry",
+    "reload": "Reload registry files",
+    "loadError": "Failed to read registry files",
+    "noWorkspace": "Open a folder or workspace — the registry lives next to it",
+    "search": "Search by canonical, forms and aliases",
+    "filterAll": "All types",
+    "empty": "Registry is empty",
+    "emptyHint": "Entities appear when you mark text up (Entity button, NER Mark / Add to registry)",
+    "formsCount": "forms: {{count}}",
+    "aliasesCount": "aliases: {{count}}",
+    "duplicatesTitle": "Possible duplicates (one form in several records) — merging rewrites anchors in open documents",
+    "duplicateForm": "“{{form}}” — records: {{count}}",
+    "duplicateMerge": "Merge",
+    "duplicateOpen": "Open",
+    "back": "Back",
+    "editorGone": "The record was deleted or changed",
+    "canonical": "Canonical form",
+    "save": "Save",
+    "type": "Type",
+    "formsHint": "Observed forms ({{count}}) — from documents, read-only",
+    "formObserved": "Form observed in a document",
+    "aliases": "Aliases (manual)",
+    "aliasesEmpty": "No aliases",
+    "aliasPlaceholder": "New alias (cross-language form)",
+    "aliasAdd": "Add",
+    "aliasRemove": "Remove alias",
+    "relationsTitle": "Relations",
+    "relationsEmpty": "No relations",
+    "kind": {
+      "works_at": "works_at",
+      "member_of": "member_of",
+      "role_in": "role_in",
+      "alias_of": "alias_of",
+      "co_occurs": "co_occurs"
+    },
+    "kindDirectionIn": "incoming",
+    "kindInferred": "inferred by scan",
+    "relationRemove": "Remove",
+    "relationAdd": "Link",
+    "relationTarget": "Target entity",
+    "delete": "Delete record",
+    "deleteConfirm": "Delete the registry record? Anchors in documents will stay without the dictionary.",
+    "deleteYes": "Delete",
+    "deleteNo": "Cancel"
   }
 }

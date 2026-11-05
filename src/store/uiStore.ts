@@ -4,8 +4,11 @@ import {persist} from "zustand/middleware";
 export type ThemeMode = "light" | "dark" | "system";
 export type UiLang = "ru" | "en";
 
-/** Содержимое сайдбара: дерево файлов или дашборд задач (план 20261027_005 §5). */
-export type SidebarMode = "tree" | "tasks";
+/**
+ * Содержимое сайдбара: дерево файлов, дашборд задач (план 20261027_005 §5)
+ * или панель справочника (T6-2, план 20261105_011).
+ */
+export type SidebarMode = "tree" | "tasks" | "registry";
 
 /**
  * Что показано в главной панели: документ активной вкладки или панель графа

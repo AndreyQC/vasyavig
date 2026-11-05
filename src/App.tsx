@@ -4,6 +4,7 @@ import {Layout} from "./components/Layout";
 import {SidebarHeader} from "./components/Sidebar/SidebarHeader";
 import {FileTree} from "./components/Sidebar/FileTree";
 import {TaskDashboard} from "./components/Sidebar/TaskDashboard";
+import {RegistryPanel} from "./components/Registry/RegistryPanel";
 import {DocumentGraphPanel} from "./components/Graph/DocumentGraphPanel";
 import {EmptyState} from "./components/EditorArea/EmptyState";
 import {EditorTabs} from "./components/EditorArea/EditorTabs";
@@ -83,13 +84,19 @@ function App() {
   }, [activeName, hasDirty]);
 
   // шапка сайдбара закреплена; скроллится только содержимое (flex-колонка);
-  // содержимое — дерево файлов или дашборд задач (план 20261027_005 §5)
+  // содержимое — дерево файлов, дашборд задач или панель справочника (T6-2)
   const sidebarMode = useUiStore((s) => s.sidebarMode);
   const sidebar = (
     <div className="sidebar">
       <SidebarHeader />
       <div className="sidebar__content">
-        {sidebarMode === "tasks" ? <TaskDashboard /> : <FileTree />}
+        {sidebarMode === "tasks" ? (
+          <TaskDashboard />
+        ) : sidebarMode === "registry" ? (
+          <RegistryPanel />
+        ) : (
+          <FileTree />
+        )}
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import {useEffect, useRef, useState} from "react";
 import {Button, Icon, Text, Tooltip} from "@gravity-ui/uikit";
-import {ArrowRotateRight, Eye, EyeSlash, FilePlus, FolderPlus, Folders, GraphNode, ListCheck, ListUl, Sparkles, TrashBin} from "@gravity-ui/icons";
+import {ArrowRotateRight, Books, Eye, EyeSlash, FilePlus, FolderPlus, Folders, GraphNode, ListCheck, ListUl, Sparkles, TrashBin} from "@gravity-ui/icons";
 import {useTranslation} from "react-i18next";
 import {useFileStore} from "../../store/fileStore";
 import {useUiStore} from "../../store/uiStore";
@@ -108,6 +108,17 @@ export function SidebarHeader() {
               onClick={() => setSidebarMode(sidebarMode === "tasks" ? "tree" : "tasks")}
             >
               <Icon data={ListCheck} />
+            </Button>
+          </Tooltip>
+        )}
+        {hasRoots && (
+          <Tooltip content={t(sidebarMode === "registry" ? "sidebar.showTree" : "sidebar.showRegistry")}>
+            <Button
+              view={sidebarMode === "registry" ? "normal" : "flat"}
+              size="m"
+              onClick={() => setSidebarMode(sidebarMode === "registry" ? "tree" : "registry")}
+            >
+              <Icon data={Books} />
             </Button>
           </Tooltip>
         )}

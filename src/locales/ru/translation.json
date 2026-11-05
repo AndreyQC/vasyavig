@@ -24,7 +24,8 @@
     "showGraph": "Граф документов",
     "createFolder": "Новая папка",
     "copyPath": "Копировать путь",
-    "recentWorkspaces": "Недавние"
+    "recentWorkspaces": "Недавние",
+    "showRegistry": "Панель справочника"
   },
   "empty": {
     "hint": "Добавьте папку в workspace и выберите Markdown/YFM файл",
@@ -458,5 +459,51 @@
   "quickOpen": {
     "placeholder": "Имя файла…",
     "empty": "Ничего не найдено"
+  },
+  "registry": {
+    "title": "Справочник",
+    "reload": "Перечитать файлы справочника",
+    "loadError": "Файлы справочника не прочитались",
+    "noWorkspace": "Откройте папку или workspace — справочник хранится рядом",
+    "search": "Поиск по канону, формам и алиасам",
+    "filterAll": "Все типы",
+    "empty": "Справочник пуст",
+    "emptyHint": "Сущности появляются при разметке («Сущность», NER «Разметить»/«В справочник»)",
+    "formsCount": "форм: {{count}}",
+    "aliasesCount": "алиасов: {{count}}",
+    "duplicatesTitle": "Возможные дубли (одна форма у нескольких записей) — слияние переписывает якоря в открытых документах",
+    "duplicateForm": "«{{form}}» — записей: {{count}}",
+    "duplicateMerge": "Слить",
+    "duplicateOpen": "Открыть",
+    "back": "Назад",
+    "editorGone": "Запись удалена или изменилась",
+    "canonical": "Эталонная форма",
+    "save": "Сохранить",
+    "type": "Тип",
+    "formsHint": "Наблюдаемые формы ({{count}}) — из документов, только чтение",
+    "formObserved": "Форма из документа",
+    "aliases": "Алиасы (ручные)",
+    "aliasesEmpty": "Алиасов нет",
+    "aliasPlaceholder": "Новый алиас (кросс-языковая форма)",
+    "aliasAdd": "Добавить",
+    "aliasRemove": "Убрать алиас",
+    "relationsTitle": "Связи",
+    "relationsEmpty": "Связей нет",
+    "kind": {
+      "works_at": "works_at",
+      "member_of": "member_of",
+      "role_in": "role_in",
+      "alias_of": "alias_of",
+      "co_occurs": "co_occurs"
+    },
+    "kindDirectionIn": "входящая",
+    "kindInferred": "выведенная сканом",
+    "relationRemove": "Убрать",
+    "relationAdd": "Связать",
+    "relationTarget": "Сущность-цель",
+    "delete": "Удалить запись",
+    "deleteConfirm": "Удалить запись справочника? Якоря в документах останутся без словаря.",
+    "deleteYes": "Удалить",
+    "deleteNo": "Отмена"
   }
 }
