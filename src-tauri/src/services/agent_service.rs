@@ -35,9 +35,6 @@ const MAX_ERROR_BODY: usize = 4 * 1024;
 /// Суммарный лимит SSE-ответа одного запуска.
 const MAX_STREAM_BYTES: usize = 8 * 1024 * 1024;
 
-/// Временная диагностика T4: сколько байт ответа писать в temp-файл.
-const MAX_CAPTURE_BYTES: usize = 64 * 1024;
-
 /// Один чанк ответа: сырые байты, фронтенд сам режет на SSE-строки.
 /// `end: true` — маркер конца потока: Tauri доставляет крупные сообщения
 /// канала асинхронно (fetch), и без маркера фронтенд успевает закрыть буфер
@@ -156,8 +153,6 @@ impl AgentService {
 
         let mut stream = response.bytes_stream();
         let mut total = 0usize;
-        // Временная диагностика T4: сырое тело ответа в temp-файл.
-        let mut capture: Vec<u8> = Vec::new();
         loop {
             let Some(chunk) = wait_cancellable(stream.next(), &cancel_token).await? else {
                 break;
@@ -169,11 +164,6 @@ impl AgentService {
             total += bytes.len();
             if total > MAX_STREAM_BYTES {
                 return Err("Ответ модели превысил допустимый размер".to_string());
-            }
-            if capture.len() < MAX_CAPTURE_BYTES {
-                let room = MAX_CAPTURE_BYTES - capture.len();
-                let take = room.min(bytes.len());
-                capture.extend_from_slice(&bytes[..take]);
             }
             on_event
                 .send(StreamChunk {
@@ -189,7 +179,6 @@ impl AgentService {
                 end: true,
             })
             .map_err(|e| format!("Отправка маркера конца: {e}"))?;
-        let _ = std::fs::write(std::env::temp_dir().join("vasyavig-t4-raw.txt"), &capture);
 
         if cancel_token.load(Ordering::SeqCst) {
             return Err(CANCELED.to_string());

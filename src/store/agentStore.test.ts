@@ -694,7 +694,7 @@ describe("маскирование (8.5 T1c/T1b)", () => {
     expect(runEntry?.result).toBe("error");
   });
 
-  it("preview: потерянные плейсхолдеры — предупреждение, замены применяются", async () => {
+  it("preview: одни пояснения (explain) — без ложного «потеряно плейсхолдеров»", async () => {
     resetUlidMonotonic();
     openText(MASK_DOC);
     enableModel();
@@ -712,9 +712,10 @@ describe("маскирование (8.5 T1c/T1b)", () => {
     await useAgentStore.getState().confirmMaskedSend();
 
     const state = useAgentStore.getState();
-    expect(state.modelNotice?.key).toBe("assistant.modelStage.maskLost");
+    // D-5: модель не писала текст с плейсхолдерами — нечего «терять».
+    expect(state.modelNotice?.key).toBe("assistant.modelStage.ok");
     expect(state.modelNotice?.kind).toBe("info");
-    expect(state.modelNotice?.params).toMatchObject({lost: 3});
+    expect(state.modelNotice?.params).toMatchObject({lost: 0});
     expect(state.verdicts).toHaveLength(1);
     const runEntry = auditLog.list().find((entry) => entry.operation === "run");
     expect(runEntry?.result).toBe("ok");

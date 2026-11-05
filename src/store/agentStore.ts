@@ -421,8 +421,14 @@ export const useAgentStore = create<AgentState>((set, get) => {
                 : undefined,
           }))
         : parsed.verdicts;
+      // Потерянные плейсхолдеры считаем только если модель писала текст с
+      // плейсхолдерами (есть fix-вердикт). При одних пояснениях (explain)
+      // модель не обязана эхом возвращать алиасы — иначе notice «потеряно
+      // плейсхолдеров» срабатывает ложно (T4, D-5).
       const lostAliases =
-        pending.registry && pending.maskingMeta
+        pending.registry &&
+        pending.maskingMeta &&
+        verdicts.some((verdict) => verdict.action === "fix")
           ? missingAliasIds(pending.promptUserText, chat.text, pending.registry).length
           : 0;
 
