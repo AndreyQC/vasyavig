@@ -88,7 +88,7 @@ describe("config defaults", () => {
     expect(config.app.assistant.masking).toEqual({
       // T1b: превью — дефолт (R1); T2 (N8): ner включён из коробки.
       mode: "preview",
-      detectors: ["secrets", "email", "phone", "ner"],
+      detectors: ["secrets", "email", "phone", "ner", "rules"],
     });
   });
 

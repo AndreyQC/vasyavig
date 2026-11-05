@@ -112,10 +112,16 @@ export class RunRegistry {
   /**
    * Regex всех алиасов активного префикса: группы (TYPE)(ULID); совпадения
    * перебирать через matchAll.
+   *
+   * Толерантен к «дрейфу» (T6-9, приём из guardrails): модель может вернуть
+   * алиас с лишними пробелами или в другом регистре — `[[ VAS_PERSON_01J… ]]`.
+   * Допускаем до 3 символов пробелов по краям и регистронезависимое сравнение.
    */
   aliasPattern(): RegExp {
-    const typePart = "[A-Z_]+";
-    const ulidPart = "[0-9A-HJKMNP-TV-Z]{26}";
-    return new RegExp(`${escapeRegExp(this.prefix.open)}(${typePart})_(${ulidPart})${escapeRegExp(this.prefix.close)}`, "g");
+    const typePart = "[A-Za-z_]+";
+    const ulidPart = "[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26}";
+    const open = escapeRegExp(this.prefix.open);
+    const close = escapeRegExp(this.prefix.close);
+    return new RegExp(`${open}\\s{0,3}(${typePart})_(${ulidPart})\\s{0,3}${close}`, "gi");
   }
 }

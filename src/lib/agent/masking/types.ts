@@ -18,7 +18,27 @@ export type EntityType =
   | "URL_CRED";
 
 /** Идентификаторы детекторов — совпадают со значениями `masking.detectors` конфига. */
-export type DetectorId = "secrets" | "email" | "phone" | "url_credentials" | "ner";
+export type DetectorId = "secrets" | "email" | "phone" | "url_credentials" | "ner" | "rules";
+
+/**
+ * Типы правил (T6-9) → системные типы маскирования. Неизвестный тип правила
+ * маскируется как SECRET (privacy-first: лучше замаскировать лишнее, чем
+ * пропустить чувствительное значение).
+ */
+export const RULE_TYPE_TO_ENTITY: Record<string, EntityType> = {
+  person: "PERSON",
+  org: "ORG",
+  loc: "LOC",
+  email: "EMAIL",
+  phone: "PHONE",
+  secret: "SECRET",
+  url_cred: "URL_CRED",
+};
+
+/** Тип правила → системный тип (fallback — SECRET). */
+export function entityTypeForRule(ruleType: string): EntityType {
+  return RULE_TYPE_TO_ENTITY[ruleType.toLowerCase()] ?? "SECRET";
+}
 
 /** Найденное чувствительное значение: спан [start, end) в исходном тексте. */
 export interface DetectorSpan {

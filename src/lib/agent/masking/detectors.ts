@@ -9,7 +9,23 @@
  */
 
 import {detectNer} from "./ner";
-import type {DetectorId, DetectorSpan, EntityType} from "./types";
+import {
+  activeDetectorRules,
+  compileRules,
+  resolveOverlaps,
+  runRules,
+  type CompiledRule,
+} from "./rules";
+import {DEFAULT_DETECTOR_RULES} from "./rules.default";
+import {entityTypeForRule, type DetectorId, type DetectorSpan, type EntityType} from "./types";
+
+/** Подключить пользовательские правила (harness.yaml `entities.rules`). */
+export {setCustomDetectorRules} from "./rules";
+
+/** Скомпилированный набор правил (встроенные + пользовательские). */
+export function detectorRules(): CompiledRule[] {
+  return [...compileRules(DEFAULT_DETECTOR_RULES), ...activeDetectorRules()];
+}
 
 interface Rule {
   detector: DetectorId;
@@ -123,21 +139,66 @@ export function detectText(text: string, detectors: readonly DetectorId[]): Dete
   }
   // NER (T2, D3): правила+словари в общем реестре; пересечения — в mergeSpans.
   if (enabled.has("ner")) spans.push(...detectNer(text));
-  return mergeSpans(spans);
+  // Правила-детекторы (T6-9): пересечения внутри набора — union-span.
+  if (enabled.has("rules")) {
+    const ruleSpans = resolveOverlaps(runRules(text, detectorRules()));
+    spans.push(
+      ...ruleSpans.map((span) => ({
+        start: span.start,
+        end: span.end,
+        value: span.value,
+        type: entityTypeForRule(span.type),
+        detector: "rules" as const,
+      })),
+    );
+  }
+  return mergeSpans(spans, text);
 }
 
-/** Слияние пересекающихся спанов: сортировка по началу, затем по длине по убыванию. */
-export function mergeSpans<T extends {start: number; end: number}>(spans: T[]): T[] {
+/**
+ * Слияние пересекающихся спанов — **union-span** (подход guardrails,
+ * `resolveConflicts`): пересекающиеся спаны объединяются в `[min, max)`,
+ * атрибуция — самому длиннейшему.
+ *
+ * Зачем не longest-wins: при отбрасывании более короткого пересекающегося
+ * спана его непересекающиеся байты остаются открытым текстом — часть
+ * чувствительного значения утекает в промпт.
+ *
+ * @param text — исходный текст: нужен, чтобы пересчитать `value` объединённого
+ *   спана (иначе unmask восстановит не то, что было замаскировано).
+ */
+export function mergeSpans<T extends {start: number; end: number; value?: string}>(
+  spans: T[],
+  text?: string,
+): T[] {
   const sorted = [...spans].sort(
     (a, b) => a.start - b.start || b.end - b.start - (a.end - a.start),
   );
   const out: T[] = [];
-  let lastEnd = -1;
+  let current: T | null = null;
   for (const span of sorted) {
-    if (span.start >= lastEnd) {
-      out.push(span);
-      lastEnd = span.end;
+    if (current == null) {
+      current = {...span};
+      continue;
     }
+    if (span.start < current.end) {
+      // пересечение — объединяем; тип и атрибуция у длиннейшего
+      const longest: T =
+        span.end - span.start > current.end - current.start ? span : current;
+      const merged: T = {
+        ...longest,
+        start: Math.min(current.start, span.start),
+        end: Math.max(current.end, span.end),
+      };
+      if (text != null && merged.value !== undefined) {
+        merged.value = text.slice(merged.start, merged.end);
+      }
+      current = merged;
+      continue;
+    }
+    out.push(current);
+    current = {...span};
   }
+  if (current) out.push(current);
   return out;
 }

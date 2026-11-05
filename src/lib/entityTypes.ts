@@ -12,6 +12,8 @@
 import {parseDocument} from "yaml";
 import {defaultReadProbe, findHarnessRoot, type ReadProbe} from "./harnessIndex";
 import type {EntityType} from "./agent/masking/types";
+import {setCustomDetectorRules} from "./agent/masking/detectors";
+import {parseDetectorRules} from "./agent/masking/rules";
 
 /** Системные типы — участвуют в маскировании и алиасах. */
 export const SYSTEM_ENTITY_TYPES: readonly EntityType[] = [
@@ -135,11 +137,14 @@ export async function ensureEntityTypes(dir: string, probe: ReadProbe = defaultR
   const root = await findHarnessRoot(dir, probe);
   if (root == null) {
     setEntityTypes(defaultEntityTypes());
+    setCustomDetectorRules([]);
     return currentEntityTypes();
   }
   const text = await probe(`${root}/harness.yaml`);
   const config = text == null ? defaultEntityTypes() : parseEntityTypes(text);
   setEntityTypes(config);
+  // T6-9: пользовательские правила-детекторы из той же harness.yaml.
+  setCustomDetectorRules(text == null ? [] : parseDetectorRules(text));
   return config;
 }
 

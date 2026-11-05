@@ -23,7 +23,7 @@ export type EditorSpellcheck = "off" | "ru" | "en" | "ru+en";
 export type EditorDefaultMode = "wysiwyg" | "markup" | "split";
 export type ContextChunking = "headings" | "none";
 export type MaskingMode = "off" | "preview";
-export type MaskingDetector = "secrets" | "email" | "phone" | "url_credentials" | "ner";
+export type MaskingDetector = "secrets" | "email" | "phone" | "url_credentials" | "ner" | "rules";
 
 export interface ModelCapabilities {
   streaming: boolean;
@@ -145,7 +145,7 @@ export function createDefaultConfig(): VasyavigConfig {
         // T1b (R1): превью отправки — дефолт; без подтверждения модель не зовётся.
         // T2 (N8): ner включён по умолчанию — preview с подтверждением делает
         // это безопасным, персоны/организации ловятся из коробки.
-        masking: {mode: "preview", detectors: ["secrets", "email", "phone", "ner"]},
+        masking: {mode: "preview", detectors: ["secrets", "email", "phone", "ner", "rules"]},
         audit: {enabled: true, retainRuns: 50},
       },
     },
@@ -255,6 +255,7 @@ const MASKING_DETECTORS: readonly MaskingDetector[] = [
   "phone",
   "url_credentials",
   "ner",
+  "rules",
 ];
 
 function parseCapabilities(value: unknown, path: string): ModelCapabilities {
