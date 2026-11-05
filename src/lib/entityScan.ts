@@ -8,7 +8,8 @@
 
 import {collectMarkedEntities, parseEntityLinks} from "./agent/masking/vasEntityMarkup";
 import {expandEntityForms} from "./agent/masking/declension";
-import type {EntitiesIndexFile} from "./entitiesIndex";
+import {compileRegistryForms, matchRegistryForms} from "./registryHighlightExtension";
+import type {EntityIndexEntry, EntitiesIndexFile} from "./entitiesIndex";
 
 /** Вхождение разметки в документе (позиции raw-markdown). */
 export interface EntityOccurrence {
@@ -201,6 +202,79 @@ export function diffEntitiesScan(
   }
 
   return {changed, missing, unknownKnown, typeConflicts: scan.typeConflicts};
+}
+
+/** Неоднозначная форма в репо: одна форма → несколько ULID (T6-6, сигнал T6-5). */
+export interface AmbiguousForm {
+  value: string;
+  type: string;
+  ulids: string[];
+  /** Первые вхождения (для перехода к документу). */
+  occurrences: Array<{doc: string; start: number; end: number}>;
+}
+
+/** Запись справочника, не встретившаяся ни в якорях, ни в текстах (T6-6). */
+export interface UnusedEntity {
+  ulid: string;
+  type: string;
+  canonical: string;
+}
+
+export interface RegistryFormsDiff {
+  ambiguous: AmbiguousForm[];
+  unused: UnusedEntity[];
+}
+
+/**
+ * Скан форм справочника по текстам репо (T6-6, план 20261105_013): не только
+ * якоря (byUlid), но и вхождения форм в текстах. ambiguous — вхождения вне
+ * разметки, у формы несколько ULID (однофамильцы/дубли; разрешение — панель
+ * конфликтов T6-5); unused — записи, чьи формы/алиасы/склонения не
+ * встретились ни в якорях, ни в текстах (кандидаты на выведение; совпадение
+ * «в другом написании» исключено частично — матчатся и склонения).
+ */
+export function scanRegistryForms(
+  docContents: readonly {path: string; content: string}[],
+  index: EntitiesIndexFile,
+  scan: EntitiesScan,
+): RegistryFormsDiff {
+  const compiled = compileRegistryForms(index.entries);
+  const ambiguousByValue = new Map<string, AmbiguousForm>();
+  const usedUlids = new Set<string>(scan.byUlid.keys());
+
+  if (compiled != null) {
+    for (const file of docContents) {
+      const marked = parseEntityLinks(file.content);
+      const overlapsMarked = (start: number, end: number) =>
+        marked.some((range) => start < range.end && range.start < end);
+      for (const match of matchRegistryForms(file.content, compiled)) {
+        for (const ulid of match.ulids) usedUlids.add(ulid); // форма в тексте — запись живая
+        if (match.ulids.length < 2 || overlapsMarked(match.start, match.end)) continue;
+        const group = ambiguousByValue.get(match.value);
+        if (group != null) {
+          if (group.occurrences.length < 5) {
+            group.occurrences.push({doc: file.path, start: match.start, end: match.end});
+          }
+        } else {
+          ambiguousByValue.set(match.value, {
+            value: match.value,
+            type: match.type,
+            ulids: match.ulids,
+            occurrences: [{doc: file.path, start: match.start, end: match.end}],
+          });
+        }
+      }
+    }
+  }
+
+  const unused: UnusedEntity[] = index.entries
+    .filter((entry: EntityIndexEntry) => !usedUlids.has(entry.ulid))
+    .map((entry) => ({ulid: entry.ulid, type: entry.type, canonical: entry.canonical}));
+
+  return {
+    ambiguous: [...ambiguousByValue.values()].sort((a, b) => a.value.localeCompare(b.value)),
+    unused,
+  };
 }
 
 /**

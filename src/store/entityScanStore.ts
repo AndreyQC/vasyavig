@@ -3,9 +3,11 @@ import {
   diffEntitiesScan,
   listMarkdownFiles,
   scanMarkdownContents,
+  scanRegistryForms,
   scanToIndexEntries,
   type ChangedEntity,
   type EntitiesDiff,
+  type RegistryFormsDiff,
 } from "../lib/entityScan";
 import {
   ensureEntitiesIndex,
@@ -31,6 +33,8 @@ interface RootScan {
   at: number | null;
   scannedDocs: number;
   diff: EntitiesDiff | null;
+  /** Скан форм справочника по текстам (T6-6): ambiguous/unused. */
+  formsDiff: RegistryFormsDiff | null;
   error: string | null;
 }
 
@@ -42,10 +46,12 @@ interface EntityScanState {
   removeMissing: (root: string, ulid: string) => Promise<void>;
   /** Выбрать правильный тип для ULID с разными type в href (T3e-2). */
   resolveTypeConflict: (root: string, ulid: string, chosenType: string) => Promise<void>;
+  /** Вывести неиспользуемую запись справочника (T6-6). */
+  removeUnused: (root: string, ulid: string) => Promise<void>;
   clear: (root: string) => void;
 }
 
-const initialRoot: RootScan = {scanning: false, at: null, scannedDocs: 0, diff: null, error: null};
+const initialRoot: RootScan = {scanning: false, at: null, scannedDocs: 0, diff: null, formsDiff: null, error: null};
 
 /** Патч raw-контента: заменить href в конструкции вхождения на новый ULID. */
 function retargetHrefAt(content: string, start: number, end: number, newUlid: string): string | null {
@@ -119,10 +125,11 @@ export const useEntityScanStore = create<EntityScanState>((set, get) => ({
       const scanResult = await scanMarkdownContents(key, contents);
       const index = await ensureEntitiesIndex(root);
       const diff = diffEntitiesScan(scanResult, index, contents);
+      const formsDiff = scanRegistryForms(contents, index, scanResult);
       set((s) => ({
         byRoot: {
           ...s.byRoot,
-          [key]: {scanning: false, at: Date.now(), scannedDocs: scanResult.docs, diff, error: null},
+          [key]: {scanning: false, at: Date.now(), scannedDocs: scanResult.docs, diff, formsDiff, error: null},
         },
       }));
     } catch (e) {
@@ -216,6 +223,17 @@ export const useEntityScanStore = create<EntityScanState>((set, get) => ({
     if (entry != null && entry.type !== chosenType.toLowerCase()) {
       entry.type = chosenType.toLowerCase();
       await writeEntitiesIndex(index, index.entries);
+    }
+    await get().scan(root);
+  },
+
+  removeUnused: async (root, ulid) => {
+    // «Неиспользуемые» могут быть ложными (форма в другом написании) —
+    // удаление с подтверждением остаётся за пользователем (риск 2 плана T6-6)
+    const index = await ensureEntitiesIndex(root);
+    const entries = index.entries.filter((e) => e.ulid !== ulid);
+    if (entries.length !== index.entries.length) {
+      await writeEntitiesIndex(index, entries);
     }
     await get().scan(root);
   },

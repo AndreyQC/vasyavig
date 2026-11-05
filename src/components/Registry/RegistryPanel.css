@@ -62,6 +62,10 @@
   overscroll-behavior: contain;
 }
 
+.registry-panel__chip-rule {
+  padding: var(--g-spacing-2) 0 var(--g-spacing-1);
+}
+
 .registry-panel__row {
   display: flex;
   align-items: center;

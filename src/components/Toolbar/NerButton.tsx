@@ -163,7 +163,16 @@ export function NerButton({path}: {path: string}) {
   const resolveChanged = useEntityScanStore((s) => s.resolveChanged);
   const removeMissing = useEntityScanStore((s) => s.removeMissing);
   const resolveTypeConflict = useEntityScanStore((s) => s.resolveTypeConflict);
+  const removeUnused = useEntityScanStore((s) => s.removeUnused);
   const [showAllKnown, setShowAllKnown] = useState(false);
+  const [confirmUnused, setConfirmUnused] = useState<string | null>(null);
+
+  /** Открыть документ репо вкладкой (неоднозначная форма — разрешение в панели). */
+  const openDoc = (docPath?: string) => {
+    if (docPath == null) return;
+    useEditorStore.getState().openTab({path: docPath, kind: "markdown", content: ""});
+    useEditorStore.getState().setActiveTab(docPath);
+  };
 
   return (
     <Tooltip content={t("tools.nerTooltip")}>
@@ -283,6 +292,66 @@ export function NerButton({path}: {path: string}) {
                         <Button size="xs" view="flat" onClick={() => setShowAllKnown(true)}>
                           {t("entity.showAll", {count: scanState.diff.unknownKnown.length})}
                         </Button>
+                      )}
+
+                      {(scanState.formsDiff?.ambiguous.length ?? 0) > 0 && (
+                        <div className="ner-panel__section">
+                          <div className="ner-panel__section-title">
+                            {t("entity.repoAmbiguous")} · {scanState.formsDiff!.ambiguous.length}
+                          </div>
+                          {scanState.formsDiff!.ambiguous.map((group) => (
+                            <div key={group.value} className="ner-panel__row">
+                              <button
+                                type="button"
+                                className="ner-panel__item"
+                                title={t("entity.repoAmbiguousOpenDoc")}
+                                onClick={() => openDoc(group.occurrences[0]?.doc)}
+                              >
+                                <span className={`ner-panel__type ner-panel__type--${group.type}`}>
+                                  {typeLabel(group.type)}
+                                </span>
+                                <span className="ner-panel__value">{group.value}</span>
+                                <span className="ner-panel__line">
+                                  {group.ulids
+                                    .map((ulid) => indexEntries.find((e) => e.ulid === ulid)?.canonical ?? ulid.slice(0, 8))
+                                    .join(" / ")}
+                                </span>
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {(scanState.formsDiff?.unused.length ?? 0) > 0 && (
+                        <div className="ner-panel__section">
+                          <div className="ner-panel__section-title">
+                            {t("entity.repoUnused")} · {scanState.formsDiff!.unused.length}
+                          </div>
+                          {scanState.formsDiff!.unused.map((unused) => (
+                            <div key={unused.ulid} className="ner-panel__row">
+                              <span className="ner-panel__item">
+                                <span className={`ner-panel__type ner-panel__type--${unused.type}`}>
+                                  {typeLabel(unused.type)}
+                                </span>
+                                <span className="ner-panel__value">{unused.canonical}</span>
+                              </span>
+                              <Button
+                                size="xs"
+                                view={confirmUnused === unused.ulid ? "outlined-danger" : "flat"}
+                                onClick={() => {
+                                  if (confirmUnused !== unused.ulid) {
+                                    setConfirmUnused(unused.ulid); // риск 2: могут быть ложными — подтверждение
+                                    return;
+                                  }
+                                  setConfirmUnused(null);
+                                  void removeUnused(repoRoot, unused.ulid);
+                                }}
+                              >
+                                {confirmUnused === unused.ulid ? t("entity.repoUnusedConfirm") : t("entity.repoRemove")}
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </>
                   )}

@@ -8,6 +8,7 @@ import {
   diffEntitiesScan,
   listMarkdownFiles,
   scanMarkdownContents,
+  scanRegistryForms,
   scanToIndexEntries,
 } from "./entityScan";
 import type {EntitiesIndexFile} from "./entitiesIndex";
@@ -134,5 +135,54 @@ describe("typeConflicts (T3e-1)", () => {
       {path: "C:/repo/b.md", content: `[Б](vas-entity:person:${P}) [В](vas-entity:org:${O})`},
     ]);
     expect(scan.typeConflicts).toEqual([]);
+  });
+});
+
+describe("scanRegistryForms (T6-6)", () => {
+  const P1 = "01JBBCCCCDDDDDDDDDDDDDDDDD";
+  const P2 = "01JHKNNNNNNNNNNNNNNNNNNNNN";
+  const O1 = "01JHKMMMMMMMMMMMMMMMMMMMMM";
+  const P3 = "01JHKPPPPPPPPPPPPPPPPPPPPP";
+
+  const formsIndex: EntitiesIndexFile = {
+    path: "C:/repo/entities.jsonl",
+    entries: [
+      {ulid: P1, type: "person", canonical: "Иванов И. И.", forms: ["Иванов И. И."]},
+      {ulid: P2, type: "person", canonical: "Иванов Пётр", forms: ["Иванов И. И."]}, // общий форма-ключ
+      {ulid: O1, type: "org", canonical: "АО Колос", forms: ["АО Колос"]},
+      {ulid: P3, type: "person", canonical: "Забытый З. З.", forms: ["Забытый З. З."]},
+    ],
+  };
+
+  const docWithSharedForm = `[Иванов И. И.](vas-entity:person:${P1}) и Иванов И. И. — разные?`;
+  const docWithOrgText = "АО Колос упоминается текстом без якоря.";
+
+  it("общая форма вне якоря → ambiguous; форма в тексте оживляет запись", () => {
+    const diff = scanRegistryForms(
+      [{path: "a.md", content: docWithSharedForm}, {path: "b.md", content: docWithOrgText}],
+      formsIndex,
+      {root: "C:/repo", docs: 2, byUlid: new Map([[P1, []]]), typeConflicts: []},
+    );
+    expect(diff.ambiguous).toHaveLength(1);
+    expect(diff.ambiguous[0]).toMatchObject({value: "Иванов И. И.", type: "person"});
+    expect(diff.ambiguous[0].ulids.sort()).toEqual([P1, P2].sort());
+    expect(diff.ambiguous[0].occurrences[0].doc).toBe("a.md");
+    // P1 — по якорю, P2 — по форме в тексте, O1 — по тексту, P3 — нигде
+    expect(diff.unused.map((u) => u.ulid)).toEqual([P3]);
+  });
+
+  it("вхождение формы внутри якоря не считается неоднозначным", () => {
+    const diff = scanRegistryForms(
+      [{path: "a.md", content: `[Иванов И. И.](vas-entity:person:${P1})`}],
+      formsIndex,
+      {root: "C:/repo", docs: 1, byUlid: new Map(), typeConflicts: []},
+    );
+    // единственное вхождение формы — внутри конструкции якоря → вне разметки пусто
+    expect(diff.ambiguous).toHaveLength(0);
+  });
+
+  it("пустой справочник → пустой diff", () => {
+    const diff = scanRegistryForms([{path: "a.md", content: "текст"}], {path: "e", entries: []}, {root: "r", docs: 1, byUlid: new Map(), typeConflicts: []});
+    expect(diff).toEqual({ambiguous: [], unused: []});
   });
 });

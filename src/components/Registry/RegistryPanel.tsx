@@ -166,6 +166,10 @@ export function RegistryPanel() {
                   </span>
                 </button>
               ))}
+              {/* T6-8: правило использования чипа (план 20261105_013) */}
+              <Text variant="caption-2" color="secondary" as="div" className="registry-panel__chip-rule">
+                {t("registry.chipRule")}
+              </Text>
             </div>
           )}
         </>

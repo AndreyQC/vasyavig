@@ -87,7 +87,11 @@
     "repoOpenRequired": "Open the document — uneditable files cannot be changed",
     "repoScanError": "Scan failed",
     "repoConflicts": "Type conflicts",
-    "showAll": "Show all ({{count}})"
+    "showAll": "Show all ({{count}})",
+    "repoAmbiguous": "One form — several entities",
+    "repoAmbiguousOpenDoc": "Open the document with the occurrence (resolve in the Registry panel → Conflicts)",
+    "repoUnused": "Not found in anchors or texts",
+    "repoUnusedConfirm": "Remove for sure?"
   },
   "audit": {
     "title": "Audit log",
@@ -520,6 +524,7 @@
     "conflictSeparate": "It's a separate entity",
     "conflictMerge": "Merge records",
     "autoAnchors": "Auto-anchors",
-    "autoAnchorsHint": "Anchor occurrences automatically when the form is ambiguous but resolution is unambiguous via relations/co-occurrence"
+    "autoAnchorsHint": "Anchor occurrences automatically when the form is ambiguous but resolution is unambiguous via relations/co-occurrence",
+    "chipRule": "An anchor (chip) is needed when one form means different entities, the entity spans several documents, masking/audit needs an anchor, or a stable link is required. Otherwise a registry record is enough — forms are recognized on their own."
   }
 }
