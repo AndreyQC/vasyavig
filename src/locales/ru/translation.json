@@ -504,6 +504,23 @@
     "delete": "Удалить запись",
     "deleteConfirm": "Удалить запись справочника? Якоря в документах останутся без словаря.",
     "deleteYes": "Удалить",
-    "deleteNo": "Отмена"
+    "deleteNo": "Отмена",
+    "conflictsTitle": "Конфликты документа: {{count}} · разрешимых: {{resolvable}}",
+    "rescan": "Перепроверить документ",
+    "scanning": "Проверка…",
+    "conflictScanError": "Проверка не удалась",
+    "conflictsEmpty": "Конфликтов форм нет (или вхождения уже размечены)",
+    "resolvableVia": "→ {{canonical}} ({{via}})",
+    "conflictVia": {
+      "relations": "по связи",
+      "co_occurs": "по совместным появлениям"
+    },
+    "anchorAction": "Закрепить якорем",
+    "conflictValue": "«{{value}}» — вхождений: {{count}}",
+    "conflictItIs": "Это он",
+    "conflictSeparate": "Это отдельная сущность",
+    "conflictMerge": "Объединить записи",
+    "autoAnchors": "Авто-якоря",
+    "autoAnchorsHint": "Ставить якоря сами там, где форма неоднозначна, но разрешение однозначно по связям/co_occurs"
   }
 }

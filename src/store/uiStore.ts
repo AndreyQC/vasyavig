@@ -84,6 +84,12 @@ interface UiState {
    * в persist не попадает.
    */
   registryHighlight: boolean;
+  /**
+   * Авто-якоря (T6-5, план 20261105_012): при скане конфликтов вхождения,
+   * однозначно разрешённые по связям/co_occurs, закрепляются якорем сами.
+   * Выключен по умолчанию (риск 4 плана: документы меняются без спроса).
+   */
+  autoAnchors: boolean;
 
   setTheme: (theme: ThemeMode) => void;
   setSidebarMode: (mode: SidebarMode) => void;
@@ -97,6 +103,7 @@ interface UiState {
   setQuickOpenOpen: (open: boolean) => void;
   setCursorPos: (pos: CursorPos | null) => void;
   setRegistryHighlight: (on: boolean) => void;
+  setAutoAnchors: (on: boolean) => void;
   setPendingSaveAsPath: (path: string | null) => void;
   setPendingClosePath: (path: string | null) => void;
   setPendingRemoveRootPath: (path: string | null) => void;
@@ -138,6 +145,7 @@ export const useUiStore = create<UiState>()(
       quickOpenOpen: false,
       cursorPos: null,
       registryHighlight: true,
+      autoAnchors: false,
 
       setTheme: (theme) => set({theme}),
       setSidebarMode: (mode) => set({sidebarMode: mode}),
@@ -157,6 +165,7 @@ export const useUiStore = create<UiState>()(
       setQuickOpenOpen: (open) => set({quickOpenOpen: open}),
       setCursorPos: (pos) => set({cursorPos: pos}),
       setRegistryHighlight: (on) => set({registryHighlight: on}),
+      setAutoAnchors: (on) => set({autoAnchors: on}),
       setPendingSaveAsPath: (path) => set({pendingSaveAsPath: path}),
       setPendingClosePath: (path) => set({pendingClosePath: path}),
       setPendingRemoveRootPath: (path) => set({pendingRemoveRootPath: path}),

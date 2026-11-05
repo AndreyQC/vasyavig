@@ -503,6 +503,23 @@
     "delete": "Delete record",
     "deleteConfirm": "Delete the registry record? Anchors in documents will stay without the dictionary.",
     "deleteYes": "Delete",
-    "deleteNo": "Cancel"
+    "deleteNo": "Cancel",
+    "conflictsTitle": "Document conflicts: {{count}} · resolvable: {{resolvable}}",
+    "rescan": "Re-check the document",
+    "scanning": "Checking…",
+    "conflictScanError": "Check failed",
+    "conflictsEmpty": "No form conflicts (or occurrences are already anchored)",
+    "resolvableVia": "→ {{canonical}} ({{via}})",
+    "conflictVia": {
+      "relations": "by relation",
+      "co_occurs": "by co-occurrence"
+    },
+    "anchorAction": "Anchor it",
+    "conflictValue": "“{{value}}” — occurrences: {{count}}",
+    "conflictItIs": "It's them",
+    "conflictSeparate": "It's a separate entity",
+    "conflictMerge": "Merge records",
+    "autoAnchors": "Auto-anchors",
+    "autoAnchorsHint": "Anchor occurrences automatically when the form is ambiguous but resolution is unambiguous via relations/co-occurrence"
   }
 }

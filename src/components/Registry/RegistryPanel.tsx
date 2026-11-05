@@ -7,6 +7,7 @@ import {useEntitiesIndexStore} from "../../store/entitiesIndexStore";
 import {customTypeLabel} from "../../lib/entityTypes";
 import type {EntityIndexEntry} from "../../lib/entitiesIndex";
 import {RegistryEntityEditor} from "./RegistryEntityEditor";
+import {ConflictSection} from "./ConflictSection";
 import "./RegistryPanel.css";
 
 /**
@@ -110,6 +111,7 @@ export function RegistryPanel() {
       {error != null && (
         <div className="registry-panel__hint registry-panel__hint--error">{t("registry.loadError")}</div>
       )}
+      <ConflictSection />
       {selectedEntry != null ? (
         <RegistryEntityEditor ulid={selectedEntry.ulid} onClose={() => setSelectedUlid(null)} />
       ) : (
