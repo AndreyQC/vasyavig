@@ -1,7 +1,8 @@
 import {Button, Icon, Tooltip} from "@gravity-ui/uikit";
-import {ChartLine, FloppyDisk, ListUl, MagicWand} from "@gravity-ui/icons";
+import {ChartLine, FloppyDisk, ListUl, MagicWand, Persons} from "@gravity-ui/icons";
 import {useTranslation} from "react-i18next";
 import {useEditorStore} from "../../store/editorStore";
+import {useUiStore} from "../../store/uiStore";
 import {useSaveActions} from "../../hooks/useSaveActions";
 import {useMarkdownTools} from "../../hooks/useMarkdownTools";
 import {isConfigFileName} from "../../lib/agent/config";
@@ -22,6 +23,9 @@ export function MainToolbar({path}: Props) {
   const hasDirty = useEditorStore((s) => s.tabs.some((tab) => tab.dirty));
   const {saveActive, saveActiveAs, saveAll} = useSaveActions();
   const {restoreUrls, startToc, insertMermaid} = useMarkdownTools(path);
+  // T6-3: глобальный флаг подсветки форм справочника (декорации — WYSIWYG-only)
+  const registryHighlight = useUiStore((s) => s.registryHighlight);
+  const setRegistryHighlight = useUiStore((s) => s.setRegistryHighlight);
 
   const isMarkdown = kind === "markdown";
   // полный цикл правки/сохранения — у markdown и text (design D5);
@@ -52,6 +56,18 @@ export function MainToolbar({path}: Props) {
             <HarnessLinksButton path={path} />
             <NerButton path={path} />
             <EntityMarkButton path={path} />
+            <Tooltip content={t("tools.registryHighlightTooltip")}>
+              <span>
+                <Button
+                  view="flat"
+                  selected={registryHighlight}
+                  onClick={() => setRegistryHighlight(!registryHighlight)}
+                >
+                  <Icon data={Persons} />
+                  {t("tools.registryHighlight")}
+                </Button>
+              </span>
+            </Tooltip>
             <Tooltip content={t("tools.mermaidTooltip")}>
               <span>
                 <Button view="flat" onClick={insertMermaid}>

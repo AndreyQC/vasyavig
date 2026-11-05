@@ -75,6 +75,12 @@ interface UiState {
   quickOpenOpen: boolean;
   /** Позиция курсора активной вкладки; null — неизвестна (D5). */
   cursorPos: CursorPos | null;
+  /**
+   * Подсветка форм справочника в WYSIWYG (T6-3, план 20261105_010): глобальный
+   * флаг (пер-вкладные отключения не нужны, решение плана). Сессионная —
+   * в persist не попадает.
+   */
+  registryHighlight: boolean;
 
   setTheme: (theme: ThemeMode) => void;
   setSidebarMode: (mode: SidebarMode) => void;
@@ -87,6 +93,7 @@ interface UiState {
   setLastWorkspacePath: (path: string | null) => void;
   setQuickOpenOpen: (open: boolean) => void;
   setCursorPos: (pos: CursorPos | null) => void;
+  setRegistryHighlight: (on: boolean) => void;
   setPendingSaveAsPath: (path: string | null) => void;
   setPendingClosePath: (path: string | null) => void;
   setPendingRemoveRootPath: (path: string | null) => void;
@@ -127,6 +134,7 @@ export const useUiStore = create<UiState>()(
       mainPane: "doc",
       quickOpenOpen: false,
       cursorPos: null,
+      registryHighlight: true,
 
       setTheme: (theme) => set({theme}),
       setSidebarMode: (mode) => set({sidebarMode: mode}),
@@ -145,6 +153,7 @@ export const useUiStore = create<UiState>()(
         }),
       setQuickOpenOpen: (open) => set({quickOpenOpen: open}),
       setCursorPos: (pos) => set({cursorPos: pos}),
+      setRegistryHighlight: (on) => set({registryHighlight: on}),
       setPendingSaveAsPath: (path) => set({pendingSaveAsPath: path}),
       setPendingClosePath: (path) => set({pendingClosePath: path}),
       setPendingRemoveRootPath: (path) => set({pendingRemoveRootPath: path}),

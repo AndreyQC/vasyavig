@@ -13,6 +13,7 @@ import {harnessUlidExtension} from "../../lib/harnessUlidExtension";
 import {harnessUlidMarkupExtension} from "../../lib/harnessUlidMarkupExtension";
 import {vasEntityExtension} from "../../lib/vasEntityExtension";
 import {vasEntityMarkupExtension} from "../../lib/vasEntityMarkupExtension";
+import {registryHighlightExtension} from "../../lib/registryHighlightExtension";
 import {cursorPosExtension, cursorPosMarkupExtension} from "../../lib/cursorPosExtension";
 import {
   selectionMarkupExtension,
@@ -74,6 +75,8 @@ export function MarkdownEditor({path, initialContent}: Props) {
           selectionPmExtension(path),
           // сущности vas-entity: чипы + команды разметки (T3)
           vasEntityExtension(path),
+          // подсветка форм справочника в неразмеченном тексте (T6-3)
+          registryHighlightExtension(getParentDir(path)),
         ),
       },
     },

@@ -18,6 +18,7 @@ import {defaultReadProbe, findHarnessRoot} from "./harnessIndex";
 import type {EntityType} from "./agent/masking/types";
 import {collectMarkedEntities, parseEntityLinks} from "./agent/masking/vasEntityMarkup";
 import {expandEntityForms} from "./agent/masking/declension";
+import {generateUlid} from "./agent/masking/ulid";
 
 export const ENTITIES_FILE_NAME = "entities.jsonl";
 /** В harness-репо лежит рядом с documents.jsonl. */
@@ -172,6 +173,26 @@ export interface EntitiesIndexFile {
 
 const cache = new Map<string, EntitiesIndexFile>();
 
+/**
+ * Подписчики на изменение файла индекса (T6-3): runtime-подсветка
+ * перестраивает декорации, когда индекс записан (save/rebuild/панель) или
+ * изменён извне (watcher → invalidate). Аргумент — путь файла индекса.
+ */
+type EntitiesIndexListener = (path: string) => void;
+const indexListeners = new Set<EntitiesIndexListener>();
+
+/** Подписка на изменения файла индекса; возвращает отписку. */
+export function subscribeEntitiesIndex(listener: EntitiesIndexListener): () => void {
+  indexListeners.add(listener);
+  return () => {
+    indexListeners.delete(listener);
+  };
+}
+
+function notifyEntitiesIndex(path: string): void {
+  for (const listener of indexListeners) listener(path);
+}
+
 function normalizeDir(dir: string): string {
   return dir.replace(/\\/g, "/").replace(/\/+$/, "");
 }
@@ -220,6 +241,7 @@ export function invalidateEntitiesIndex(path: string): void {
     const file = cache.get(key);
     if (file && file.path.replace(/\\/g, "/").toLowerCase() === norm) {
       cache.delete(key);
+      notifyEntitiesIndex(file.path);
     }
   }
 }
@@ -246,6 +268,30 @@ export async function updateEntitiesIndexForContent(dir: string, markdown: strin
   }
 }
 
+/**
+ * Новая запись справочника без разметки документа (T6-4): NER-предложение
+ * «В справочник» / «Создать отдельную» (однофамилец). Запись с свежим ULID
+ * мержится в индекс и пишется на диск; возвращается записанная запись.
+ * Совпадение канона с формой другой записи не проверяется — это осознанное
+ * действие пользователя (неоднозначность разрешает панель, T6-5).
+ */
+export async function addEntityToIndex(
+  dir: string,
+  spec: {type: string; canonical: string; forms?: string[]; aliases?: string[]},
+): Promise<EntityIndexEntry> {
+  const file = await ensureEntitiesIndex(dir);
+  const entry: EntityIndexEntry = {
+    ulid: generateUlid(),
+    type: spec.type.toLowerCase(),
+    canonical: spec.canonical,
+    forms: spec.forms ?? [],
+    aliases: spec.aliases ?? [],
+  };
+  const {entries} = mergeEntitiesIndex(file.entries, [entry]);
+  await writeEntitiesIndex(file, entries);
+  return entry;
+}
+
 /** Записать индекс на диск и обновить кэш (rebuild/решения панели, B-3). */
 export async function writeEntitiesIndex(
   file: EntitiesIndexFile,
@@ -253,4 +299,5 @@ export async function writeEntitiesIndex(
 ): Promise<void> {
   await writeFile(file.path, serializeEntitiesJsonl(entries));
   file.entries = entries;
+  notifyEntitiesIndex(file.path);
 }

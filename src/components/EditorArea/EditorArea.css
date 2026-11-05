@@ -354,6 +354,19 @@
   letter-spacing: 0.4px;
 }
 
+/* Подсветка форм справочника в неразмеченном тексте (T6-3): тише чипов —
+   это подсказка, а не разметка. Неоднозначная форма (форма → несколько
+   ULID) — warning, сигнал для панели конфликтов (T6-5). */
+.vas-registry-match {
+  background: var(--g-color-base-info-light, rgba(51, 130, 240, 0.08));
+  border-bottom: 1px dashed var(--g-color-line-info, rgba(51, 130, 240, 0.5));
+}
+
+.vas-registry-match.vas-registry-ambiguous {
+  background: var(--g-color-base-warning-light, rgba(243, 174, 4, 0.12));
+  border-bottom: 1px dashed var(--g-color-line-warning, rgba(243, 174, 4, 0.6));
+}
+
 /* Поповер чипа сущности (паттерн HarnessUlidPopover). */
 .vas-entity-popover {
   position: fixed;

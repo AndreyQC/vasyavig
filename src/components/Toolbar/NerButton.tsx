@@ -10,7 +10,12 @@ import {parseEntityLinks} from "../../lib/agent/masking/vasEntityMarkup";
 import {buildVasEntityHref} from "../../lib/agent/masking/vasEntityLink";
 import {generateUlid} from "../../lib/agent/masking/ulid";
 import type {EntityType} from "../../lib/agent/masking/types";
-import {ensureEntitiesIndex, matchEntityEntry, type EntityIndexEntry} from "../../lib/entitiesIndex";
+import {
+  addEntityToIndex,
+  ensureEntitiesIndex,
+  matchEntityEntry,
+  type EntityIndexEntry,
+} from "../../lib/entitiesIndex";
 import {customTypeLabel, ensureEntityTypes} from "../../lib/entityTypes";
 import {useEntityScanStore} from "../../store/entityScanStore";
 import {findHarnessRoot} from "../../lib/harnessIndex";
@@ -21,8 +26,11 @@ import {findHarnessRoot} from "../../lib/harnessIndex";
  * из документа (кнопка «Снять»); «Предложения» — NER-спаны вне разметки:
  * известные словарю identities сущности помечены бейджем эталона и
  * размечаются существующим ULID, новые — свежим ULID. «Разметить все
- * известные» — одним bulk-редактом. Правки — через editor.replace()
- * (паттерн restoreUrls), работают в обоих режимах.
+ * известные» — одним bulk-редактом. T6-4: у предложений действие
+ * «В справочник» (запись entities.jsonl без разметки документа) и
+ * «Создать отдельную» для совпавших с известной формой (однофамилец).
+ * Правки — через editor.replace() (паттерн restoreUrls), работают в обоих
+ * режимах.
  */
 export function NerButton({path}: {path: string}) {
   const {t, i18n} = useTranslation();
@@ -118,6 +126,17 @@ export function NerButton({path}: {path: string}) {
     const editor = getEditor(path);
     if (!editor) return;
     editor.moveCursor({line: lineOfOffset(content, offset)});
+  };
+
+  /**
+   * T6-4: NER-предложение → запись справочника, документ не меняется.
+   * Неизвестное значение — «В справочник»; совпавшее с известной записью —
+   * «Создать отдельную» (однофамилец; связь/конфликт — T6-5). После записи
+   * индекс перечитывается: предложение станет known (форма теперь в справочнике).
+   */
+  const addToRegistry = async (span: {value: string; type: EntityType}) => {
+    await addEntityToIndex(getParentDir(path), {type: span.type, canonical: span.value});
+    await reloadIndex();
   };
 
   const markedCount = markedSpans.length;
@@ -339,6 +358,9 @@ export function NerButton({path}: {path: string}) {
                         </button>
                         <Button size="xs" view="outlined" onClick={() => void markSuggestion(span, known)}>
                           {t("entity.markAction")}
+                        </Button>
+                        <Button size="xs" view="flat" onClick={() => void addToRegistry(span)}>
+                          {known == null ? t("entity.toRegistry") : t("entity.createSeparate")}
                         </Button>
                       </div>
                     ))}
