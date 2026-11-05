@@ -44,6 +44,18 @@ export function NerButton({path}: {path: string}) {
 
   const markedSpans = useMemo(() => parseEntityLinks(content), [content]);
 
+  /**
+   * D-1: перечитать словарь сущностей. Снимок из mount-time устаревает после
+   * сохранения вкладки (watcher инвалидирует кэш), поэтому перед действием
+   * индекс берётся заново — иначе разметка склонения не найдёт только что
+   * сохранённую запись и создаст дубль ULID.
+   */
+  const reloadIndex = async (): Promise<EntityIndexEntry[]> => {
+    const file = await ensureEntitiesIndex(getParentDir(path));
+    setIndexEntries(file.entries);
+    return file.entries;
+  };
+
   /** Предложения: NER-спаны, не накрытые существующей разметкой. */
   const suggestions = useMemo(
     () =>
@@ -71,20 +83,28 @@ export function NerButton({path}: {path: string}) {
     editor.replace(text);
   };
 
-  const markSuggestion = (
+  const markSuggestion = async (
     span: {start: number; end: number; value: string; type: EntityType},
     known: EntityIndexEntry | null,
   ) => {
+    // D-1: сверка со свежим индексом (запись могла появиться после открытия).
+    const entries = await reloadIndex();
+    const resolved = matchEntityEntry(entries, span.value, undefined, {fuzzy: true}) ?? known;
     // HY-5: токен типа — из известной записи (идентичность важнее догадки NER)
-    const token = known?.type ?? span.type.toLowerCase();
-    const ulid = known?.ulid ?? generateUlid();
+    const token = resolved?.type ?? span.type.toLowerCase();
+    const ulid = resolved?.ulid ?? generateUlid();
     applyEdits([
       {start: span.start, end: span.end, insert: `[${span.value}](${buildVasEntityHref(token, ulid)})`},
     ]);
   };
 
-  const markAllKnown = () => {
+  const markAllKnown = async () => {
+    const entries = await reloadIndex();
     const edits = knownSuggestions
+      .map(({span}) => ({
+        span,
+        known: matchEntityEntry(entries, span.value, undefined, {fuzzy: true}),
+      }))
       .filter((item) => item.known != null)
       .map(({span, known}) => ({
         start: span.start,
@@ -291,9 +311,9 @@ export function NerButton({path}: {path: string}) {
                   <div className="ner-panel__section-title">
                     {t("entity.suggestionsSection")} · {knownSuggestions.length}
                     {knownCount > 0 && (
-                      <Button size="xs" view="flat" onClick={markAllKnown}>
-                        {t("entity.markAllKnown")}
-                      </Button>
+                    <Button size="xs" view="flat" onClick={() => void markAllKnown()}>
+                      {t("entity.markAllKnown")}
+                    </Button>
                     )}
                   </div>
                   <div className="ner-panel__list">
@@ -317,7 +337,7 @@ export function NerButton({path}: {path: string}) {
                             </span>
                           )}
                         </button>
-                        <Button size="xs" view="outlined" onClick={() => markSuggestion(span, known)}>
+                        <Button size="xs" view="outlined" onClick={() => void markSuggestion(span, known)}>
                           {t("entity.markAction")}
                         </Button>
                       </div>
@@ -330,7 +350,11 @@ export function NerButton({path}: {path: string}) {
             </div>
           }
         >
-          <Button view="flat">
+          <Button
+            view="flat"
+            // D-1: открытие панели — повод перечитать словарь сущностей.
+            onClick={() => void reloadIndex()}
+          >
             <Icon data={PersonMagnifier} />
             {t("tools.ner")}
             <span className="harness-links-panel__count">{spans.length + markedCount}</span>

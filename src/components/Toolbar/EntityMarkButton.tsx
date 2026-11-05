@@ -7,7 +7,7 @@ import {useEditorStore} from "../../store/editorStore";
 import {useSelectionStore} from "../../store/selectionStore";
 import {getParentDir} from "../../lib/utils";
 import {markSelectionAsEntity} from "../../lib/vasEntityExtension";
-import {ensureEntitiesIndex, matchEntityEntry, type EntityIndexEntry} from "../../lib/entitiesIndex";
+import {ensureEntitiesIndex, matchEntityEntry} from "../../lib/entitiesIndex";
 import {customTypeLabel, ensureEntityTypes, type EntityTypeDef} from "../../lib/entityTypes";
 import {generateUlid} from "../../lib/agent/masking/ulid";
 
@@ -25,16 +25,12 @@ export function EntityMarkButton({path}: {path: string}) {
   const selPath = useSelectionStore((s) => s.path);
   const selText = useSelectionStore((s) => s.text);
   const [typeDefs, setTypeDefs] = useState<EntityTypeDef[]>([]);
-  const [indexEntries, setIndexEntries] = useState<EntityIndexEntry[]>([]);
 
   useEffect(() => {
     let alive = true;
     const dir = getParentDir(path);
     void ensureEntityTypes(dir).then((config) => {
       if (alive) setTypeDefs(config.defs);
-    });
-    void ensureEntitiesIndex(dir).then((file) => {
-      if (alive) setIndexEntries(file.entries);
     });
     return () => {
       alive = false;
@@ -47,8 +43,12 @@ export function EntityMarkButton({path}: {path: string}) {
   const label = (token: string): string =>
     customTypeLabel(token, i18n.language) ?? t(`assistant.entityType.${token}`);
 
-  const mark = (token: string) => {
-    const known = matchEntityEntry(indexEntries, selText, undefined, {fuzzy: true});
+  const mark = async (token: string) => {
+    // D-1: индекс перечитывается в момент действия. Снимок из mount-time
+    // устаревает после сохранения вкладки (watcher инвалидирует кэш), и
+    // разметка склонения не нашла бы только что сохранённую запись.
+    const fresh = await ensureEntitiesIndex(getParentDir(path));
+    const known = matchEntityEntry(fresh.entries, selText, undefined, {fuzzy: true});
     const ulid = known?.ulid ?? generateUlid();
     const ok = markSelectionAsEntity(path, token, ulid);
     if (!ok) {
@@ -78,11 +78,11 @@ export function EntityMarkButton({path}: {path: string}) {
                 <>
                   <div className="entity-mark-panel__value">{selText}</div>
                   <div className="entity-mark-panel__types">
-                    {typeDefs.map((def) => (
-                      <Button key={def.token} size="s" view="flat" onClick={() => mark(def.token)}>
-                        {label(def.token)}
-                      </Button>
-                    ))}
+                  {typeDefs.map((def) => (
+                    <Button key={def.token} size="s" view="flat" onClick={() => void mark(def.token)}>
+                      {label(def.token)}
+                    </Button>
+                  ))}
                   </div>
                 </>
               ) : (
