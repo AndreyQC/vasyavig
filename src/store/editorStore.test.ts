@@ -40,6 +40,17 @@ describe("editorStore.openTab", () => {
     expect(s.tabs).toHaveLength(2);
     expect(s.activePath).toBe("/a.md");
   });
+
+  // D-15 (приёмка 20261108_001): пути из разных источников различаются
+  // сепараторами/регистром — сравнение должно быть по канону, иначе дубль.
+  it("активирует вкладку при несовпадении сепараторов/регистра пути (D-15)", () => {
+    const st = useEditorStore.getState();
+    st.openTab({path: "C:\\repos\\repo\\docs\\a.md", kind: "markdown", content: "A"});
+    st.openTab({path: "c:/repos/REPO/docs/A.MD", kind: "markdown", content: "A"});
+    const s = useEditorStore.getState();
+    expect(s.tabs).toHaveLength(1);
+    expect(s.activePath).toBe("C:\\repos\\repo\\docs\\a.md");
+  });
 });
 
 describe("editorStore.updateContent", () => {
