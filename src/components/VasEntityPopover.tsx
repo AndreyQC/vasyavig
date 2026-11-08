@@ -124,7 +124,16 @@ export function VasEntityPopover() {
     setPos({left, top});
   }, [target, canonical]);
 
-  if (!target || !pos) return null;
+  if (!target) return null;
+  // D-18 (приёмка 20261108_001): прежний гейт `!target || !pos` замыкался
+  // в круг — pos выставлялся в useLayoutEffect только при живом ref, а ref
+  // появляется лишь при рендере div, заблокированном отсутствием pos.
+  // Поповер не мог появиться никогда. Теперь рендерим по rect чипа сразу,
+  // useLayoutEffect уточняет позицию по фактическим размерам до отрисовки.
+  const fallbackLeft = Math.max(8, target.rect.left);
+  const fallbackTop = Math.max(8, target.rect.top - 48);
+  const left = pos?.left ?? fallbackLeft;
+  const top = pos?.top ?? fallbackTop;
 
   // Алиас показывается только у маскируемых типов (кастомные — для графов)
   const masking = isMaskingTypeToken(target.type);
@@ -137,7 +146,7 @@ export function VasEntityPopover() {
   };
 
   return createPortal(
-    <div ref={popoverRef} className="vas-entity-popover" style={{left: pos.left, top: pos.top}}>
+    <div ref={popoverRef} className="vas-entity-popover" style={{left, top}}>
       <div className="vas-entity-popover__row">
         <Label theme="info">{typeLabel}</Label>
         <span className="vas-entity-popover__value">{target.value}</span>
