@@ -96,13 +96,20 @@ export const useEditorStore = create<EditorState>((set, get) => {
     activePath: null,
 
     openTab: ({path, kind, content}, opts) => {
-      const existing = get().tabs.find((t) => t.path === path);
+      // D-15 (приёмка 20261108_001): пути из разных источников (дерево, скан
+      // репо, drag-and-drop) различаются сепараторами/регистром — точное
+      // сравнение плодило дубли вкладок одного файла. Канон для поиска —
+      // как в readDocContents скана: слеши вперёд + lowercase.
+      const canonical = (p: string) => p.replace(/\\/g, "/").toLowerCase();
+      const existing = get().tabs.find((t) => canonical(t.path) === canonical(path));
       if (existing) {
         // закреплённое открытие уже открытого файла (двойной клик) закрепляет
         // вкладку; preview-открытие лишь активирует её, статус не меняя
         set((s) => ({
-          tabs: opts?.preview ? s.tabs : s.tabs.map((t) => (t.path === path ? {...t, preview: false} : t)),
-          activePath: path,
+          tabs: opts?.preview
+            ? s.tabs
+            : s.tabs.map((t) => (t.path === existing.path ? {...t, preview: false} : t)),
+          activePath: existing.path,
         }));
         return;
       }
