@@ -3,6 +3,7 @@ import {Button, Icon, Popover, Tooltip} from "@gravity-ui/uikit";
 import {PersonMagnifier} from "@gravity-ui/icons";
 import {useTranslation} from "react-i18next";
 import {useEditorStore} from "../../store/editorStore";
+import {useFileStore} from "../../store/fileStore";
 import {getEditor} from "../../lib/editorRegistry";
 import {getParentDir} from "../../lib/utils";
 import {lineOfOffset, useNerSpans} from "../../hooks/useNerSpans";
@@ -170,8 +171,10 @@ export function NerButton({path}: {path: string}) {
   /** Открыть документ репо вкладкой (неоднозначная форма — разрешение в панели). */
   const openDoc = (docPath?: string) => {
     if (docPath == null) return;
-    useEditorStore.getState().openTab({path: docPath, kind: "markdown", content: ""});
-    useEditorStore.getState().setActiveTab(docPath);
+    // D-14 (приёмка 20261108_001): openTab с content: "" создавал пустую
+    // вкладку под именем реального файла (риск data-loss при сохранении).
+    // openFile читает файл с диска и открывает вкладку с реальным контентом.
+    void useFileStore.getState().openFile(docPath);
   };
 
   return (
@@ -276,8 +279,8 @@ export function NerButton({path}: {path: string}) {
                             type="button"
                             className="ner-panel__item"
                             onClick={() => {
-                              useEditorStore.getState().openTab({path: unknown.doc, kind: "markdown", content: ""});
-                              useEditorStore.getState().setActiveTab(unknown.doc);
+                              // D-14: то же — чтение файла вместо пустой вкладки.
+                              void useFileStore.getState().openFile(unknown.doc);
                             }}
                           >
                             <span className={`ner-panel__type ner-panel__type--${unknown.type}`}>
