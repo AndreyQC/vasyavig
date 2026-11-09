@@ -222,4 +222,38 @@ describe("T6-9: встроенный корпус", () => {
     const second = runRules(text, rules);
     expect(first).toEqual(second);
   });
+
+  it("D-17: ловит 16-значную карту с пробелами (раньше матчалось только 14–15 цифр)", () => {
+    const spans = runRules("Карта: 4111 1111 1111 1111", rules).filter(
+      (s) => s.type === "credit_card",
+    );
+    expect(spans.map((s) => s.value)).toContain("4111 1111 1111 1111");
+  });
+
+  it("D-17: ловит 16 цифр слитно и Amex 15 (4-6-5)", () => {
+    expect(
+      runRules("4111111111111111", rules).some((s) => s.value === "4111111111111111"),
+    ).toBe(true);
+    expect(
+      runRules("3782 822463 10005", rules).some((s) => s.value === "3782 822463 10005"),
+    ).toBe(true);
+  });
+
+  it("D-17: context-правило срабатывает на «Карта:» с заглавной и невалидным Luhn", () => {
+    const spans = runRules("Карта: 4111 1111 1111 1112", rules).filter(
+      (s) => s.type === "credit_card",
+    );
+    expect(spans.length).toBeGreaterThan(0);
+  });
+
+  it("D-17: карта не склеивается через перенос строки и не ловит СНИЛС/ИНН-цепочки", () => {
+    expect(runRules("4111111111111111\n1111", rules).some((s) => s.value.includes("\n"))).toBe(false);
+    const spans = runRules("112-233-565 01 500100732259 7707083893", rules);
+    expect(spans.filter((s) => s.type === "credit_card")).toEqual([]);
+  });
+
+  it("D-17: мусорный Luhn без keyword не маскируется как карта", () => {
+    const spans = runRules("номер 4111111111111113", rules);
+    expect(spans.filter((s) => s.type === "credit_card")).toEqual([]);
+  });
 });

@@ -25,6 +25,19 @@ export type ContextChunking = "headings" | "none";
 export type MaskingMode = "off" | "preview";
 export type MaskingDetector = "secrets" | "email" | "phone" | "url_credentials" | "ner" | "rules";
 
+/**
+ * Дефолтный набор детекторов (T1b/T2/T6-9): единый источник для
+ * `createDefaultConfig` и fallback'а парсера (D-17: легаси-список без
+ * `rules` молча отключал правила при `masking:` без `detectors:`).
+ */
+export const DEFAULT_MASKING_DETECTORS: readonly MaskingDetector[] = [
+  "secrets",
+  "email",
+  "phone",
+  "ner",
+  "rules",
+];
+
 export interface ModelCapabilities {
   streaming: boolean;
   jsonMode: boolean;
@@ -145,7 +158,7 @@ export function createDefaultConfig(): VasyavigConfig {
         // T1b (R1): превью отправки — дефолт; без подтверждения модель не зовётся.
         // T2 (N8): ner включён по умолчанию — preview с подтверждением делает
         // это безопасным, персоны/организации ловятся из коробки.
-        masking: {mode: "preview", detectors: ["secrets", "email", "phone", "ner", "rules"]},
+        masking: {mode: "preview", detectors: [...DEFAULT_MASKING_DETECTORS]},
         audit: {enabled: true, retainRuns: 50},
       },
     },
@@ -393,7 +406,9 @@ function parseFiles(value: unknown): FilesSettings {
 }
 
 function parseMaskingDetectors(value: unknown): MaskingDetector[] {
-  if (value === undefined || value === null) return ["secrets", "email", "phone", "ner"];
+  // D-17: fallback = единый дефолт с `rules` (легаси-список без правил молча
+  // отключал T6-9 в конфигах, где секция `masking` есть, а `detectors` нет).
+  if (value === undefined || value === null) return [...DEFAULT_MASKING_DETECTORS];
   if (!Array.isArray(value)) {
     throw new ConfigError("ожидается список детекторов", "app.assistant.masking.detectors");
   }

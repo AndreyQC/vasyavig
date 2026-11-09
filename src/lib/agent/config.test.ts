@@ -5,6 +5,7 @@ import {
   ConfigError,
   configPathForWorkspace,
   createDefaultConfig,
+  DEFAULT_MASKING_DETECTORS,
   isConfigFileName,
   isCryptoToken,
   parseConfig,
@@ -90,6 +91,19 @@ describe("config defaults", () => {
       mode: "preview",
       detectors: ["secrets", "email", "phone", "ner", "rules"],
     });
+  });
+
+  it("D-17: секция masking без detectors — полный дефолт (включая rules)", () => {
+    // Легаси-fallback ["secrets","email","phone","ner"] молча отключал
+    // правила T6-9 в конфигах, где mode задан, а список детекторов — нет.
+    const config = parseConfig(`
+version: 1
+app:
+  assistant:
+    masking:
+      mode: preview
+`);
+    expect(config.app.assistant.masking.detectors).toEqual(DEFAULT_MASKING_DETECTORS);
   });
 
   it("fills optional model fields with defaults and labels the model by id", () => {
