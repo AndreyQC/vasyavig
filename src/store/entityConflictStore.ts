@@ -155,6 +155,9 @@ function collectConflicts(
       entries,
       relations,
       profile,
+      // D-7: кандидаты из компилята (включают склонённые формы) — резолвер
+      // не должен перематчинговать по stored-формам.
+      candidates,
     );
     if (resolution == null || resolution.status === "unique") continue;
     const type = candidates[0]?.type ?? "";

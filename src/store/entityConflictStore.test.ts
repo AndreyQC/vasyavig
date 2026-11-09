@@ -138,4 +138,31 @@ describe("T6-5: entityConflictStore", () => {
     expect(state?.conflicts).toHaveLength(1);
     expect(state?.conflicts[0].occurrences).toHaveLength(1);
   });
+
+  it("D-7: конфликт по склонению (форма только генерируется, не хранится) виден", async () => {
+    // «Ивановым И. И.» — творительный падеж, который declension выводит и из
+    // «Иванов Иван Иванович», и из «Иванов Иван Иваныч»; в stored-формах его
+    // нет. Резолвер перематчинговал по stored → matchesOfForm=[] → вхождение
+    // молча пропускалось (флагман T6-5). Фикс: кандидаты из компилята.
+    // NB: forms: [] индекс отбраковывает (entitiesIndex.ts:55) — stored-форма
+    // = сам канон, склонённой формы в списке нет.
+    const Q1 = "01JHKQQQQQQQQQQQQQQQQQQQ";
+    const Q2 = "01JHKRRRRRRRRRRRRRRRRRRR";
+    files.set(
+      norm(`${DIR}/entities.jsonl`),
+      [
+        {ulid: Q1, type: "person", canonical: "Иванов Иван Иванович", forms: ["Иванов Иван Иванович"]},
+        {ulid: Q2, type: "person", canonical: "Иванов Иван Иваныч", forms: ["Иванов Иван Иваныч"]},
+      ]
+        .map((e) => JSON.stringify(e))
+        .join("\n") + "\n",
+    );
+    files.set(norm(`${DIR}/relations.jsonl`), "");
+    openTab("Отчёт согласован с Ивановым И. И. вчера.");
+    await useEntityConflictStore.getState().scan(DOC, useEditorStore.getState().tabs[0].content);
+    const state = useEntityConflictStore.getState().byDoc[norm(DOC)];
+    expect(state?.conflicts).toHaveLength(1);
+    expect(state?.conflicts[0].value).toBe("Ивановым И. И.");
+    expect(state?.conflicts[0].candidates.map((c) => c.ulid).sort()).toEqual([Q1, Q2].sort());
+  });
 });

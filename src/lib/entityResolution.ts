@@ -27,7 +27,7 @@ export interface ResolutionContext {
 export type EntityResolution =
   | {status: "unique"; entry: EntityIndexEntry}
   | {status: "resolved"; entry: EntityIndexEntry; via: "relations" | "co_occurs"}
-  | {status: "conflict"; candidates: EntityIndexEntry[]};
+  | {status: "conflict"; candidates: readonly EntityIndexEntry[]};
 
 /**
  * Все записи, у которых value — canonical/форма/алиас (точное совпадение).
@@ -50,6 +50,12 @@ export function matchesOfForm(
  * Разрешить значение по контексту. null — значение не в справочнике.
  * Несколько кандидатов: явная связь с сущностью контекста сильнее профиля
  * co_occurs; ничья или пустой контекст — конфликт.
+ *
+ * D-7: `precomputedCandidates` — кандидаты из компилята (`match.ulids`),
+ * включающие склонённые формы. Без них резолвер перематчинговал по stored-
+ * формам (`matchesOfForm`), и для формы, существующей только как склонение,
+ * candidates = [] → конфликт по склонению молча пропадал. Вызывающий код,
+ * у которого есть матчинг компилята, обязан передавать кандидатов сюда.
  */
 export function resolveRegistryForm(
   value: string,
@@ -57,8 +63,9 @@ export function resolveRegistryForm(
   entries: readonly EntityIndexEntry[],
   relations: readonly EntityRelation[],
   profile: CoOccurrenceProfile,
+  precomputedCandidates?: readonly EntityIndexEntry[],
 ): EntityResolution | null {
-  const candidates = matchesOfForm(entries, value);
+  const candidates = precomputedCandidates ?? matchesOfForm(entries, value);
   if (candidates.length === 0) return null;
   if (candidates.length === 1) return {status: "unique", entry: candidates[0]};
 

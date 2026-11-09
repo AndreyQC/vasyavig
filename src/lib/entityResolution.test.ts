@@ -116,4 +116,34 @@ describe("entityResolution: matchesOfForm / resolveRegistryForm", () => {
     expect(r).toMatchObject({status: "conflict"}); // пара есть, но не в этом документе
     expect(pairKey(P1, O1)).toBe(`${P1}|${O1}`); // порядок пары лексический
   });
+
+  it("D-7: stored-перематчинг не находит кандидатов — без pre-computed null, с ними конфликт", () => {
+    // «Иванову Ивану Ивановичу» — склонённая форма: matchesOfForm по stored-
+    // формам её не знает ([]), компилят (declension) даёт [P1]. Резолвер с
+    // pre-computed кандидатом работает, без — null (молчаливая потеря).
+    expect(matchesOfForm(ENTRIES, "Иванову Ивану Ивановичу")).toEqual([]);
+    expect(
+      resolveRegistryForm("Иванову Ивану Ивановичу", {docPath: "a.md", contextUlids: []}, ENTRIES, [], EMPTY_PROFILE),
+    ).toBeNull();
+    const pre = ENTRIES.filter((e) => e.ulid === P1);
+    const r = resolveRegistryForm(
+      "Иванову Ивану Ивановичу",
+      {docPath: "a.md", contextUlids: []},
+      ENTRIES,
+      [],
+      EMPTY_PROFILE,
+      pre,
+    );
+    expect(r).toMatchObject({status: "unique", entry: {ulid: P1}});
+    // 2+ pre-computed кандидатов без связей → conflict (flagman T6-5)
+    const r2 = resolveRegistryForm(
+      "Ивановым И. И.",
+      {docPath: "a.md", contextUlids: []},
+      ENTRIES,
+      [],
+      EMPTY_PROFILE,
+      ENTRIES.filter((e) => e.type === "person"),
+    );
+    expect(r2).toMatchObject({status: "conflict", candidates: [{ulid: P1}, {ulid: P2}]});
+  });
 });
