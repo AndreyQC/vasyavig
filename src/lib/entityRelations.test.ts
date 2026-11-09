@@ -1,13 +1,17 @@
-import {describe, expect, it} from "vitest";
+import {beforeEach, describe, expect, it, vi, type Mock} from "vitest";
 import {
   computeCoOccurrences,
+  ensureRelationsIndex,
+  invalidateRelationsIndex,
   mergeRelations,
   parseRelationsJsonl,
   relationKey,
   relationsFor,
+  resetRelationsIndexCache,
   resolveByCoOccurrence,
   resolveByRelations,
   serializeRelationsJsonl,
+  writeRelationsIndex,
   type EntityRelation,
 } from "./entityRelations";
 import {
@@ -17,9 +21,68 @@ import {
   serializeEntitiesJsonl,
 } from "./entitiesIndex";
 
+vi.mock("../hooks/useTauriFS", () => ({
+  readFile: vi.fn(async () => {
+    throw new Error("not found");
+  }),
+  writeFile: vi.fn(async () => {}),
+}));
+
+const {readFile, writeFile} = await import("../hooks/useTauriFS");
+
 const P1 = "01AAAAAAAAAAAAAAAAAAAAAAAA";
 const P2 = "01BBBBBBBBBBBBBBBBBBBBBBBB";
 const O1 = "01CCCCCCCCCCCCCCCCCCCCCCCC";
+
+describe("D-9: инвалидация кэша relations между ключами каталогов", () => {
+  const ROOT = "C:/repo";
+  const DOC_DIR = "C:/repo/docs/sub";
+  const REL = `${ROOT}/harness_docs/harness_index/relations.jsonl`;
+  const files = new Map<string, string>();
+  const norm = (p: string) => p.replace(/\\/g, "/").toLowerCase();
+
+  beforeEach(() => {
+    files.clear();
+    files.set(norm(`${ROOT}/harness.yaml`), "vocabularies: {}\n");
+    resetRelationsIndexCache();
+    (readFile as Mock).mockImplementation(async (path: string) => {
+      const hit = files.get(norm(path));
+      if (hit == null) throw new Error("not found");
+      return hit;
+    });
+    (writeFile as Mock).mockImplementation(async (path: string, text: string) => {
+      files.set(norm(path), text);
+    });
+  });
+
+  it("запись через ключ корня видна скану из ключа каталога документа", async () => {
+    // Скан создаёт запись кэша ДО появления файла (пустая), панель пишет
+    // связь под другим ключом того же файла. Кэш-запись скана не должна
+    // оставаться устаревшей до перезапуска.
+    const stale = await ensureRelationsIndex(DOC_DIR);
+    expect(stale.relations).toEqual([]);
+
+    const rootFile = await ensureRelationsIndex(ROOT);
+    expect(rootFile.path.replace(/\\/g, "/").toLowerCase()).toBe(norm(REL));
+    const rel: EntityRelation = {from: P1, to: O1, kind: "works_at", confidence: "explicit"};
+    await writeRelationsIndex(rootFile, [rel]);
+
+    const reread = await ensureRelationsIndex(DOC_DIR);
+    expect(reread.relations).toEqual([rel]); // до фикса — [] (stale-кэш)
+  });
+
+  it("invalidateRelationsIndex сбрасывает только ключи этого файла", async () => {
+    const OTHER = "C:/plain"; // вне harness-корня — свой relations.jsonl
+    files.set(norm(`${OTHER}/relations.jsonl`), "");
+    await ensureRelationsIndex(DOC_DIR);
+    const other = await ensureRelationsIndex(OTHER);
+    invalidateRelationsIndex(REL);
+    const stillCached = await ensureRelationsIndex(OTHER);
+    expect(stillCached).toBe(other); // ключ OTHER жив (свой путь)
+    const refreshed = await ensureRelationsIndex(DOC_DIR);
+    expect(refreshed.relations).toEqual([]); // ключ DOC_DIR сброшен → перечитан
+  });
+});
 
 describe("T6-1: алиасы в справочнике", () => {
   it("читает aliases и не ломается на старых файлах без поля", () => {

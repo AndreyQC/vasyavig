@@ -4,6 +4,7 @@ import {useFileStore} from "../store/fileStore";
 import {useHarnessStore} from "../store/harnessStore";
 import {useHarnessTasksStore} from "../store/harnessTasksStore";
 import {invalidateEntitiesIndex} from "../lib/entitiesIndex";
+import {invalidateRelationsIndex} from "../lib/entityRelations";
 import {resolveRoot} from "../lib/roots";
 
 const DEBOUNCE_MS = 300;
@@ -31,8 +32,10 @@ export function useFileWatcher() {
         useHarnessStore.getState().invalidatePath(path);
         // дашборд задач: .md — точечный патч строки, реестр — сброс корня
         useHarnessTasksStore.getState().invalidatePath(path);
-        // словарь сущностей изменился извне (make/git) — сбросить кэш (B-5)
+        // словарь сущностей и граф связей изменились извне (make/git) —
+        // сбросить кэши (B-5; D-9 — зеркалирование для relations)
         invalidateEntitiesIndex(path);
+        invalidateRelationsIndex(path);
         const root = resolveRoot(path, useFileStore.getState().roots);
         if (!root) return; // изменения вне корней не инициируют обновление деревьев
         if (timers.has(root.path)) clearTimeout(timers.get(root.path));

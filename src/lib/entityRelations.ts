@@ -292,6 +292,23 @@ export async function ensureRelationsIndex(dir: string): Promise<RelationsIndexF
   return file;
 }
 
+/**
+ * Сброс кэша по пути файла (D-9): изменился relations.jsonl — все ключи
+ * каталогов, резолвящиеся в этот путь, устарели; следующий
+ * ensureRelationsIndex перечитает с диска. Зеркало invalidateEntitiesIndex.
+ * Вызывается при записи (writeRelationsIndex) и из файлового watcher'а
+ * (внешние правки make/git).
+ */
+export function invalidateRelationsIndex(path: string): void {
+  const norm = path.replace(/\\/g, "/").toLowerCase();
+  if (!norm.endsWith(`/${RELATIONS_FILE_NAME}`)) return;
+  for (const [key, file] of [...cache.entries()]) {
+    if (file && file.path.replace(/\\/g, "/").toLowerCase() === norm) {
+      cache.delete(key);
+    }
+  }
+}
+
 /** Тестовый хук: сброс кэша. */
 export function resetRelationsIndexCache(): void {
   cache.clear();
@@ -304,4 +321,10 @@ export async function writeRelationsIndex(
 ): Promise<void> {
   await writeFile(file.path, serializeRelationsJsonl(relations));
   file.relations = relations;
+  // D-9: другие ключи каталога, указывающие на тот же файл (скан читает по
+  // «каталогу документа», панель пишет по «корню репо»), иначе остались бы
+  // устаревшими до перезапуска. Свой ключ уже свеж (file обновлён выше), но
+  // invalidateRelationsIndex удалит и его — следующий ensure перечитает
+  // диск (уже актуален); это один лишний read, зато корректно для всех.
+  invalidateRelationsIndex(file.path);
 }
