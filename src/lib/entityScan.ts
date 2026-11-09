@@ -8,6 +8,7 @@
 
 import {collectMarkedEntities, parseEntityLinks} from "./agent/masking/vasEntityMarkup";
 import {expandEntityForms} from "./agent/masking/declension";
+import {maskFencedCode} from "./entityContext";
 import {compileRegistryForms, matchRegistryForms} from "./registryHighlightExtension";
 import type {EntityIndexEntry, EntitiesIndexFile} from "./entitiesIndex";
 
@@ -247,7 +248,7 @@ export function scanRegistryForms(
       const marked = parseEntityLinks(file.content);
       const overlapsMarked = (start: number, end: number) =>
         marked.some((range) => start < range.end && range.start < end);
-      for (const match of matchRegistryForms(file.content, compiled)) {
+      for (const match of matchRegistryForms(maskFencedCode(file.content), compiled)) { // D-8
         for (const ulid of match.ulids) usedUlids.add(ulid); // форма в тексте — запись живая
         if (match.ulids.length < 2 || overlapsMarked(match.start, match.end)) continue;
         const group = ambiguousByValue.get(match.value);

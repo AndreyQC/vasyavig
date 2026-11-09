@@ -1,6 +1,7 @@
 import {useEffect, useState} from "react";
 import {applyDomainDictionary, detectNer} from "../lib/agent/masking/ner";
 import type {DetectorSpan} from "../lib/agent/masking/types";
+import {maskFencedCode} from "../lib/entityContext";
 import {ensureEntityTypes} from "../lib/entityTypes";
 import {getParentDir} from "../lib/utils";
 
@@ -12,6 +13,8 @@ const NER_DEBOUNCE_MS = 400;
  * больших документах, поэтому с дебаунсом после ввода; ничего не отправляет
  * наружу — это навигация по документу, а не masking-прогон. T3c: перед сканом
  * подтягивается справочник типов и доменный словарь (harness.yaml, HY-5).
+ * D-19: предложение/bulk «Разметить все известные» не должны лезть в
+ * fenced-код — фенсы зачищаются перед детекцией (см. maskFencedCode).
  */
 export function useNerSpans(path: string, content: string): DetectorSpan[] {
   const [spans, setSpans] = useState<DetectorSpan[]>([]);
@@ -22,7 +25,7 @@ export function useNerSpans(path: string, content: string): DetectorSpan[] {
     const timer = setTimeout(() => {
       void ensureEntityTypes(getParentDir(path)).then(() => {
         applyDomainDictionary();
-        if (!cancelled) setSpans(detectNer(content));
+        if (!cancelled) setSpans(detectNer(maskFencedCode(content)));
       });
     }, NER_DEBOUNCE_MS);
     return () => {

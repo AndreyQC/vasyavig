@@ -1,5 +1,5 @@
 import {describe, expect, it} from "vitest";
-import {blockAt, markdownBlocks} from "./entityContext";
+import {blockAt, maskFencedCode, markdownBlocks} from "./entityContext";
 import {matchesOfForm, resolveRegistryForm} from "./entityResolution";
 import {computeCoOccurrences, pairKey, type EntityRelation} from "./entityRelations";
 
@@ -44,6 +44,32 @@ describe("entityContext: markdownBlocks / blockAt", () => {
     expect(blocks).toHaveLength(2);
     const found = blockAt(md, md.indexOf("продолжение"));
     expect(found.text).toBe("строка один\nпродолжение строки");
+  });
+
+  it("D-8: maskFencedCode — фенсы в пробелы, длина и смещения вне фенсов те же", () => {
+    const md = [
+      "До фенса Иванов Иван Иванович.",
+      "",
+      "```text",
+      "Иванов Иван Иваныч в код-блоке",
+      "```",
+      "",
+      "После фенса Иванов Пётр Сидорович.",
+    ].join("\n");
+    const masked = maskFencedCode(md);
+    expect(masked).toHaveLength(md.length);
+    const inside = masked.slice(md.indexOf("Иванов Иван Иваныч"), md.indexOf("в код-блоке"));
+    expect(inside).toBe(" ".repeat(inside.length)); // форма внутри фенса стёрта
+    // вне фенсов не тронуто: смещения «до» и «после» совпадают с оригиналом
+    expect(masked.indexOf("До фенса")).toBe(0);
+    expect(masked.indexOf("После фенса")).toBe(md.indexOf("После фенса"));
+    // переводы строк сохранены — блоки/строки не склеиваются
+    expect(masked.split("\n").length).toBe(md.split("\n").length);
+    // ``` и ~~~ считаются, строки-маркеры тоже зачищаются
+    expect(maskFencedCode("~~~\nabc\n~~~\n")).toBe("   \n   \n   \n");
+    // текст без фенсов возвращается как есть (тот же объект)
+    const plain = "без кода";
+    expect(maskFencedCode(plain)).toBe(plain);
   });
 });
 

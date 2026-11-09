@@ -1,5 +1,5 @@
 import {create} from "zustand";
-import {blockAt} from "../lib/entityContext";
+import {blockAt, maskFencedCode} from "../lib/entityContext";
 import {resolveRegistryForm} from "../lib/entityResolution";
 import {compileRegistryForms, matchRegistryForms} from "../lib/registryHighlightExtension";
 import {
@@ -129,7 +129,7 @@ function collectConflicts(
   const markedUlids = [...new Set(marked.map((span) => span.ulid))];
   const profile = computeCoOccurrences(new Map([[docPath, markedUlids]]));
 
-  const matches = matchRegistryForms(content, compiled);
+  const matches = matchRegistryForms(maskFencedCode(content), compiled); // D-8/D-10
   const resolvable: ResolvableOccurrence[] = [];
   const byKey = new Map<string, EntityConflict>();
 

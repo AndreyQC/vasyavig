@@ -181,6 +181,17 @@ describe("scanRegistryForms (T6-6)", () => {
     expect(diff.ambiguous).toHaveLength(0);
   });
 
+  it("D-8: форма только внутри fenced-кода → не ambiguous и не «оживляет» запись", () => {
+    const diff = scanRegistryForms(
+      [{path: "a.md", content: "текст без форм.\n\n```\nИванов И. И.\n```\n"}],
+      formsIndex,
+      {root: "C:/repo", docs: 1, byUlid: new Map(), typeConflicts: []},
+    );
+    expect(diff.ambiguous).toHaveLength(0); // фенс зачищен перед матчингом
+    // ни одна запись не «оживлена» (форма была только во фенсе) → все в unused
+    expect(diff.unused.map((u) => u.ulid).sort()).toEqual([O1, P1, P2, P3].sort());
+  });
+
   it("пустой справочник → пустой diff", () => {
     const diff = scanRegistryForms([{path: "a.md", content: "текст"}], {path: "e", entries: []}, {root: "r", docs: 1, byUlid: new Map(), typeConflicts: []});
     expect(diff).toEqual({ambiguous: [], unused: []});

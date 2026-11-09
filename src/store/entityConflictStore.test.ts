@@ -165,4 +165,26 @@ describe("T6-5: entityConflictStore", () => {
     expect(state?.conflicts[0].value).toBe("Ивановым И. И.");
     expect(state?.conflicts[0].candidates.map((c) => c.ulid).sort()).toEqual([Q1, Q2].sort());
   });
+
+  it("D-8: вхождение формы внутри fenced-кода не конфликтует", async () => {
+    seed();
+    openTab("Иванов И. И. вне фенса.\n\n```\nИванов И. И. внутри фенса\n```\n");
+    await useEntityConflictStore.getState().scan(DOC, useEditorStore.getState().tabs[0].content);
+    const state = useEntityConflictStore.getState().byDoc[norm(DOC)];
+    expect(state?.conflicts).toHaveLength(1);
+    expect(state?.conflicts[0].occurrences).toHaveLength(1); // только проза (было 2 — D-8)
+  });
+
+  it("D-10: авто-якоря не лезут в fenced-код (без рекурсивного цикла)", async () => {
+    seed([{from: P2, to: O1, kind: "member_of", confidence: "explicit"}]);
+    useUiStore.getState().setAutoAnchors(true);
+    openTab("Иванов И. И. из АО Колос подтвердил.\n\n```\nИванов И. И.\n```\n");
+    await useEntityConflictStore.getState().scan(DOC, useEditorStore.getState().tabs[0].content);
+    const tab = useEditorStore.getState().tabs[0];
+    // проза заякорена ровно одним слоем; строка внутри фенса не тронута
+    expect(tab.content).toBe(
+      `[Иванов И. И.](vas-entity:person:${P2}) из АО Колос подтвердил.\n\n\`\`\`\nИванов И. И.\n\`\`\`\n`,
+    );
+    expect(tab.content.match(/vas-entity:/g)).toHaveLength(1); // не 50 слоёв (D-10)
+  });
 });

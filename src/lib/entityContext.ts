@@ -78,3 +78,37 @@ export function blockAt(markdown: string, offset: number): ContextBlock {
   }
   return {start: 0, end: markdown.length, text: markdown};
 }
+
+/**
+ * Зачистка fenced-кода перед сущностным матчингом (D-8/D-10/D-19): символы
+ * fenced-блоков (включая строки-маркеры ```/~~~) заменяются пробелами с
+ * сохранением длины и переводов строк — смещения вхождений ВНЕ фенсов
+ * остаются валидными, вхождения внутри фенсов физически не матчатся. Тот же
+ * FENCE_RE toggle, что у `markdownBlocks`/`parseEntityLinks` (эвристика по
+ * строкам; `~~~` и ``` считаются одинаково, вложенность не поддерживается).
+ *
+ * Назначение — контуры «матчинг как навигация/разметка» (скан конфликтов,
+ * авто-якоря, репо-скан, NER-предложения/bulk). МАСКИРОВАНИЕ (privacy) этот
+ * хелпер НЕ использует: секрет в код-блоке всё равно уходит в промпт.
+ */
+export function maskFencedCode(markdown: string): string {
+  const lines = markdown.split("\n");
+  let inCode = false;
+  let changed = false;
+  const out: string[] = [];
+  for (const line of lines) {
+    if (FENCE_RE.test(line)) {
+      inCode = !inCode;
+      out.push(" ".repeat(line.length));
+      changed = true;
+      continue;
+    }
+    if (inCode) {
+      out.push(" ".repeat(line.length));
+      changed = true;
+      continue;
+    }
+    out.push(line);
+  }
+  return changed ? out.join("\n") : markdown;
+}
